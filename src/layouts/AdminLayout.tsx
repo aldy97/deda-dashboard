@@ -11,6 +11,7 @@ const MENU_ITEMS = [
   { key: '/fleet', label: '设备舰队' },
   { key: '/users', label: '用户画像' },
   { key: '/content', label: '内容与质量' },
+  { key: '/feedback', label: '用户反馈' },
 ]
 
 export default function AdminLayout() {

@@ -3,6 +3,8 @@ import type { ReactElement } from 'react'
 import AdminLayout from '../layouts/AdminLayout'
 import Login from '../pages/Login'
 import Overview from '../pages/Overview'
+import Retention from '../pages/Retention'
+import Feedback from '../pages/Feedback'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import { TOKEN_KEY } from '../api/client'
 
@@ -24,20 +26,7 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <Navigate to="/overview" replace /> },
         { path: 'overview', element: <Overview /> },
-        {
-          path: 'retention',
-          element: (
-            <PlaceholderPage
-              title="留存与激活"
-              description="cohort 留存热力表、D1/D7/D30/D90 留存曲线、激活→首聊→7/30 日留存漏斗。BP 核心页。"
-              apis={[
-                'GET /analytics/retention/cohorts',
-                'GET /analytics/retention/curve',
-                'GET /analytics/activation/funnel',
-              ]}
-            />
-          ),
-        },
+        { path: 'retention', element: <Retention /> },
         {
           path: 'engagement',
           element: (
@@ -93,6 +82,7 @@ export const router = createBrowserRouter(
             />
           ),
         },
+        { path: 'feedback', element: <Feedback /> },
         { path: '*', element: <Navigate to="/overview" replace /> },
       ],
     },

@@ -106,6 +106,59 @@ export interface ActivationFunnelResponse {
   conversionRates: Array<{ from: string; to: string; rate: number | null }>
 }
 
+// ---- 用户反馈 ----
+export interface FeedbackUserBrief {
+  nickname: string | null
+  phone: string | null
+}
+
+export interface ReportFeedbackItem {
+  id: string
+  /** 报告日期 YYYY-MM-DD */
+  reportDate: string
+  isUseful: boolean
+  /** = updatedAt：用户可改票，此为最新状态时间（ISO 8601） */
+  feedbackAt: string
+  user: FeedbackUserBrief
+  device: {
+    /** 业务设备 ID（非数据库 UUID） */
+    deviceId: string
+    deviceCode: string | null
+    characterKey: string
+  }
+}
+
+export interface ReportFeedbackListResponse {
+  total: number
+  page: number
+  pageSize: number
+  /** 区间内整体有用率统计，不受 isUseful 过滤影响；区间无反馈时 usefulRate 为 0 */
+  summary: {
+    usefulCount: number
+    notUsefulCount: number
+    usefulRate: number
+  }
+  items: ReportFeedbackItem[]
+}
+
+export interface UserFeedbackItem {
+  id: string
+  /** C 端限制 200 字 */
+  content: string
+  /** 用户主动留的联系手机号，可空 */
+  contact: string | null
+  createdAt: string
+  /** 用户已注销时为 null（反馈保留） */
+  user: FeedbackUserBrief | null
+}
+
+export interface UserFeedbackListResponse {
+  total: number
+  page: number
+  pageSize: number
+  items: UserFeedbackItem[]
+}
+
 // ---- 使用行为 ----
 export interface EngagementSummaryResponse {
   activeDevices: number
