@@ -1,0 +1,68 @@
+name: Deploy Dashboard Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dashboard-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Pack static assets
+        run: tar -C dist -czf "dashboard-${{ github.sha }}.tar.gz" .
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.ECS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Transfer to ECS
+        run: scp "dashboard-${{ github.sha }}.tar.gz" "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:/tmp/"
+
+      # 原子切换：先解压到 .new 再 mv，目标目录任何时刻都是完整的
+      - name: Deploy on ECS
+        run: |
+          ssh "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" bash -s <<'EOF'
+          set -e
+          mkdir -p /opt/deda/dashboard
+          rm -rf /opt/deda/dashboard/prod.new
+          mkdir -p /opt/deda/dashboard/prod.new
+          tar -xzf /tmp/dashboard-${{ github.sha }}.tar.gz -C /opt/deda/dashboard/prod.new
+          rm -f /tmp/dashboard-${{ github.sha }}.tar.gz
+          if [ -d /opt/deda/dashboard/prod ]; then
+            rm -rf /opt/deda/dashboard/prod.old
+            mv /opt/deda/dashboard/prod /opt/deda/dashboard/prod.old
+          fi
+          mv /opt/deda/dashboard/prod.new /opt/deda/dashboard/prod
+          EOF
+
+      # 备案期间：域名未生效，健康检查 = 落盘校验。
+      # 备案后替换为：curl -fsS --retry 8 --retry-delay 5 https://<域名>/dashboard/
+      - name: Health check (on-disk, pre-ICP)
+        run: |
+          ssh "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" bash -s <<'EOF'
+          set -e
+          test -f /opt/deda/dashboard/prod/index.html
+          grep -q '/dashboard/assets/' /opt/deda/dashboard/prod/index.html
+          echo "OK: $(ls /opt/deda/dashboard/prod/assets | wc -l) asset files deployed"
+          EOF
