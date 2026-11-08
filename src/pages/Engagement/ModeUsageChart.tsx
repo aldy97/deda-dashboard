@@ -2,15 +2,25 @@ import { Empty } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { ModeUsageResponse } from '../../types/analytics'
 
-/** 与 MINI_PROGRAM_API.md 已知模式映射一致 */
+/** 与 deda-wechat-app learning-data.ts 的 MODE_LABELS 完全一致（唯一映射来源，勿自行增改） */
 const MODE_LABELS: Record<string, string> = {
   free_chat: '自由对话',
+  free_chat_casual: '自由闲聊',
+  free_chat_roleplay: '角色扮演',
+  free_chat_qa: '百科问答',
   english_chat: '英语对话',
-  adventure_story: '每日冒险',
   english_story: '英语故事',
   idiom_story: '成语故事',
+  adventure_story: '冒险故事',
   free_story: '自由故事',
+  daily_adventure: '每日冒险',
+  adventure: '每日冒险',
+  story: '故事',
+  sleep: '哄睡故事',
   sleep_story: '哄睡故事',
+  bedtime: '哄睡故事',
+  music: '音乐',
+  device_control: '设备控制',
   unknown: '其他',
 }
 

@@ -24,7 +24,6 @@ import type {
 import MessageDetailDrawer, {
   modeLabel,
   roleTag,
-  statusTag,
 } from './MessageDetailDrawer'
 
 type Range = [Dayjs, Dayjs] | null
@@ -276,18 +275,20 @@ export default function Messages() {
               width: 100,
               render: (_, row) => modeLabel(row.mode, row.conversationModeKey),
             },
-            {
-              title: '状态',
-              dataIndex: 'status',
-              width: 80,
-              render: statusTag,
-            },
-            {
-              title: 'CEFR',
-              dataIndex: 'cefrLevel',
-              width: 70,
-              render: (v: string | null) => v ?? '—',
-            },
+            // 状态列暂不需要（一期消息几乎全 completed），需要时取消注释
+            // {
+            //   title: '状态',
+            //   dataIndex: 'status',
+            //   width: 80,
+            //   render: statusTag,
+            // },
+            // CEFR 列暂不需要，需要时取消注释
+            // {
+            //   title: 'CEFR',
+            //   dataIndex: 'cefrLevel',
+            //   width: 70,
+            //   render: (v: string | null) => v ?? '—',
+            // },
           ]}
         />
       </Card>
