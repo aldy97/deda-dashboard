@@ -13,6 +13,7 @@ const MENU_ITEMS = [
   { key: '/content', label: '内容与质量' },
   { key: '/feedback', label: '用户反馈' },
   { key: '/messages', label: '消息明细' },
+  { key: '/llm', label: '模型监控' },
 ]
 
 export default function AdminLayout() {

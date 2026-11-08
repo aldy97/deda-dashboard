@@ -12,6 +12,9 @@ import type {
   FeatureAdoptionResponse,
   Granularity,
   HourlyHeatmapResponse,
+  LlmRecentFailuresResponse,
+  LlmSummaryResponse,
+  LlmTrendResponse,
   MessageDetailResponse,
   MessageListResponse,
   MessageSort,
@@ -284,6 +287,40 @@ export async function fetchMessageDetail(
 ): Promise<MessageDetailResponse> {
   const resp = await apiClient.get(`/analytics/messages/${id}`)
   return resp.data as MessageDetailResponse
+}
+
+// ---- 模型监控 ----
+
+/** 契约见 docs/llm-monitoring-spec.md */
+export async function fetchLlmSummary(params: {
+  startDate?: string
+  endDate?: string
+}): Promise<LlmSummaryResponse> {
+  const resp = await apiClient.get('/analytics/llm/summary', { params })
+  return resp.data as LlmSummaryResponse
+}
+
+export async function fetchLlmTrend(params: {
+  startDate?: string
+  endDate?: string
+  granularity?: Granularity
+  /** 缺省 = 全部场景聚合 */
+  scene?: string
+}): Promise<LlmTrendResponse> {
+  const resp = await apiClient.get('/analytics/llm/trend', { params })
+  return resp.data as LlmTrendResponse
+}
+
+export async function fetchLlmRecentFailures(params: {
+  page?: number
+  /** 1-100，默认 20 */
+  pageSize?: number
+  scene?: string
+}): Promise<LlmRecentFailuresResponse> {
+  const resp = await apiClient.get('/analytics/llm/recent-failures', {
+    params,
+  })
+  return resp.data as LlmRecentFailuresResponse
 }
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。

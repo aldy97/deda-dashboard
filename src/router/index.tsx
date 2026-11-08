@@ -8,6 +8,7 @@ import Engagement from '../pages/Engagement'
 import Users from '../pages/Users'
 import Content from '../pages/Content'
 import Messages from '../pages/Messages'
+import LlmMonitor from '../pages/Llm'
 import Feedback from '../pages/Feedback'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import { TOKEN_KEY } from '../api/client'
@@ -46,6 +47,7 @@ export const router = createBrowserRouter(
         { path: 'content', element: <Content /> },
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },
+        { path: 'llm', element: <LlmMonitor /> },
         { path: '*', element: <Navigate to="/overview" replace /> },
       ],
     },
