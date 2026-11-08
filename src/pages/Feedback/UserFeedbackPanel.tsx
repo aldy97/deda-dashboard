@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, DatePicker, Radio, Table, Tooltip, Typography } from 'antd'
+import { Alert, DatePicker, Radio, Table, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { fetchUserFeedbacks } from '../../api/analytics'
@@ -131,26 +131,22 @@ export default function UserFeedbackPanel() {
             title: '联系方式',
             dataIndex: 'contact',
             width: 130,
-            render: (contact: string | null) =>
-              contact ?? <Typography.Text type="secondary">—</Typography.Text>,
+            render: (contact: string | null) => contact ?? '—',
           },
-          {
-            title: '账号手机号',
-            key: 'phone',
-            width: 130,
-            render: (_, row) => row.user?.phone ?? '—',
-          },
-          {
-            title: '家长',
-            key: 'nickname',
-            width: 120,
-            render: (_, row) =>
-              row.user === null ? (
-                <Typography.Text type="secondary">已注销用户</Typography.Text>
-              ) : (
-                (row.user.nickname ?? '—')
-              ),
-          },
+          // 账号手机号、家长列暂不需要（当前用户普遍未绑定手机号/昵称），需要时取消注释
+          // {
+          //   title: '账号手机号',
+          //   key: 'phone',
+          //   width: 130,
+          //   render: (_, row) => row.user?.phone ?? '—',
+          // },
+          // {
+          //   title: '家长',
+          //   key: 'nickname',
+          //   width: 120,
+          //   render: (_, row) =>
+          //     row.user === null ? '已注销用户' : (row.user.nickname ?? '—'),
+          // },
           {
             title: '提交时间',
             dataIndex: 'createdAt',
