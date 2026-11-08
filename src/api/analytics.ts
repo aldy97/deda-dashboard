@@ -16,8 +16,10 @@ import type {
   OverviewResponse,
   OverviewTrendResponse,
   QualityConversationResponse,
+  ReportFeedbackListResponse,
   RetentionCohortsResponse,
   RetentionCurveResponse,
+  UserFeedbackListResponse,
   UsersDemographicsResponse,
   UsersSummaryResponse,
 } from '../types/analytics'
@@ -99,6 +101,46 @@ export async function fetchActivationFunnel(params: {
 }): Promise<ActivationFunnelResponse> {
   const resp = await apiClient.get('/analytics/activation/funnel', { params })
   return resp.data as ActivationFunnelResponse
+}
+
+// ---- 用户反馈 ----
+
+/** 日期区间按 reportDate 过滤；summary 不受 isUseful 影响 */
+export interface ReportFeedbackQuery {
+  startDate?: string
+  endDate?: string
+  isUseful?: boolean
+  page?: number
+  /** 1-100，默认 20 */
+  pageSize?: number
+}
+
+export async function fetchReportFeedbacks(
+  params: ReportFeedbackQuery,
+): Promise<ReportFeedbackListResponse> {
+  const resp = await apiClient.get('/analytics/feedback/parent-reports', {
+    params,
+  })
+  return resp.data as ReportFeedbackListResponse
+}
+
+/** 日期区间按 createdAt 过滤 */
+export interface UserFeedbackQuery {
+  startDate?: string
+  endDate?: string
+  /** true = 仅看留了联系方式的反馈 */
+  hasContact?: boolean
+  page?: number
+  pageSize?: number
+}
+
+export async function fetchUserFeedbacks(
+  params: UserFeedbackQuery,
+): Promise<UserFeedbackListResponse> {
+  const resp = await apiClient.get('/analytics/feedback/user-feedbacks', {
+    params,
+  })
+  return resp.data as UserFeedbackListResponse
 }
 
 // ---- 使用行为 ----
