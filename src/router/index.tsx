@@ -4,6 +4,10 @@ import AdminLayout from '../layouts/AdminLayout'
 import Login from '../pages/Login'
 import Overview from '../pages/Overview'
 import Retention from '../pages/Retention'
+import Engagement from '../pages/Engagement'
+import Users from '../pages/Users'
+import Content from '../pages/Content'
+import Messages from '../pages/Messages'
 import Feedback from '../pages/Feedback'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import { TOKEN_KEY } from '../api/client'
@@ -27,22 +31,7 @@ export const router = createBrowserRouter(
         { index: true, element: <Navigate to="/overview" replace /> },
         { path: 'overview', element: <Overview /> },
         { path: 'retention', element: <Retention /> },
-        {
-          path: 'engagement',
-          element: (
-            <PlaceholderPage
-              title="使用行为"
-              description="使用时长分桶分布（估算口径）、对话轮次、7×24 时段热力、模式分布、哄睡/冒险/习惯功能渗透率。"
-              apis={[
-                'GET /analytics/engagement/summary',
-                'GET /analytics/engagement/duration-distribution',
-                'GET /analytics/engagement/hourly-heatmap',
-                'GET /analytics/engagement/mode-usage',
-                'GET /analytics/engagement/feature-adoption',
-              ]}
-            />
-          ),
-        },
+        { path: 'engagement', element: <Engagement /> },
         {
           path: 'fleet',
           element: (
@@ -53,36 +42,10 @@ export const router = createBrowserRouter(
             />
           ),
         },
-        {
-          path: 'users',
-          element: (
-            <PlaceholderPage
-              title="用户画像"
-              description="家长注册趋势、孩子年龄段/性别分布、IP 型号（elly/polly）分布、家庭绑定结构。聚合数据，不出 PII。"
-              apis={[
-                'GET /analytics/users/summary',
-                'GET /analytics/users/demographics',
-              ]}
-            />
-          ),
-        },
-        {
-          path: 'content',
-          element: (
-            <PlaceholderPage
-              title="内容与质量"
-              description="冒险故事完集率、学习数据、家长报告有用率、对话失败率与安全拦截。LLM 单机日成本二期上线。"
-              apis={[
-                'GET /analytics/content/adventure',
-                'GET /analytics/content/learning',
-                'GET /analytics/content/parent-report',
-                'GET /analytics/quality/conversation',
-                'GET /analytics/quality/llm-usage（一期 501，二期上线）',
-              ]}
-            />
-          ),
-        },
+        { path: 'users', element: <Users /> },
+        { path: 'content', element: <Content /> },
         { path: 'feedback', element: <Feedback /> },
+        { path: 'messages', element: <Messages /> },
         { path: '*', element: <Navigate to="/overview" replace /> },
       ],
     },
