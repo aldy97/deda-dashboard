@@ -319,3 +319,57 @@ export interface MessageDetailResponse extends MessageListItem {
 }
 
 export type MessageSort = 'spokeAt_desc' | 'spokeAt_asc'
+
+// ---- 模型监控 ----
+/** 契约见 docs/llm-monitoring-spec.md */
+export interface LlmSceneSummary {
+  scene: string
+  /** small / main */
+  tier: string
+  calls: number
+  /** 分母 0 时 null */
+  successRate: number | null
+  p50LatencyMs: number | null
+  p90LatencyMs: number | null
+  /** 首包时间：仅流式场景（chat_main / filler）有值，否则 null */
+  p50FirstTokenMs: number | null
+  p90FirstTokenMs: number | null
+  totalTokens: number
+  failureBreakdown: Array<{ reason: string; count: number }>
+}
+
+export interface LlmSummaryResponse {
+  scenes: LlmSceneSummary[]
+}
+
+export interface LlmTrendResponse {
+  granularity: 'day' | 'week' | 'month'
+  series: Array<{
+    date: string
+    calls: number
+    successRate: number | null
+    p50LatencyMs: number | null
+    /** 首包均值，仅流式场景有值 */
+    avgFirstTokenMs: number | null
+    totalTokens: number
+  }>
+}
+
+export interface LlmFailureItem {
+  id: string
+  scene: string
+  tier: string
+  model: string
+  /** timeout / rate_limit / parse_error / upstream_error / empty_response */
+  failureReason: string | null
+  latencyMs: number | null
+  deviceId: string | null
+  createdAt: string
+}
+
+export interface LlmRecentFailuresResponse {
+  total: number
+  page: number
+  pageSize: number
+  items: LlmFailureItem[]
+}
