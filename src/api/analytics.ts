@@ -12,6 +12,9 @@ import type {
   FeatureAdoptionResponse,
   Granularity,
   HourlyHeatmapResponse,
+  MessageDetailResponse,
+  MessageListResponse,
+  MessageSort,
   ModeUsageResponse,
   OverviewResponse,
   OverviewTrendResponse,
@@ -245,6 +248,42 @@ export async function fetchQualityConversation(params: {
     params,
   })
   return resp.data as QualityConversationResponse
+}
+
+// ---- 消息明细 ----
+
+/** 日期区间按 spokeAt 过滤；deviceId 为业务设备 ID */
+export interface MessagesQuery {
+  startDate?: string
+  endDate?: string
+  deviceId?: string
+  role?: 'user' | 'assistant'
+  status?: 'completed' | 'failed'
+  mode?: string
+  conversationModeKey?: string
+  /** 精确匹配，用于查看同一轮问答 */
+  turnId?: string
+  conversationId?: string
+  /** content 模糊匹配，≤ 50 字 */
+  keyword?: string
+  sort?: MessageSort
+  page?: number
+  /** 1-100，默认 20 */
+  pageSize?: number
+}
+
+export async function fetchMessages(
+  params: MessagesQuery,
+): Promise<MessageListResponse> {
+  const resp = await apiClient.get('/analytics/messages', { params })
+  return resp.data as MessageListResponse
+}
+
+export async function fetchMessageDetail(
+  id: string,
+): Promise<MessageDetailResponse> {
+  const resp = await apiClient.get(`/analytics/messages/${id}`)
+  return resp.data as MessageDetailResponse
 }
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。

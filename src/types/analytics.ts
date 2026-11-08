@@ -278,3 +278,44 @@ export interface QualityConversationResponse {
     safetyRate: number | null
   }>
 }
+
+// ---- 消息明细 ----
+export interface MessageDeviceBrief {
+  /** 业务设备 ID（非数据库 UUID） */
+  deviceId: string
+  deviceCode: string | null
+  characterKey: string
+}
+
+export interface MessageListItem {
+  id: string
+  /** 同一轮问答共享 ID（user/assistant 两条） */
+  turnId: string
+  /** 厂商侧对话唯一 ID，可空 */
+  conversationId: string | null
+  role: string
+  content: string
+  /** assistant: completed / failed */
+  status: string
+  mode: string | null
+  conversationModeKey: string | null
+  cefrLevel: string | null
+  spokeAt: string
+  createdAt: string
+  device: MessageDeviceBrief
+}
+
+export interface MessageListResponse {
+  total: number
+  page: number
+  pageSize: number
+  /** 列表项不含 rawPayload（体积大，走详情接口） */
+  items: MessageListItem[]
+}
+
+/** 整行详情，rawPayload 原样返回 */
+export interface MessageDetailResponse extends MessageListItem {
+  rawPayload: unknown
+}
+
+export type MessageSort = 'spokeAt_desc' | 'spokeAt_asc'

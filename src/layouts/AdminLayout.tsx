@@ -12,6 +12,7 @@ const MENU_ITEMS = [
   { key: '/users', label: '用户画像' },
   { key: '/content', label: '内容与质量' },
   { key: '/feedback', label: '用户反馈' },
+  { key: '/messages', label: '消息明细' },
 ]
 
 export default function AdminLayout() {
