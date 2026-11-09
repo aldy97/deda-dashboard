@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, DatePicker, Radio, Table, Tooltip } from 'antd'
+import { Alert, Radio, Table, Tooltip } from 'antd'
 import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
 import { fetchUserFeedbacks } from '../../api/analytics'
 import type { UserFeedbackListResponse } from '../../types/analytics'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { defaultRange, fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 
 type ContactFilter = 'all' | 'hasContact'
 
@@ -24,10 +20,7 @@ const CONTACT_OPTIONS: Array<{ label: string; value: ContactFilter }> = [
  * 「账号手机号」来自 users.phone，可能与反馈留的 contact 不同，两列都展示。
  */
 export default function UserFeedbackPanel() {
-  const [range, setRange] = useState<Range>([
-    dayjs().subtract(30, 'day'),
-    yesterday(),
-  ])
+  const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [contactFilter, setContactFilter] = useState<ContactFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -36,7 +29,7 @@ export default function UserFeedbackPanel() {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(
-    async (r: Range, f: ContactFilter, p: number, ps: number) => {
+    async (r: DayRange, f: ContactFilter, p: number, ps: number) => {
       setLoading(true)
       setError(null)
       try {
@@ -67,14 +60,12 @@ export default function UserFeedbackPanel() {
       <div
         style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}
       >
-        <DatePicker.RangePicker
-          allowClear={false}
-          disabledDate={disableAfterYesterday}
+        <AnalyticsRangePicker
           value={range}
-          onChange={(dates) => {
-            if (dates?.[0] && dates?.[1]) {
+          onChange={(r) => {
+            if (r) {
               setPage(1)
-              setRange([dates[0], dates[1]])
+              setRange(r)
             }
           }}
         />

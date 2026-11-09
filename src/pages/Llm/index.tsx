@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Card, DatePicker, Select, Spin, Typography } from 'antd'
-import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
+import { Alert, Card, Select, Spin, Typography } from 'antd'
 import { fetchLlmSummary, fetchLlmTrend } from '../../api/analytics'
 import type { LlmSummaryResponse, LlmTrendResponse } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { defaultRange, fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import SceneSummaryTable from './SceneSummaryTable'
 import LlmTrendChart from './LlmTrendChart'
 import RecentFailuresTable from './RecentFailuresTable'
 import { SCENE_META } from './scenes'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-// 监控页要看近实时数据，范围含今天；仅禁选未来日期
-const disableFuture = (d: Dayjs) => d.isAfter(dayjs(), 'day')
 
 /**
  * 模型监控页：主模型 + 小模型全量调用的分场景汇总、趋势与失败明细。
@@ -21,17 +16,14 @@ const disableFuture = (d: Dayjs) => d.isAfter(dayjs(), 'day')
  * 注意：fail-open 场景（安全分类、过渡语）失败不报错，只能靠本页成功率发现。
  */
 export default function LlmMonitor() {
-  const [range, setRange] = useState<Range>([
-    dayjs().subtract(6, 'day'),
-    dayjs(),
-  ])
+  const [range, setRange] = useState<DayRange>(defaultRange(7))
   const [scene, setScene] = useState<string | undefined>(undefined)
   const [summary, setSummary] = useState<LlmSummaryResponse | null>(null)
   const [trend, setTrend] = useState<LlmTrendResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (r: Range, s: string | undefined) => {
+  const load = useCallback(async (r: DayRange, s: string | undefined) => {
     setLoading(true)
     setError(null)
     const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
@@ -73,12 +65,10 @@ export default function LlmMonitor() {
             主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值
           </Typography.Text>
         </div>
-        <DatePicker.RangePicker
-          allowClear={false}
-          disabledDate={disableFuture}
+        <AnalyticsRangePicker
           value={range}
-          onChange={(dates) => {
-            if (dates?.[0] && dates?.[1]) setRange([dates[0], dates[1]])
+          onChange={(r) => {
+            if (r) setRange(r)
           }}
         />
       </div>

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Card, Col, Radio, Row, Spin, Typography } from 'antd'
-import dayjs from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { fetchOverview, fetchOverviewTrend } from '../../api/analytics'
 import type { OverviewResponse, OverviewTrendResponse } from '../../types/analytics'
+import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
+import TodayOngoingTag from '../../components/TodayOngoingTag'
+import { defaultRange, fmt, today } from '../../utils/date-range'
 import KpiCards from './KpiCards'
 import TrendChart from './TrendChart'
 import FunnelChart from './FunnelChart'
@@ -15,25 +18,23 @@ const RANGE_OPTIONS = [
 
 /**
  * 总览页（P1）：核心 KPI 卡 + 主趋势图 + 激活漏斗。
- * 数据日期默认 T-1（昨天，Asia/Shanghai 完整自然日）。
+ * KPI 日期与趋势区间均含今日（可切回历史日期）；今日数据为进行中口径，已标注。
  */
 export default function Overview() {
   const [overview, setOverview] = useState<OverviewResponse | null>(null)
   const [trend, setTrend] = useState<OverviewTrendResponse | null>(null)
+  const [kpiDate, setKpiDate] = useState<Dayjs>(today())
   const [rangeDays, setRangeDays] = useState(30)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (days: number) => {
+  const load = useCallback(async (date: Dayjs, days: number) => {
     setLoading(true)
     setError(null)
-    const endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
-    const startDate = dayjs()
-      .subtract(days, 'day')
-      .format('YYYY-MM-DD')
+    const [startDate, endDate] = defaultRange(days).map(fmt)
     try {
       const [overviewData, trendData] = await Promise.all([
-        fetchOverview(endDate),
+        fetchOverview(fmt(date)),
         fetchOverviewTrend({ startDate, endDate }),
       ])
       setOverview(overviewData)
@@ -46,8 +47,8 @@ export default function Overview() {
   }, [])
 
   useEffect(() => {
-    void load(rangeDays)
-  }, [load, rangeDays])
+    void load(kpiDate, rangeDays)
+  }, [load, kpiDate, rangeDays])
 
   return (
     <div>
@@ -64,12 +65,20 @@ export default function Overview() {
             总览
           </Typography.Title>
           <Typography.Text type="secondary">
-            数据日期 {overview?.date ?? '—'}（T-1）· 时长为估算口径（每条对话 × 0.5 分钟）
+            数据日期 {overview?.date ?? '—'} · 时长为估算口径（每条对话 × 0.5 分钟）
           </Typography.Text>
         </div>
-        <Button onClick={() => void load(rangeDays)} loading={loading}>
-          刷新
-        </Button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <AnalyticsDatePicker
+            value={kpiDate}
+            onChange={(d) => {
+              if (d) setKpiDate(d)
+            }}
+          />
+          <Button onClick={() => void load(kpiDate, rangeDays)} loading={loading}>
+            刷新
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -89,13 +98,16 @@ export default function Overview() {
           title="核心指标趋势"
           style={{ marginTop: 16 }}
           extra={
-            <Radio.Group
-              optionType="button"
-              buttonStyle="solid"
-              options={RANGE_OPTIONS}
-              value={rangeDays}
-              onChange={(e) => setRangeDays(e.target.value as number)}
-            />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <TodayOngoingTag />
+              <Radio.Group
+                optionType="button"
+                buttonStyle="solid"
+                options={RANGE_OPTIONS}
+                value={rangeDays}
+                onChange={(e) => setRangeDays(e.target.value as number)}
+              />
+            </div>
           }
         >
           {trend && <TrendChart data={trend} />}
