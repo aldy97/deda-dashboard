@@ -14,6 +14,7 @@ import type {
   HourlyHeatmapResponse,
   LlmRecentFailuresResponse,
   LlmSummaryResponse,
+  LlmTurnChainResponse,
   LlmTrendResponse,
   MemoriesOverviewResponse,
   CurrentMemoriesResponse,
@@ -325,6 +326,16 @@ export async function fetchLlmRecentFailures(params: {
     params,
   })
   return resp.data as LlmRecentFailuresResponse
+}
+
+/** 单轮 LLM 调用链路（消息详情抽屉内对照用；无记录返回空 calls） */
+export async function fetchLlmCallsByTurn(
+  turnId: string,
+): Promise<LlmTurnChainResponse> {
+  const resp = await apiClient.get('/analytics/llm/by-turn', {
+    params: { turnId },
+  })
+  return resp.data as LlmTurnChainResponse
 }
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。

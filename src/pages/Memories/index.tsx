@@ -2,12 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
   Card,
-  Col,
+  Flex,
   Input,
   Progress,
-  Row,
   Spin,
-  Statistic,
   Table,
   Typography,
 } from 'antd'
@@ -85,66 +83,58 @@ export default function Memories() {
       )}
 
       <Spin spinning={loading && !overview}>
-        <Row gutter={16}>
-          <Col xs={12} md={6}>
-            <Card style={{ height: '100%' }}>
-              <Statistic
-                title="有记忆设备占比"
-                value={overview ? overview.deviceCoverage * 100 : 0}
-                precision={1}
-                suffix="%"
-              />
-              {overview && (
-                <Typography.Text type="secondary">
-                  {overview.deviceWithMemories} / {overview.deviceTotal} 台
-                </Typography.Text>
-              )}
-            </Card>
-          </Col>
-          <Col xs={12} md={6}>
-            <Card style={{ height: '100%' }}>
-              <Statistic
-                title="生效中的记忆"
-                value={overview?.totalActiveMemories ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} md={6}>
-            <Card style={{ height: '100%' }}>
-              <Statistic
-                title="累计版本数（含历史）"
-                value={overview?.totalVersions ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} md={6}>
-            <Card style={{ height: '100%' }}>
-              <Typography.Text type="secondary">槽位覆盖率</Typography.Text>
-              {MEMORY_KEYS.map((key) => {
-                const slot = overview?.slotCoverage.find((s) => s.key === key)
-                const coverage = slot?.coverage ?? 0
-                return (
-                  <div key={key} style={{ marginTop: 4 }}>
-                    <Typography.Text
-                      style={{ fontSize: 12 }}
-                      type="secondary"
-                    >
-                      {memoryKeyLabel(key)}
-                      {slot ? `（${slot.deviceCount} 台）` : ''}
-                    </Typography.Text>
-                    <Progress
-                      percent={Number((coverage * 100).toFixed(1))}
-                      size="small"
-                    />
-                  </div>
-                )
-              })}
-            </Card>
-          </Col>
-        </Row>
+        {/* 槽位覆盖率：横向紧凑条 */}
+        <Card size="small">
+          <Flex align="center" gap={16} wrap="wrap">
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+            >
+              槽位覆盖率
+            </Typography.Text>
+            {MEMORY_KEYS.map((key) => {
+              const slot = overview?.slotCoverage.find((s) => s.key === key)
+              const coverage = slot?.coverage ?? 0
+              return (
+                <Flex key={key} align="center" gap={8}>
+                  <Typography.Text
+                    style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+                    type="secondary"
+                  >
+                    {memoryKeyLabel(key)}
+                    {slot ? ` ${slot.deviceCount}台` : ''}
+                  </Typography.Text>
+                  <Progress
+                    percent={Number((coverage * 100).toFixed(1))}
+                    size="small"
+                    style={{ width: 110, margin: 0 }}
+                  />
+                </Flex>
+              )
+            })}
+          </Flex>
+        </Card>
       </Spin>
 
-      <Card style={{ marginTop: 16 }}>
+      <Card
+        style={{ marginTop: 16 }}
+        title={
+          <Flex align="baseline" gap={12} wrap="wrap">
+            <span>设备列表</span>
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 12, fontWeight: 'normal' }}
+            >
+              有记忆设备{' '}
+              {overview
+                ? `${(overview.deviceCoverage * 100).toFixed(1)}%（${overview.deviceWithMemories} / ${overview.deviceTotal} 台）`
+                : '—'}
+              {' · '}生效中的记忆 {overview?.totalActiveMemories ?? '—'}
+              {' · '}累计版本 {overview?.totalVersions ?? '—'}
+            </Typography.Text>
+          </Flex>
+        }
+      >
         <div style={{ marginBottom: 12 }}>
           <Input.Search
             allowClear
