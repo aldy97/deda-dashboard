@@ -4,6 +4,7 @@ import {
   AreaChartOutlined,
   CommentOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
   MessageOutlined,
   ReadOutlined,
   RobotOutlined,
@@ -15,14 +16,13 @@ import { TOKEN_KEY } from '../api/client'
 
 const { Sider, Header, Content } = Layout
 
-// 顺序按阅读动线：宏观总览 → 增长 → 画像 → 内容运营 → 资产 → 明细 → 技术监控。
-// 「记忆档案」（/memories，DatabaseOutlined）在 feature/memories-page 分支，
-// 合并后插到「用户画像」之后。
+// 顺序按阅读动线：宏观总览 → 增长 → 画像/记忆 → 内容运营 → 资产 → 明细 → 技术监控。
 const MENU_ITEMS = [
   { key: '/overview', label: '总览', icon: <DashboardOutlined /> },
   { key: '/retention', label: '留存与激活', icon: <UsergroupAddOutlined /> },
   { key: '/engagement', label: '使用行为', icon: <AreaChartOutlined /> },
   { key: '/users', label: '用户画像', icon: <TeamOutlined /> },
+  { key: '/memories', label: '记忆档案', icon: <DatabaseOutlined /> },
   { key: '/content', label: '内容与质量', icon: <ReadOutlined /> },
   { key: '/feedback', label: '用户反馈', icon: <CommentOutlined /> },
   { key: '/fleet', label: '设备舰队', icon: <RobotOutlined /> },
@@ -56,7 +56,12 @@ export default function AdminLayout() {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[
+            // 记忆详情页 /memories/:deviceId 高亮「记忆档案」菜单
+            location.pathname.startsWith('/memories')
+              ? '/memories'
+              : location.pathname,
+          ]}
           items={MENU_ITEMS}
           onClick={({ key }) => navigate(key)}
         />

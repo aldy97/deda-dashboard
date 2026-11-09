@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Card, Col, DatePicker, Row, Spin, Typography } from 'antd'
-import dayjs from 'dayjs'
+import { Alert, Card, Col, Row, Spin, Typography } from 'antd'
 import type { Dayjs } from 'dayjs'
 import {
   fetchDurationDistribution,
@@ -16,19 +15,15 @@ import type {
   HourlyHeatmapResponse,
   ModeUsageResponse,
 } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
+import { defaultRange, fmt, today } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import SummaryCards from './SummaryCards'
 import ModeUsageChart from './ModeUsageChart'
 import HourlyHeatmap from './HourlyHeatmap'
 import DurationDistributionChart from './DurationDistributionChart'
 import FeatureAdoptionTable from './FeatureAdoptionTable'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-
-/** 数据日期上限为 T-1（昨天），与总览页口径一致 */
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
 
 function toErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : '加载失败'
@@ -41,17 +36,14 @@ function toErrorMessage(err: unknown): string {
  */
 export default function Engagement() {
   // ---- 区间口径（summary / mode-usage / heatmap）----
-  const [range, setRange] = useState<Range>([
-    dayjs().subtract(6, 'day'),
-    yesterday(),
-  ])
+  const [range, setRange] = useState<DayRange>(defaultRange(7))
   const [summary, setSummary] = useState<EngagementSummaryResponse | null>(null)
   const [modeUsage, setModeUsage] = useState<ModeUsageResponse | null>(null)
   const [heatmap, setHeatmap] = useState<HourlyHeatmapResponse | null>(null)
   const [rangeLoading, setRangeLoading] = useState(true)
   const [rangeError, setRangeError] = useState<string | null>(null)
 
-  const loadRange = useCallback(async (r: Range) => {
+  const loadRange = useCallback(async (r: DayRange) => {
     setRangeLoading(true)
     setRangeError(null)
     const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
@@ -72,7 +64,7 @@ export default function Engagement() {
   }, [])
 
   // ---- 单日口径（duration-distribution / feature-adoption）----
-  const [date, setDate] = useState<Dayjs>(yesterday())
+  const [date, setDate] = useState<Dayjs>(today())
   const [distribution, setDistribution] =
     useState<DurationDistributionResponse | null>(null)
   const [adoption, setAdoption] = useState<FeatureAdoptionResponse | null>(null)
@@ -121,23 +113,19 @@ export default function Engagement() {
             使用行为
           </Typography.Title>
           <Typography.Text type="secondary">
-            时长类指标为估算口径（每条对话 × 0.5 分钟）；单日快照按自然日（Asia/Shanghai）
+            时长类指标为估算口径（每条对话 × 0.5 分钟）；含今日时今日数据进行中
           </Typography.Text>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <Typography.Text type="secondary">区间</Typography.Text>
-          <DatePicker.RangePicker
-            allowClear={false}
-            disabledDate={disableAfterYesterday}
+          <AnalyticsRangePicker
             value={range}
-            onChange={(dates) => {
-              if (dates?.[0] && dates?.[1]) setRange([dates[0], dates[1]])
+            onChange={(r) => {
+              if (r) setRange(r)
             }}
           />
           <Typography.Text type="secondary">单日</Typography.Text>
-          <DatePicker
-            allowClear={false}
-            disabledDate={disableAfterYesterday}
+          <AnalyticsDatePicker
             value={date}
             onChange={(d) => {
               if (d) setDate(d)

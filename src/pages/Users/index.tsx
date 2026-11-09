@@ -1,36 +1,28 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Card, Col, DatePicker, Row, Spin, Statistic, Typography } from 'antd'
-import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
+import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
 import { fetchUsersDemographics, fetchUsersSummary } from '../../api/analytics'
 import type {
   UsersDemographicsResponse,
   UsersSummaryResponse,
 } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { defaultRange, fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import Demographics from './Demographics'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
 
 /**
  * 用户画像页（P5）：家长总量/新增/绑定概览 + 孩子画像分布。
  * 区间控件仅影响「区间新增家长」（后端约定：startDate+endDate 同传才返回）。
  */
 export default function Users() {
-  const [range, setRange] = useState<Range>([
-    dayjs().subtract(30, 'day'),
-    yesterday(),
-  ])
+  const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [summary, setSummary] = useState<UsersSummaryResponse | null>(null)
   const [demographics, setDemographics] =
     useState<UsersDemographicsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (r: Range) => {
+  const load = useCallback(async (r: DayRange) => {
     setLoading(true)
     setError(null)
     try {
@@ -71,12 +63,10 @@ export default function Users() {
             聚合数据，不出 PII；画像分布为当前全量快照
           </Typography.Text>
         </div>
-        <DatePicker.RangePicker
-          allowClear={false}
-          disabledDate={disableAfterYesterday}
+        <AnalyticsRangePicker
           value={range}
-          onChange={(dates) => {
-            if (dates?.[0] && dates?.[1]) setRange([dates[0], dates[1]])
+          onChange={(r) => {
+            if (r) setRange(r)
           }}
         />
       </div>

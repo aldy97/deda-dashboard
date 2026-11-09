@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Card, Col, DatePicker, Row, Spin, Statistic, Typography } from 'antd'
-import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
+import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
 import {
   fetchContentAdventure,
   fetchContentLearning,
@@ -14,14 +12,11 @@ import type {
   ContentParentReportResponse,
   QualityConversationResponse,
 } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { defaultRange, fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
 import QualityTrend from './QualityTrend'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
@@ -32,10 +27,7 @@ const formatPct = (rate: number | null) =>
  * /analytics/quality/llm-usage 一期 501（未落库），本页不接入。
  */
 export default function Content() {
-  const [range, setRange] = useState<Range>([
-    dayjs().subtract(30, 'day'),
-    yesterday(),
-  ])
+  const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [adventure, setAdventure] = useState<ContentAdventureResponse | null>(null)
   const [learning, setLearning] = useState<ContentLearningResponse | null>(null)
   const [parentReport, setParentReport] =
@@ -44,7 +36,7 @@ export default function Content() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (r: Range) => {
+  const load = useCallback(async (r: DayRange) => {
     setLoading(true)
     setError(null)
     const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
@@ -88,15 +80,13 @@ export default function Content() {
             内容与质量
           </Typography.Title>
           <Typography.Text type="secondary">
-            区间为 Asia/Shanghai 闭区间，上限 T-1
+            区间为闭区间，含今日时今日数据进行中
           </Typography.Text>
         </div>
-        <DatePicker.RangePicker
-          allowClear={false}
-          disabledDate={disableAfterYesterday}
+        <AnalyticsRangePicker
           value={range}
-          onChange={(dates) => {
-            if (dates?.[0] && dates?.[1]) setRange([dates[0], dates[1]])
+          onChange={(r) => {
+            if (r) setRange(r)
           }}
         />
       </div>

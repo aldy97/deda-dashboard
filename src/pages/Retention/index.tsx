@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Card, Col, DatePicker, Radio, Row, Spin, Typography } from 'antd'
-import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
+import { Alert, Card, Col, Radio, Row, Spin, Typography } from 'antd'
 import {
   fetchActivationFunnel,
   fetchRetentionCohorts,
@@ -13,17 +11,12 @@ import type {
   RetentionCohortsResponse,
   RetentionCurveResponse,
 } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { defaultRange, fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import CohortTable from './CohortTable'
 import RetentionCurve from './RetentionCurve'
 import ActivationFunnel from './ActivationFunnel'
-
-type Range = [Dayjs, Dayjs]
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-
-/** 数据日期上限为 T-1（昨天），与总览页口径一致 */
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
 
 function toErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : '加载失败'
@@ -35,10 +28,7 @@ function toErrorMessage(err: unknown): string {
  */
 export default function Retention() {
   // ---- cohort 热力表 ----
-  const [cohortRange, setCohortRange] = useState<Range>([
-    dayjs().subtract(56, 'day'),
-    yesterday(),
-  ])
+  const [cohortRange, setCohortRange] = useState<DayRange>(defaultRange(56))
   const [granularity, setGranularity] = useState<'day' | 'week'>('week')
   const [basis, setBasis] = useState<CohortBasis>('activation')
   const [cohorts, setCohorts] = useState<RetentionCohortsResponse | null>(null)
@@ -46,7 +36,7 @@ export default function Retention() {
   const [cohortsError, setCohortsError] = useState<string | null>(null)
 
   const loadCohorts = useCallback(
-    async (range: Range, g: 'day' | 'week', b: CohortBasis) => {
+    async (range: DayRange, g: 'day' | 'week', b: CohortBasis) => {
       setCohortsLoading(true)
       setCohortsError(null)
       try {
@@ -68,12 +58,12 @@ export default function Retention() {
   )
 
   // ---- 留存曲线 ----
-  const [curveRange, setCurveRange] = useState<Range | null>(null)
+  const [curveRange, setCurveRange] = useState<DayRange | null>(null)
   const [curve, setCurve] = useState<RetentionCurveResponse | null>(null)
   const [curveLoading, setCurveLoading] = useState(true)
   const [curveError, setCurveError] = useState<string | null>(null)
 
-  const loadCurve = useCallback(async (range: Range | null) => {
+  const loadCurve = useCallback(async (range: DayRange | null) => {
     setCurveLoading(true)
     setCurveError(null)
     try {
@@ -92,15 +82,12 @@ export default function Retention() {
   }, [])
 
   // ---- 激活漏斗 ----
-  const [funnelRange, setFunnelRange] = useState<Range>([
-    dayjs().subtract(30, 'day'),
-    yesterday(),
-  ])
+  const [funnelRange, setFunnelRange] = useState<DayRange>(defaultRange(30))
   const [funnel, setFunnel] = useState<ActivationFunnelResponse | null>(null)
   const [funnelLoading, setFunnelLoading] = useState(true)
   const [funnelError, setFunnelError] = useState<string | null>(null)
 
-  const loadFunnel = useCallback(async (range: Range) => {
+  const loadFunnel = useCallback(async (range: DayRange) => {
     setFunnelLoading(true)
     setFunnelError(null)
     try {
@@ -136,7 +123,7 @@ export default function Retention() {
           留存与激活
         </Typography.Title>
         <Typography.Text type="secondary">
-          日期均为 Asia/Shanghai 闭区间，上限 T-1；激活口径基于当前绑定记录，设备解绑后会从
+          日期为闭区间，含今日时今日数据进行中；激活口径基于当前绑定记录，设备解绑后会从
           cohort 消失（二期快照表冻结）
         </Typography.Text>
       </div>
@@ -165,14 +152,10 @@ export default function Retention() {
             marginBottom: 12,
           }}
         >
-          <DatePicker.RangePicker
-            allowClear={false}
-            disabledDate={disableAfterYesterday}
+          <AnalyticsRangePicker
             value={cohortRange}
-            onChange={(dates) => {
-              if (dates?.[0] && dates?.[1]) {
-                setCohortRange([dates[0], dates[1]])
-              }
+            onChange={(r) => {
+              if (r) setCohortRange(r)
             }}
           />
           <Radio.Group
@@ -204,17 +187,12 @@ export default function Retention() {
           <Card
             title="留存曲线"
             extra={
-              <DatePicker.RangePicker
+              <AnalyticsRangePicker
                 size="small"
                 allowClear
-                disabledDate={disableAfterYesterday}
                 placeholder={['Cohort 起始', 'Cohort 截止']}
                 value={curveRange}
-                onChange={(dates) => {
-                  setCurveRange(
-                    dates?.[0] && dates?.[1] ? [dates[0], dates[1]] : null,
-                  )
-                }}
+                onChange={(r) => setCurveRange(r)}
               />
             }
           >
@@ -240,15 +218,11 @@ export default function Retention() {
           <Card
             title="激活漏斗"
             extra={
-              <DatePicker.RangePicker
+              <AnalyticsRangePicker
                 size="small"
-                allowClear={false}
-                disabledDate={disableAfterYesterday}
                 value={funnelRange}
-                onChange={(dates) => {
-                  if (dates?.[0] && dates?.[1]) {
-                    setFunnelRange([dates[0], dates[1]])
-                  }
+                onChange={(r) => {
+                  if (r) setFunnelRange(r)
                 }}
               />
             }
