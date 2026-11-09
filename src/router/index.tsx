@@ -9,6 +9,8 @@ import Users from '../pages/Users'
 import Content from '../pages/Content'
 import Messages from '../pages/Messages'
 import LlmMonitor from '../pages/Llm'
+import Memories from '../pages/Memories'
+import MemoryDetail from '../pages/Memories/DeviceDetail'
 import Feedback from '../pages/Feedback'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import { TOKEN_KEY } from '../api/client'
@@ -48,6 +50,8 @@ export const router = createBrowserRouter(
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },
         { path: 'llm', element: <LlmMonitor /> },
+        { path: 'memories', element: <Memories /> },
+        { path: 'memories/:deviceId', element: <MemoryDetail /> },
         { path: '*', element: <Navigate to="/overview" replace /> },
       ],
     },

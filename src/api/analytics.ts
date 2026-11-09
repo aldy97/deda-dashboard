@@ -15,6 +15,10 @@ import type {
   LlmRecentFailuresResponse,
   LlmSummaryResponse,
   LlmTrendResponse,
+  MemoriesOverviewResponse,
+  CurrentMemoriesResponse,
+  MemoryDevicesResponse,
+  MemoryHistoryResponse,
   MessageDetailResponse,
   MessageListResponse,
   MessageSort,
@@ -325,3 +329,38 @@ export async function fetchLlmRecentFailures(params: {
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。
 // /analytics/quality/llm-usage 一期返回 501，二期上线。
+
+// ---- 记忆档案 ----
+
+export async function fetchMemoriesOverview(): Promise<MemoriesOverviewResponse> {
+  const resp = await apiClient.get('/analytics/memories/overview')
+  return resp.data as MemoriesOverviewResponse
+}
+
+export async function fetchMemoryDevices(params: {
+  keyword?: string
+  page?: number
+  pageSize?: number
+}): Promise<MemoryDevicesResponse> {
+  const resp = await apiClient.get('/analytics/memories/devices', { params })
+  return resp.data as MemoryDevicesResponse
+}
+
+export async function fetchCurrentMemories(
+  deviceId: string,
+): Promise<CurrentMemoriesResponse> {
+  const resp = await apiClient.get('/analytics/memories/current', {
+    params: { deviceId },
+  })
+  return resp.data as CurrentMemoriesResponse
+}
+
+export async function fetchMemoryHistory(
+  deviceId: string,
+  key: string,
+): Promise<MemoryHistoryResponse> {
+  const resp = await apiClient.get('/analytics/memories/history', {
+    params: { deviceId, key },
+  })
+  return resp.data as MemoryHistoryResponse
+}

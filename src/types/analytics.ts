@@ -373,3 +373,74 @@ export interface LlmRecentFailuresResponse {
   pageSize: number
   items: LlmFailureItem[]
 }
+
+// ---- 记忆档案 ----
+/** 全局汇总（GET /analytics/memories/overview） */
+export interface MemoriesOverviewResponse {
+  /** 分母：至少有 1 条消息的设备数 */
+  deviceTotal: number
+  /** 至少 1 条 active 记忆的设备数 */
+  deviceWithMemories: number
+  /** 0-1 小数 */
+  deviceCoverage: number
+  totalActiveMemories: number
+  /** 全部版本行数（含 superseded/retracted） */
+  totalVersions: number
+  /** 固定 5 槽位，按 key 字典序 */
+  slotCoverage: Array<{ key: string; deviceCount: number; coverage: number }>
+}
+
+export interface MemoryDeviceItem {
+  deviceId: string
+  deviceCode: string | null
+  activeCount: number
+  totalVersions: number
+  lastChangeAt: string
+}
+
+export interface MemoryDevicesResponse {
+  total: number
+  page: number
+  pageSize: number
+  items: MemoryDeviceItem[]
+}
+
+export interface CurrentMemoryItem {
+  key: string
+  valueText: string
+  version: number
+  confidence: number
+  injectionCount: number
+  lastInjectedAt: string | null
+  lastConfirmedAt: string
+  validFrom: string
+}
+
+export interface CurrentMemoriesResponse {
+  deviceId: string
+  memories: CurrentMemoryItem[]
+}
+
+export type MemoryChangeType = 'initial' | 'supersede' | 'retract'
+export type MemoryStatus = 'active' | 'superseded' | 'retracted'
+
+export interface MemoryVersionItem {
+  id: string
+  version: number
+  changeType: MemoryChangeType
+  status: MemoryStatus
+  /** 撤回墓碑为 null */
+  valueText: string | null
+  confidence: number
+  sourceTurnId: string
+  validFrom: string
+  validTo: string | null
+  createdAt: string
+}
+
+export interface MemoryHistoryResponse {
+  deviceId: string
+  key: string
+  /** version 升序 */
+  versions: MemoryVersionItem[]
+}

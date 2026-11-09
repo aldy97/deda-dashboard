@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
   Card,
-  DatePicker,
   Input,
   Select,
   Space,
@@ -13,7 +13,6 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import type { Dayjs } from 'dayjs'
 import { fetchMessages } from '../../api/analytics'
 import type { MessagesQuery } from '../../api/analytics'
 import type {
@@ -21,18 +20,17 @@ import type {
   MessageListResponse,
   MessageSort,
 } from '../../types/analytics'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import { fmt } from '../../utils/date-range'
+import type { DayRange } from '../../utils/date-range'
 import MessageDetailDrawer, {
   modeLabel,
   roleTag,
 } from './MessageDetailDrawer'
 
-type Range = [Dayjs, Dayjs] | null
-
-const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-
 /** 筛选条件（不含分页/排序） */
 interface Filters {
-  range: Range
+  range: DayRange | null
   deviceId: string
   role?: 'user' | 'assistant'
   status?: 'completed' | 'failed'
@@ -56,7 +54,26 @@ export default function Messages() {
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS)
   // 已生效的筛选条件
   const [applied, setApplied] = useState<Filters>(DEFAULT_FILTERS)
-  const [turnId, setTurnId] = useState<string | null>(null)
+  // turnId 支持 URL 参数（记忆档案版本时间线跳转过来时带上）
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [turnId, setTurnId] = useState<string | null>(() =>
+    searchParams.get('turnId'),
+  )
+
+  /** 设置/清除 turnId 过滤，同时同步 URL（可刷新、可分享） */
+  const applyTurnId = (tid: string | null) => {
+    setTurnId(tid)
+    setPage(1)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (tid) next.set('turnId', tid)
+        else next.delete('turnId')
+        return next
+      },
+      { replace: true },
+    )
+  }
   const [sort, setSort] = useState<MessageSort>('spokeAt_desc')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -111,8 +128,7 @@ export default function Messages() {
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS)
     setApplied(DEFAULT_FILTERS)
-    setTurnId(null)
-    setPage(1)
+    applyTurnId(null)
     setSort('spokeAt_desc')
   }
 
@@ -130,17 +146,11 @@ export default function Messages() {
 
       <Card>
         <Space wrap style={{ marginBottom: 12 }}>
-          <DatePicker.RangePicker
+          <AnalyticsRangePicker
             allowClear
             placeholder={['消息开始日期', '消息结束日期']}
             value={draft.range}
-            onChange={(dates) =>
-              setDraft({
-                ...draft,
-                range:
-                  dates?.[0] && dates?.[1] ? [dates[0], dates[1]] : null,
-              })
-            }
+            onChange={(r) => setDraft({ ...draft, range: r })}
           />
           <Input
             allowClear
@@ -189,10 +199,7 @@ export default function Messages() {
             <Tag
               closable
               color="processing"
-              onClose={() => {
-                setTurnId(null)
-                setPage(1)
-              }}
+              onClose={() => applyTurnId(null)}
             >
               同一轮问答：{turnId.slice(0, 8)}…
             </Tag>
@@ -299,8 +306,7 @@ export default function Messages() {
         message={selected}
         onClose={() => setSelected(null)}
         onViewTurn={(tid) => {
-          setTurnId(tid)
-          setPage(1)
+          applyTurnId(tid)
           setSelected(null)
         }}
       />
