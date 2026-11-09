@@ -12,8 +12,8 @@ import { SCENE_META } from './scenes'
 type Range = [Dayjs, Dayjs]
 
 const fmt = (d: Dayjs) => d.format('YYYY-MM-DD')
-const yesterday = () => dayjs().subtract(1, 'day')
-const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
+// 监控页要看近实时数据，范围含今天；仅禁选未来日期
+const disableFuture = (d: Dayjs) => d.isAfter(dayjs(), 'day')
 
 /**
  * 模型监控页：主模型 + 小模型全量调用的分场景汇总、趋势与失败明细。
@@ -23,7 +23,7 @@ const disableAfterYesterday = (d: Dayjs) => d.isAfter(yesterday(), 'day')
 export default function LlmMonitor() {
   const [range, setRange] = useState<Range>([
     dayjs().subtract(6, 'day'),
-    yesterday(),
+    dayjs(),
   ])
   const [scene, setScene] = useState<string | undefined>(undefined)
   const [summary, setSummary] = useState<LlmSummaryResponse | null>(null)
@@ -75,7 +75,7 @@ export default function LlmMonitor() {
         </div>
         <DatePicker.RangePicker
           allowClear={false}
-          disabledDate={disableAfterYesterday}
+          disabledDate={disableFuture}
           value={range}
           onChange={(dates) => {
             if (dates?.[0] && dates?.[1]) setRange([dates[0], dates[1]])
