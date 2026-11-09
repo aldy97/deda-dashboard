@@ -80,8 +80,12 @@ export function failureReasonLabel(reason: string | null): string {
   return FAILURE_REASON_META[reason]?.label ?? reason
 }
 
-export const formatMs = (ms: number | null) =>
-  ms === null ? '—' : ms >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${ms} ms`
+export const formatMs = (ms: number | null) => {
+  if (ms === null) return '—'
+  // 后端 percentile_cont 可能返回长小数，统一取整
+  const rounded = Math.round(ms)
+  return rounded >= 1000 ? `${(rounded / 1000).toFixed(2)} s` : `${rounded} ms`
+}
 
 export const formatRate = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`

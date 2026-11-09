@@ -219,10 +219,12 @@ export default function Messages() {
             style: { cursor: 'pointer' },
           })}
           onChange={(_pagination, _filters, sorter) => {
-            if (!Array.isArray(sorter) && sorter.field === 'spokeAt') {
-              setSort(
-                sorter.order === 'ascend' ? 'spokeAt_asc' : 'spokeAt_desc',
-              )
+            // 翻页也会触发 onChange 且带着当前排序状态，
+            // 只有排序真的变化时才重置到第 1 页
+            if (Array.isArray(sorter) || sorter.field !== 'spokeAt') return
+            const next = sorter.order === 'ascend' ? 'spokeAt_asc' : 'spokeAt_desc'
+            if (next !== sort) {
+              setSort(next)
               setPage(1)
             }
           }}

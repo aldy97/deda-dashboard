@@ -1,6 +1,7 @@
 import { Empty } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { LlmTrendResponse } from '../../types/analytics'
+import { formatMs } from './scenes'
 
 /**
  * 模型调用趋势：调用量（柱，左轴）+ 成功率（线，右轴 %）。
@@ -29,8 +30,8 @@ export default function LlmTrendChart({ data }: { data: LlmTrendResponse }) {
         )
         const extras = [
           `总 token：${point.totalTokens.toLocaleString()}`,
-          `延迟 P50：${point.p50LatencyMs === null ? '—' : `${point.p50LatencyMs} ms`}`,
-          `首包均值：${point.avgFirstTokenMs === null ? '—' : `${point.avgFirstTokenMs} ms`}`,
+          `延迟 P50：${formatMs(point.p50LatencyMs)}`,
+          `首包均值：${formatMs(point.avgFirstTokenMs)}`,
         ]
         return [`${point.date}`, ...lines, ...extras].join('<br/>')
       },
