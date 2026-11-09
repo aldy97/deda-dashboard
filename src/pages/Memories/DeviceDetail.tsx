@@ -11,8 +11,9 @@ import {
   Timeline,
   Typography,
 } from 'antd'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import InfoTip from '../../components/InfoTip'
 import {
   fetchCurrentMemories,
   fetchMemoryHistory,
@@ -37,8 +38,13 @@ const fmtTime = (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss')
 export default function MemoryDetail() {
   const { deviceId = '' } = useParams<{ deviceId: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [current, setCurrent] = useState<CurrentMemoriesResponse | null>(null)
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  // 选中槽位同步到 URL（?key=xxx，push 模式，支持前进后退）
+  const [selectedKey, setSelectedKey] = useState<string | null>(() => {
+    const k = searchParams.get('key')
+    return k && (MEMORY_KEYS as readonly string[]).includes(k) ? k : null
+  })
   const [history, setHistory] = useState<MemoryHistoryResponse | null>(null)
   const [loadingCurrent, setLoadingCurrent] = useState(true)
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -54,9 +60,12 @@ export default function MemoryDetail() {
         setCurrent(data)
         // 默认选中：按 5 槽位白名单顺序找第一个有记忆的槽位；
         // 都没有则选中第一个槽位（历史可能全是撤回墓碑）。
-        // 不能直接取 memories[0]——后端返回顺序未约定，行为不稳定
+        // 不能直接取 memories[0]——后端返回顺序未约定，行为不稳定。
+        // URL 已有合法 key（含前进/后退回来时）则保留，不覆盖。
         const keys = new Set(data.memories.map((m) => m.key))
-        setSelectedKey(MEMORY_KEYS.find((k) => keys.has(k)) ?? MEMORY_KEYS[0])
+        setSelectedKey(
+          (prev) => prev ?? MEMORY_KEYS.find((k) => keys.has(k)) ?? MEMORY_KEYS[0],
+        )
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -88,6 +97,19 @@ export default function MemoryDetail() {
   useEffect(() => {
     if (selectedKey) void loadHistory(selectedKey)
   }, [loadHistory, selectedKey])
+
+  // 浏览器前进/后退改变 ?key= 时同步选中槽位
+  useEffect(() => {
+    const k = searchParams.get('key')
+    if (k && (MEMORY_KEYS as readonly string[]).includes(k)) {
+      setSelectedKey(k)
+    }
+  }, [searchParams])
+
+  const selectKey = (key: string) => {
+    setSelectedKey(key)
+    setSearchParams({ key })
+  }
 
   const activeByKey = new Map(
     (current?.memories ?? []).map((m) => [m.key, m]),
@@ -131,7 +153,7 @@ export default function MemoryDetail() {
                 <Card
                   size="small"
                   hoverable
-                  onClick={() => setSelectedKey(key)}
+                  onClick={() => selectKey(key)}
                   style={{
                     height: '100%',
                     borderColor: selected ? '#1677ff' : undefined,
@@ -153,13 +175,19 @@ export default function MemoryDetail() {
                     )}
                   </div>
                   {memory ? (
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      v{memory.version} · 置信度{' '}
-                      {(memory.confidence * 100).toFixed(0)}% · 被引用{' '}
-                      {memory.injectionCount} 次
-                      <br />
-                      最近确认 {fmtTime(memory.lastConfirmedAt)}
-                    </Typography.Text>
+                    <div style={{ fontSize: 12, color: 'rgba(0, 0, 0, 0.45)' }}>
+                      <div>
+                        v{memory.version} · 置信度
+                        <InfoTip title="抽取小模型自评的把握度；低于 75% 的候选不会写入记忆" />
+                        {(memory.confidence * 100).toFixed(0)}%
+                      </div>
+                      <div>
+                        被引用
+                        <InfoTip title="该记忆被注入主对话 prompt 的次数（提供给了模型，不代表孩子已听到）" />
+                        {memory.injectionCount} 次
+                      </div>
+                      <div>最近确认 {fmtTime(memory.lastConfirmedAt)}</div>
+                    </div>
                   ) : (
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       —
@@ -217,7 +245,9 @@ export default function MemoryDetail() {
                       </Space>
                       <div>
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          生效区间 {fmtTime(v.validFrom)} →{' '}
+                          生效区间
+                          <InfoTip title="该版本生效的时间范围。记忆值不可覆盖：孩子说新偏好时旧版本封存（validTo 关闭）、新版本接管，撤回则留墓碑" />
+                          {fmtTime(v.validFrom)} →{' '}
                           {v.validTo ? fmtTime(v.validTo) : '至今'} · 置信度{' '}
                           {(v.confidence * 100).toFixed(0)}% · 来源轮次{' '}
                           <Link to={`/messages?turnId=${v.sourceTurnId}`}>

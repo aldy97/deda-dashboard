@@ -11,6 +11,7 @@ import type {
   RetentionCohortsResponse,
   RetentionCurveResponse,
 } from '../../types/analytics'
+import InfoTip from '../../components/InfoTip'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -129,7 +130,12 @@ export default function Retention() {
       </div>
 
       <Card
-        title="Cohort 留存热力表"
+        title={
+          <>
+            Cohort 留存热力表
+            <InfoTip title="Cohort = 同一周期内「激活/首用」的一批设备。单元格 = 这批设备在第 N 个周期仍有对话的比例（活跃 = 当天有 ≥1 条孩子发言）；颜色越深留存越高；格子显示 — 表示该周期尚未到期。设备解绑后会从激活口径 cohort 中消失。" />
+          </>
+        }
         extra={
           <Radio.Group
             optionType="button"
@@ -150,6 +156,7 @@ export default function Retention() {
             gap: 12,
             flexWrap: 'wrap',
             marginBottom: 12,
+            alignItems: 'center',
           }}
         >
           <AnalyticsRangePicker
@@ -167,6 +174,9 @@ export default function Retention() {
               { label: '按日', value: 'day' },
             ]}
           />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            激活口径 = 首次绑定日；首用口径 = 首次发言日（解绑后仍可追溯）
+          </Typography.Text>
         </div>
         {cohortsError && (
           <Alert
@@ -185,7 +195,12 @@ export default function Retention() {
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
           <Card
-            title="留存曲线"
+            title={
+              <>
+                留存曲线
+                <InfoTip title="横轴 = 激活后第 N 天，纵轴 = 该批设备在第 N 天仍有对话的比例。分母只含激活已满 N 天的设备（未到期不计入），所以越靠右的点样本越小、波动越大。口径固定为激活口径（首次绑定日）。" />
+              </>
+            }
             extra={
               <AnalyticsRangePicker
                 size="small"
@@ -216,7 +231,12 @@ export default function Retention() {
         </Col>
         <Col xs={24} lg={12}>
           <Card
-            title="激活漏斗"
+            title={
+              <>
+                激活漏斗
+                <InfoTip title="区间内激活的设备逐层转化：绑定激活 → 首次对话（有过发言）→ 激活满 7 天且第 7 天仍活跃 → 满 30 天且第 30 天仍活跃。「出货」一级一期无埋点数据，自动隐藏。" />
+              </>
+            }
             extra={
               <AnalyticsRangePicker
                 size="small"

@@ -17,6 +17,7 @@ import type {
 } from '../../types/analytics'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
+import InfoTip from '../../components/InfoTip'
 import { defaultRange, fmt, today } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import SummaryCards from './SummaryCards'
@@ -173,7 +174,12 @@ export default function Engagement() {
         </Card>
 
         <Card
-          title={`时段热力（活跃设备数，7×24，${fmt(range[0])} ~ ${fmt(range[1])}）`}
+          title={
+            <>
+              时段热力（活跃设备数，7×24，{fmt(range[0])} ~ {fmt(range[1])}）
+              <InfoTip title="每一格 = 该「星期 × 小时」内有过发言的去重设备数（Asia/Shanghai），用于看孩子在什么时段使用最集中" />
+            </>
+          }
           style={{ marginTop: 16 }}
         >
           {heatmap && <HourlyHeatmap data={heatmap} />}

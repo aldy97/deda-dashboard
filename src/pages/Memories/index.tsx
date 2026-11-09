@@ -184,11 +184,12 @@ export default function Memories() {
               title: '设备 ID（业务 ID）',
               dataIndex: 'deviceId',
             },
-            {
-              title: '设备码',
-              dataIndex: 'deviceCode',
-              render: (v: string | null) => v ?? '—',
-            },
+            // 设备码列暂不需要（与设备 ID 展示冗余），需要时取消注释
+            // {
+            //   title: '设备码',
+            //   dataIndex: 'deviceCode',
+            //   render: (v: string | null) => v ?? '—',
+            // },
             {
               title: '生效记忆',
               dataIndex: 'activeCount',
