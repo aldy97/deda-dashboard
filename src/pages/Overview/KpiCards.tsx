@@ -25,7 +25,7 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
   return (
     <Row gutter={[16, 16]}>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="累计激活设备"
             value={totals.devicesActivated}
@@ -37,14 +37,14 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Tooltip title="分母为已入库设备数；接入出货数据后切换为出货口径">
             <Statistic title="激活率" value={pct(totals.activationRate)} />
           </Tooltip>
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="累计家长用户"
             value={totals.usersRegistered}
@@ -53,7 +53,7 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="活跃设备（当日）"
             value={today.dau}
@@ -63,7 +63,7 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="活跃设备日均使用时长"
             value={Math.round(today.avgDurationSecondsPerActiveDevice / 60)}
@@ -73,7 +73,7 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="人均对话轮次"
             value={today.avgTurnsPerActiveDevice}
@@ -82,14 +82,14 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Tooltip title="激活日为 7 天前的设备中，当日仍有对话的比例">
             <Statistic title="7 日留存" value={pct(retention.d7)} />
           </Tooltip>
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card>
+        <Card style={{ height: '100%' }}>
           <Statistic
             title="实时在线"
             value={today.onlineNow ?? '-'}

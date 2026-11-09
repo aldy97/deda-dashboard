@@ -47,7 +47,7 @@ export default function SummaryCards({
     <Row gutter={[16, 16]}>
       {cards.map((card, index) => (
         <Col xs={12} md={8} lg={6} key={index}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <Statistic
               title={card.title}
               value={card.value}

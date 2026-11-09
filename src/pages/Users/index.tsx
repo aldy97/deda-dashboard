@@ -85,12 +85,12 @@ export default function Users() {
         {summary && (
           <Row gutter={[16, 16]}>
             <Col xs={12} md={8} lg={4}>
-              <Card size="small">
+              <Card size="small" style={{ height: '100%' }}>
                 <Statistic title="注册家长总数" value={summary.totalUsers} />
               </Card>
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Card size="small">
+              <Card size="small" style={{ height: '100%' }}>
                 <Statistic
                   title="区间新增家长"
                   value={summary.newUsersInRange ?? '—'}
@@ -98,7 +98,7 @@ export default function Users() {
               </Card>
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Card size="small">
+              <Card size="small" style={{ height: '100%' }}>
                 <Statistic
                   title="已绑定设备的家长"
                   value={summary.usersWithBoundDevice}
@@ -106,7 +106,7 @@ export default function Users() {
               </Card>
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Card size="small">
+              <Card size="small" style={{ height: '100%' }}>
                 <Statistic
                   title="人均设备数"
                   value={summary.avgDevicesPerUser}
@@ -115,7 +115,7 @@ export default function Users() {
               </Card>
             </Col>
             <Col xs={12} md={8} lg={4}>
-              <Card size="small">
+              <Card size="small" style={{ height: '100%' }}>
                 <Statistic
                   title="多孩家庭"
                   value={summary.multiChildFamilies}

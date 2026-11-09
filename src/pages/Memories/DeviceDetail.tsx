@@ -52,8 +52,11 @@ export default function MemoryDetail() {
       .then((data) => {
         if (cancelled) return
         setCurrent(data)
-        // 默认选中第一个有记忆的槽位，都没有则选中第一个槽位（历史可能全是撤回墓碑）
-        setSelectedKey(data.memories[0]?.key ?? MEMORY_KEYS[0])
+        // 默认选中：按 5 槽位白名单顺序找第一个有记忆的槽位；
+        // 都没有则选中第一个槽位（历史可能全是撤回墓碑）。
+        // 不能直接取 memories[0]——后端返回顺序未约定，行为不稳定
+        const keys = new Set(data.memories.map((m) => m.key))
+        setSelectedKey(MEMORY_KEYS.find((k) => keys.has(k)) ?? MEMORY_KEYS[0])
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -130,6 +133,7 @@ export default function MemoryDetail() {
                   hoverable
                   onClick={() => setSelectedKey(key)}
                   style={{
+                    height: '100%',
                     borderColor: selected ? '#1677ff' : undefined,
                     borderWidth: selected ? 2 : undefined,
                   }}
