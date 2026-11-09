@@ -16,22 +16,22 @@ export default function AdventureSection({
     <div>
       <Row gutter={[16, 16]}>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <Statistic title="开始冒险的设备" value={data.startedDevices} suffix="台" />
           </Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <Statistic title="完集次数" value={data.completedEpisodes} suffix="次" />
           </Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <Statistic title="完集率" value={formatPct(data.completionRate)} />
           </Card>
         </Col>
         <Col xs={12} md={6}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <Statistic
               title="平均每集星数"
               value={data.avgStarsPerEpisode ?? '—'}

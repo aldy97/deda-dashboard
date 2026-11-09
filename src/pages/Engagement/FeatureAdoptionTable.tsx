@@ -1,4 +1,5 @@
 import { Progress, Table } from 'antd'
+import InfoTip from '../../components/InfoTip'
 import type { FeatureAdoptionResponse } from '../../types/analytics'
 
 const formatPct = (rate: number | null) =>
@@ -22,7 +23,12 @@ export default function FeatureAdoptionTable({
       columns={[
         { title: '功能', dataIndex: 'label', width: 110 },
         {
-          title: '渗透率',
+          title: (
+            <>
+              渗透率
+              <InfoTip title="分母 = 已激活设备（有绑定记录）。分子按功能口径不同：哄睡 = 开启了哄睡配置的设备；冒险 = 有冒险进度记录；习惯打卡 = 有进行中的计划；英语 = 近 30 天有过英语模式发言" />
+            </>
+          ),
           dataIndex: 'penetrationRate',
           width: 220,
           render: (rate: number | null) =>
@@ -44,7 +50,12 @@ export default function FeatureAdoptionTable({
           render: (_, row) => row.enabledDevices ?? row.activeDevices ?? '—',
         },
         {
-          title: '完成率',
+          title: (
+            <>
+              完成率
+              <InfoTip title="冒险故事 = 完集（追完整个系列）的设备占比；习惯打卡 = 各设备「已完成天数 ÷ 目标天数」的平均值；哄睡和英语无此指标" />
+            </>
+          ),
           key: 'completion',
           width: 110,
           align: 'right',

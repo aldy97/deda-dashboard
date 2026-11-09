@@ -87,7 +87,7 @@ export default function Memories() {
       <Spin spinning={loading && !overview}>
         <Row gutter={16}>
           <Col xs={12} md={6}>
-            <Card>
+            <Card style={{ height: '100%' }}>
               <Statistic
                 title="有记忆设备占比"
                 value={overview ? overview.deviceCoverage * 100 : 0}
@@ -102,7 +102,7 @@ export default function Memories() {
             </Card>
           </Col>
           <Col xs={12} md={6}>
-            <Card>
+            <Card style={{ height: '100%' }}>
               <Statistic
                 title="生效中的记忆"
                 value={overview?.totalActiveMemories ?? 0}
@@ -110,7 +110,7 @@ export default function Memories() {
             </Card>
           </Col>
           <Col xs={12} md={6}>
-            <Card>
+            <Card style={{ height: '100%' }}>
               <Statistic
                 title="累计版本数（含历史）"
                 value={overview?.totalVersions ?? 0}
@@ -118,7 +118,7 @@ export default function Memories() {
             </Card>
           </Col>
           <Col xs={24} md={6}>
-            <Card>
+            <Card style={{ height: '100%' }}>
               <Typography.Text type="secondary">槽位覆盖率</Typography.Text>
               {MEMORY_KEYS.map((key) => {
                 const slot = overview?.slotCoverage.find((s) => s.key === key)
@@ -184,11 +184,12 @@ export default function Memories() {
               title: '设备 ID（业务 ID）',
               dataIndex: 'deviceId',
             },
-            {
-              title: '设备码',
-              dataIndex: 'deviceCode',
-              render: (v: string | null) => v ?? '—',
-            },
+            // 设备码列暂不需要（与设备 ID 展示冗余），需要时取消注释
+            // {
+            //   title: '设备码',
+            //   dataIndex: 'deviceCode',
+            //   render: (v: string | null) => v ?? '—',
+            // },
             {
               title: '生效记忆',
               dataIndex: 'activeCount',

@@ -93,7 +93,7 @@ export default function ReportFeedbackPanel() {
       {data && (
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={8}>
-            <Card size="small">
+            <Card size="small" style={{ height: '100%' }}>
               <Statistic
                 title="区间有用率"
                 value={(data.summary.usefulRate * 100).toFixed(1)}
@@ -102,12 +102,12 @@ export default function ReportFeedbackPanel() {
             </Card>
           </Col>
           <Col span={8}>
-            <Card size="small">
+            <Card size="small" style={{ height: '100%' }}>
               <Statistic title="有用" value={data.summary.usefulCount} />
             </Card>
           </Col>
           <Col span={8}>
-            <Card size="small">
+            <Card size="small" style={{ height: '100%' }}>
               <Statistic title="无用" value={data.summary.notUsefulCount} />
             </Card>
           </Col>

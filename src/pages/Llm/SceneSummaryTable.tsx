@@ -1,5 +1,6 @@
-import { Progress, Table, Tag, Tooltip } from 'antd'
+import { Progress, Table, Tag } from 'antd'
 import type { LlmSummaryResponse } from '../../types/analytics'
+import InfoTip from '../../components/InfoTip'
 import {
   FAILURE_REASON_META,
   SCENE_META,
@@ -11,6 +12,7 @@ import {
 /**
  * 场景总览表：每场景一行的调用量 / 成功率 / 延迟 / 首包 / token / 失败 Top1。
  * fail-open 场景（安全分类、过渡语）带「静默降级」徽标：成功率跌不会报错，必须盯这里。
+ * 场景名的 InfoTip 解释来自 SCENE_META（语义与 deda-server 各调用点一致）。
  */
 export default function SceneSummaryTable({
   data,
@@ -32,14 +34,16 @@ export default function SceneSummaryTable({
             const meta = SCENE_META[scene]
             return (
               <span>
-                {sceneLabel(scene)}{' '}
+                {sceneLabel(scene)}
+                {meta && <InfoTip title={meta.description} />}
                 <Tag color={row.tier === 'small' ? 'geekblue' : 'gold'}>
                   {row.tier === 'small' ? '小模型' : '主模型'}
                 </Tag>
                 {meta?.failOpen && (
-                  <Tooltip title="静默降级：失败不报错但质量下降，成功率必须盯紧">
+                  <>
                     <Tag color="volcano">静默降级</Tag>
-                  </Tooltip>
+                    <InfoTip title="该场景失败不报错、走兜底逻辑，质量下降只能从这里成功率发现" />
+                  </>
                 )}
               </span>
             )
@@ -68,7 +72,12 @@ export default function SceneSummaryTable({
             ),
         },
         {
-          title: '延迟 P50 / P90',
+          title: (
+            <>
+              延迟 P50 / P90
+              <InfoTip title="口径：请求发出 → 完整响应（流式为末 chunk）。P50 = 半数调用快于此值，P90 = 90% 调用快于此值（看长尾体验）。空响应、失败调用也计入延迟样本。" />
+            </>
+          ),
           key: 'latency',
           width: 150,
           align: 'right',
@@ -76,7 +85,12 @@ export default function SceneSummaryTable({
             `${formatMs(row.p50LatencyMs)} / ${formatMs(row.p90LatencyMs)}`,
         },
         {
-          title: '首包 P50 / P90',
+          title: (
+            <>
+              首包 P50 / P90
+              <InfoTip title="TTFT：请求发出 → 首个流式 chunk 的耗时，孩子「开口前等待」的直接体验指标。仅流式场景（主对话、首响过渡语）有值，其余场景恒为 —。" />
+            </>
+          ),
           key: 'ttft',
           width: 150,
           align: 'right',
@@ -86,7 +100,12 @@ export default function SceneSummaryTable({
           },
         },
         {
-          title: '总 Token',
+          title: (
+            <>
+              总 Token
+              <InfoTip title="该场景区间内全部调用的 prompt + completion token 合计，成本核算依据。上游未回传 usage 的调用按 0 计（如首响过渡语）。" />
+            </>
+          ),
           dataIndex: 'totalTokens',
           width: 110,
           align: 'right',
