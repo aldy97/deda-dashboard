@@ -1,19 +1,33 @@
 import { Button, Layout, Menu, Typography } from 'antd'
+import {
+  ApiOutlined,
+  AreaChartOutlined,
+  CommentOutlined,
+  DashboardOutlined,
+  MessageOutlined,
+  ReadOutlined,
+  RobotOutlined,
+  TeamOutlined,
+  UsergroupAddOutlined,
+} from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { TOKEN_KEY } from '../api/client'
 
 const { Sider, Header, Content } = Layout
 
+// 顺序按阅读动线：宏观总览 → 增长 → 画像 → 内容运营 → 资产 → 明细 → 技术监控。
+// 「记忆档案」（/memories，DatabaseOutlined）在 feature/memories-page 分支，
+// 合并后插到「用户画像」之后。
 const MENU_ITEMS = [
-  { key: '/overview', label: '总览' },
-  { key: '/retention', label: '留存与激活' },
-  { key: '/engagement', label: '使用行为' },
-  { key: '/fleet', label: '设备舰队' },
-  { key: '/users', label: '用户画像' },
-  { key: '/content', label: '内容与质量' },
-  { key: '/feedback', label: '用户反馈' },
-  { key: '/messages', label: '消息明细' },
-  { key: '/llm', label: '模型监控' },
+  { key: '/overview', label: '总览', icon: <DashboardOutlined /> },
+  { key: '/retention', label: '留存与激活', icon: <UsergroupAddOutlined /> },
+  { key: '/engagement', label: '使用行为', icon: <AreaChartOutlined /> },
+  { key: '/users', label: '用户画像', icon: <TeamOutlined /> },
+  { key: '/content', label: '内容与质量', icon: <ReadOutlined /> },
+  { key: '/feedback', label: '用户反馈', icon: <CommentOutlined /> },
+  { key: '/fleet', label: '设备舰队', icon: <RobotOutlined /> },
+  { key: '/messages', label: '消息明细', icon: <MessageOutlined /> },
+  { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
 ]
 
 export default function AdminLayout() {
