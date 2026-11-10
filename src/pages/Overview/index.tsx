@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Button, Card, Col, Radio, Row, Spin, Typography } from 'antd'
 import type { Dayjs } from 'dayjs'
-import { fetchOverview, fetchOverviewTrend } from '../../api/analytics'
-import type { OverviewResponse, OverviewTrendResponse } from '../../types/analytics'
+import { useOverview, useOverviewTrend } from '../../api/queries'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import TodayOngoingTag from '../../components/TodayOngoingTag'
 import { defaultRange, fmt, today } from '../../utils/date-range'
@@ -21,34 +20,27 @@ const RANGE_OPTIONS = [
  * KPI 日期与趋势区间均含今日（可切回历史日期）；今日数据为进行中口径，已标注。
  */
 export default function Overview() {
-  const [overview, setOverview] = useState<OverviewResponse | null>(null)
-  const [trend, setTrend] = useState<OverviewTrendResponse | null>(null)
   const [kpiDate, setKpiDate] = useState<Dayjs>(today())
   const [rangeDays, setRangeDays] = useState(30)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [startDate, endDate] = defaultRange(rangeDays).map(fmt)
 
-  const load = useCallback(async (date: Dayjs, days: number) => {
-    setLoading(true)
-    setError(null)
-    const [startDate, endDate] = defaultRange(days).map(fmt)
-    try {
-      const [overviewData, trendData] = await Promise.all([
-        fetchOverview(fmt(date)),
-        fetchOverviewTrend({ startDate, endDate }),
-      ])
-      setOverview(overviewData)
-      setTrend(trendData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const overviewQuery = useOverview(fmt(kpiDate))
+  const trendQuery = useOverviewTrend({ startDate, endDate })
+  const overview = overviewQuery.data ?? null
+  const trend = trendQuery.data ?? null
+  const loading = overviewQuery.isLoading || trendQuery.isLoading
+  const refreshing = overviewQuery.isFetching || trendQuery.isFetching
+  const error = overviewQuery.error ?? trendQuery.error
 
-  useEffect(() => {
-    void load(kpiDate, rangeDays)
-  }, [load, kpiDate, rangeDays])
+  const refresh = () => {
+    void overviewQuery.refetch()
+    void trendQuery.refetch()
+  }
+  const errorMessage = error
+    ? error instanceof Error
+      ? error.message
+      : '加载失败'
+    : null
 
   return (
     <div>
@@ -75,18 +67,18 @@ export default function Overview() {
               if (d) setKpiDate(d)
             }}
           />
-          <Button onClick={() => void load(kpiDate, rangeDays)} loading={loading}>
+          <Button onClick={refresh} loading={refreshing}>
             刷新
           </Button>
         </div>
       </div>
 
-      {error && (
+      {errorMessage && (
         <Alert
           type="error"
           showIcon
           message="数据加载失败"
-          description={error}
+          description={errorMessage}
           style={{ marginBottom: 16 }}
         />
       )}

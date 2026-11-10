@@ -1,10 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
-import { fetchUsersDemographics, fetchUsersSummary } from '../../api/analytics'
-import type {
-  UsersDemographicsResponse,
-  UsersSummaryResponse,
-} from '../../types/analytics'
+import { useUsersDemographics, useUsersSummary } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -16,32 +12,20 @@ import Demographics from './Demographics'
  */
 export default function Users() {
   const [range, setRange] = useState<DayRange>(defaultRange(30))
-  const [summary, setSummary] = useState<UsersSummaryResponse | null>(null)
-  const [demographics, setDemographics] =
-    useState<UsersDemographicsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async (r: DayRange) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [summaryData, demographicsData] = await Promise.all([
-        fetchUsersSummary({ startDate: fmt(r[0]), endDate: fmt(r[1]) }),
-        fetchUsersDemographics(),
-      ])
-      setSummary(summaryData)
-      setDemographics(demographicsData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load(range)
-  }, [load, range])
+  const summaryQuery = useUsersSummary({
+    startDate: fmt(range[0]),
+    endDate: fmt(range[1]),
+  })
+  const demographicsQuery = useUsersDemographics()
+  const summary = summaryQuery.data ?? null
+  const demographics = demographicsQuery.data ?? null
+  const loading = summaryQuery.isLoading || demographicsQuery.isLoading
+  const queryError = summaryQuery.error ?? demographicsQuery.error
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : '加载失败'
+    : null
 
   return (
     <div>

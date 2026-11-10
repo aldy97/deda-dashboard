@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Radio, Table, Tooltip } from 'antd'
 import dayjs from 'dayjs'
-import { fetchUserFeedbacks } from '../../api/analytics'
-import type { UserFeedbackListResponse } from '../../types/analytics'
+import { useUserFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -24,36 +23,20 @@ export default function UserFeedbackPanel() {
   const [contactFilter, setContactFilter] = useState<ContactFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [data, setData] = useState<UserFeedbackListResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(
-    async (r: DayRange, f: ContactFilter, p: number, ps: number) => {
-      setLoading(true)
-      setError(null)
-      try {
-        setData(
-          await fetchUserFeedbacks({
-            startDate: fmt(r[0]),
-            endDate: fmt(r[1]),
-            hasContact: f === 'hasContact' ? true : undefined,
-            page: p,
-            pageSize: ps,
-          }),
-        )
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
-  )
-
-  useEffect(() => {
-    void load(range, contactFilter, page, pageSize)
-  }, [load, range, contactFilter, page, pageSize])
+  const query = useUserFeedbacks({
+    startDate: fmt(range[0]),
+    endDate: fmt(range[1]),
+    hasContact: contactFilter === 'hasContact' ? true : undefined,
+    page,
+    pageSize,
+  })
+  const data = query.data ?? null
+  const loading = query.isLoading
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   return (
     <div>

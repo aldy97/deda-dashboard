@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
 import { Alert, Spin, Tag, Timeline, Typography } from 'antd'
 import dayjs from 'dayjs'
-import { fetchLlmCallsByTurn } from '../../api/analytics'
+import { useLlmCallsByTurn } from '../../api/queries'
 import type { LlmTurnCall } from '../../types/analytics'
 import {
   FAILURE_REASON_META,
@@ -88,31 +87,14 @@ function callItem(call: LlmTurnCall) {
  * 用于验证大小模型配合度（fail-open 场景失败在此才可见）。
  */
 export default function LlmTurnChain({ turnId }: { turnId: string }) {
-  const [calls, setCalls] = useState<LlmTurnCall[] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    setCalls(null)
-    setError(null)
-    setLoading(true)
-    fetchLlmCallsByTurn(turnId)
-      .then((data) => {
-        if (!cancelled) setCalls(data.calls)
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : '加载失败')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [turnId])
+  const query = useLlmCallsByTurn(turnId)
+  const calls = query.data?.calls ?? null
+  const loading = query.isLoading
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   if (error) {
     return (

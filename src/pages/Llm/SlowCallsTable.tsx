@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
 import { Alert, Table, Tag } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { fetchLlmSlowCalls } from '../../api/analytics'
-import type { LlmSlowCallItem } from '../../types/analytics'
+import { useLlmSlowCalls } from '../../api/queries'
 import { formatMs, sceneLabel } from './scenes'
 
 /**
@@ -19,30 +17,18 @@ export default function SlowCallsTable({
   endDate: string
   scene?: string
 }) {
-  const [items, setItems] = useState<LlmSlowCallItem[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(
-    async (s: string, e: string, sc: string | undefined) => {
-      setError(null)
-      try {
-        const resp = await fetchLlmSlowCalls({
-          startDate: s,
-          endDate: e,
-          limit: 10,
-          ...(sc ? { scene: sc } : {}),
-        })
-        setItems(resp.items)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      }
-    },
-    [],
-  )
-
-  useEffect(() => {
-    void load(startDate, endDate, scene)
-  }, [load, startDate, endDate, scene])
+  const query = useLlmSlowCalls({
+    startDate,
+    endDate,
+    limit: 10,
+    ...(scene ? { scene } : {}),
+  })
+  const items = query.data?.items ?? null
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   if (error) {
     return (

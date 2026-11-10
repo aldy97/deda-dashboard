@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Card, Select, Spin, Typography } from 'antd'
-import { fetchLlmSummary, fetchLlmTrend } from '../../api/analytics'
-import type { LlmSummaryResponse, LlmTrendResponse } from '../../types/analytics'
+import { useLlmSummary, useLlmTrend } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -20,32 +19,22 @@ import { SCENE_META } from './scenes'
 export default function LlmMonitor() {
   const [range, setRange] = useState<DayRange>(defaultRange(7))
   const [scene, setScene] = useState<string | undefined>(undefined)
-  const [summary, setSummary] = useState<LlmSummaryResponse | null>(null)
-  const [trend, setTrend] = useState<LlmTrendResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async (r: DayRange, s: string | undefined) => {
-    setLoading(true)
-    setError(null)
-    const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
-    try {
-      const [summaryData, trendData] = await Promise.all([
-        fetchLlmSummary(params),
-        fetchLlmTrend({ ...params, granularity: 'day', ...(s ? { scene: s } : {}) }),
-      ])
-      setSummary(summaryData)
-      setTrend(trendData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load(range, scene)
-  }, [load, range, scene])
+  const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
+  const summaryQuery = useLlmSummary(params)
+  const trendQuery = useLlmTrend({
+    ...params,
+    granularity: 'day',
+    ...(scene ? { scene } : {}),
+  })
+  const summary = summaryQuery.data ?? null
+  const trend = trendQuery.data ?? null
+  const loading = summaryQuery.isLoading || trendQuery.isLoading
+  const queryError = summaryQuery.error ?? trendQuery.error
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : '加载失败'
+    : null
 
   return (
     <div>

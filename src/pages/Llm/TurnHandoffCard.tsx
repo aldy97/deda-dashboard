@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
 import { Alert, Col, Row, Statistic, Table, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { fetchLlmTurnHandoff } from '../../api/analytics'
-import type { LlmTurnHandoffResponse } from '../../types/analytics'
+import { useLlmTurnHandoff } from '../../api/queries'
 import InfoTip from '../../components/InfoTip'
 import { formatMs } from './scenes'
 
@@ -21,21 +19,13 @@ export default function TurnHandoffCard({
   startDate: string
   endDate: string
 }) {
-  const [data, setData] = useState<LlmTurnHandoffResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async (s: string, e: string) => {
-    setError(null)
-    try {
-      setData(await fetchLlmTurnHandoff({ startDate: s, endDate: e }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    }
-  }, [])
-
-  useEffect(() => {
-    void load(startDate, endDate)
-  }, [load, startDate, endDate])
+  const query = useLlmTurnHandoff({ startDate, endDate })
+  const data = query.data ?? null
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   if (error) {
     return (
