@@ -14,14 +14,17 @@ import {
 } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { fetchMessages } from '../../api/analytics'
+import { fetchInterruptionRate, fetchMessageModes, fetchMessages } from '../../api/analytics'
 import type { MessagesQuery } from '../../api/analytics'
 import type {
+  InterruptionRateResponse,
   MessageListItem,
   MessageListResponse,
+  MessageModesResponse,
   MessageSort,
 } from '../../types/analytics'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import InfoTip from '../../components/InfoTip'
 import { fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import MessageDetailDrawer, {
@@ -34,8 +37,12 @@ interface Filters {
   range: DayRange | null
   deviceId: string
   role?: 'user' | 'assistant'
-  status?: 'completed' | 'failed'
+  status?: 'completed' | 'failed' | 'interrupted'
   keyword: string
+  /** 顶层模式（配置表 category key） */
+  mode?: string
+  /** 子模式（配置表 mode key，依赖顶层模式选择） */
+  conversationModeKey?: string
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -44,6 +51,8 @@ const DEFAULT_FILTERS: Filters = {
   role: undefined,
   status: undefined,
   keyword: '',
+  mode: undefined,
+  conversationModeKey: undefined,
 }
 
 /**
@@ -82,6 +91,28 @@ export default function Messages() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<MessageListItem | null>(null)
+  // 对话模式选项源（配置表全量启用项 + 消息数参考），挂载时拉一次
+  const [modeOptions, setModeOptions] = useState<MessageModesResponse | null>(
+    null,
+  )
+  // AI 回复疑似打断率（仅随日期区间变化；推断口径）
+  const [interruption, setInterruption] =
+    useState<InterruptionRateResponse | null>(null)
+
+  useEffect(() => {
+    fetchMessageModes()
+      .then(setModeOptions)
+      .catch(() => setModeOptions(null))
+  }, [])
+
+  useEffect(() => {
+    const params = applied.range
+      ? { startDate: fmt(applied.range[0]), endDate: fmt(applied.range[1]) }
+      : {}
+    fetchInterruptionRate(params)
+      .then(setInterruption)
+      .catch(() => setInterruption(null))
+  }, [applied.range])
 
   const load = useCallback(
     async (
@@ -101,6 +132,10 @@ export default function Messages() {
         ...(f.role ? { role: f.role } : {}),
         ...(f.status ? { status: f.status } : {}),
         ...(f.keyword.trim() ? { keyword: f.keyword.trim() } : {}),
+        ...(f.mode ? { mode: f.mode } : {}),
+        ...(f.conversationModeKey
+          ? { conversationModeKey: f.conversationModeKey }
+          : {}),
         ...(tid ? { turnId: tid } : {}),
         sort: s,
         page: p,
@@ -146,6 +181,19 @@ export default function Messages() {
       </div>
 
       <Card>
+        {interruption && interruption.assistantTotal > 0 && (
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+            AI 回复疑似打断率：
+            <Typography.Text strong>
+              {interruption.interruptionRate === null
+                ? '—'
+                : `${Math.round(interruption.interruptionRate * 1000) / 10}%`}
+            </Typography.Text>
+            （{applied.range ? '所选日期区间' : '全部时间'} AI 消息{' '}
+            {interruption.assistantTotal} 条，疑似打断 {interruption.interrupted} 条）
+            <InfoTip title="推断口径：新一轮对话开始时，若上一轮 AI 回复的估算播放窗口（字数 × 120ms，封顶 60s）尚未结束，则记为疑似打断。非设备真实事件；孩子话密、家长插话都会计入。" />
+          </Typography.Text>
+        )}
         <Space wrap style={{ marginBottom: 12 }}>
           <AnalyticsRangePicker
             allowClear
@@ -181,7 +229,37 @@ export default function Messages() {
             options={[
               { label: '完成', value: 'completed' },
               { label: '失败', value: 'failed' },
+              { label: '被打断', value: 'interrupted' },
             ]}
+          />
+          <Select
+            allowClear
+            placeholder="对话模式"
+            style={{ width: 150 }}
+            value={draft.mode}
+            onChange={(v) =>
+              // 顶层模式切换时清空子模式（子模式选项依赖顶层）
+              setDraft({ ...draft, mode: v, conversationModeKey: undefined })
+            }
+            options={(modeOptions?.categories ?? []).map((c) => ({
+              label: `${c.name}（${c.messageCount}）`,
+              value: c.key,
+            }))}
+          />
+          <Select
+            allowClear
+            placeholder="子模式"
+            style={{ width: 160 }}
+            disabled={!draft.mode}
+            value={draft.conversationModeKey}
+            onChange={(v) => setDraft({ ...draft, conversationModeKey: v })}
+            options={(
+              modeOptions?.categories.find((c) => c.key === draft.mode)
+                ?.modes ?? []
+            ).map((m) => ({
+              label: `${m.name}（${m.messageCount}）`,
+              value: m.key,
+            }))}
           />
           <Input
             allowClear

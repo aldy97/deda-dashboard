@@ -12,9 +12,12 @@ import type {
   FeatureAdoptionResponse,
   Granularity,
   HourlyHeatmapResponse,
+  InterruptionRateResponse,
   LlmRecentFailuresResponse,
+  LlmSlowCallsResponse,
   LlmSummaryResponse,
   LlmTurnChainResponse,
+  LlmTurnHandoffResponse,
   LlmTrendResponse,
   MemoriesOverviewResponse,
   CurrentMemoriesResponse,
@@ -22,6 +25,7 @@ import type {
   MemoryHistoryResponse,
   MessageDetailResponse,
   MessageListResponse,
+  MessageModesResponse,
   MessageSort,
   ModeUsageResponse,
   OverviewResponse,
@@ -266,7 +270,7 @@ export interface MessagesQuery {
   endDate?: string
   deviceId?: string
   role?: 'user' | 'assistant'
-  status?: 'completed' | 'failed'
+  status?: 'completed' | 'failed' | 'interrupted'
   mode?: string
   conversationModeKey?: string
   /** 精确匹配，用于查看同一轮问答 */
@@ -292,6 +296,26 @@ export async function fetchMessageDetail(
 ): Promise<MessageDetailResponse> {
   const resp = await apiClient.get(`/analytics/messages/${id}`)
   return resp.data as MessageDetailResponse
+}
+
+/** 对话模式选项源（过滤下拉用；日期区间可选，仅影响 messageCount 参考值） */
+export async function fetchMessageModes(params?: {
+  startDate?: string
+  endDate?: string
+}): Promise<MessageModesResponse> {
+  const resp = await apiClient.get('/analytics/messages/modes', { params })
+  return resp.data as MessageModesResponse
+}
+
+/** AI 回复打断率（推断口径，UI 须标注「疑似」） */
+export async function fetchInterruptionRate(params?: {
+  startDate?: string
+  endDate?: string
+}): Promise<InterruptionRateResponse> {
+  const resp = await apiClient.get('/analytics/messages/interruption-rate', {
+    params,
+  })
+  return resp.data as InterruptionRateResponse
 }
 
 // ---- 模型监控 ----
@@ -336,6 +360,28 @@ export async function fetchLlmCallsByTurn(
     params: { turnId },
   })
   return resp.data as LlmTurnChainResponse
+}
+
+/** 轮次衔接健康度（生成侧口径，UI 须标注） */
+export async function fetchLlmTurnHandoff(params: {
+  startDate: string
+  endDate: string
+  /** 空窗判定阈值 ms，缺省 0 */
+  gapThresholdMs?: number
+}): Promise<LlmTurnHandoffResponse> {
+  const resp = await apiClient.get('/analytics/llm/turn-handoff', { params })
+  return resp.data as LlmTurnHandoffResponse
+}
+
+/** 慢调用长尾（仅成功调用，latencyMs 倒序；limit ≤ 50，缺省 20） */
+export async function fetchLlmSlowCalls(params: {
+  startDate: string
+  endDate: string
+  scene?: string
+  limit?: number
+}): Promise<LlmSlowCallsResponse> {
+  const resp = await apiClient.get('/analytics/llm/slow-calls', { params })
+  return resp.data as LlmSlowCallsResponse
 }
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。
