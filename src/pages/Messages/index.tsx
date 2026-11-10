@@ -12,6 +12,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+import { ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { fetchMessages } from '../../api/analytics'
 import type { MessagesQuery } from '../../api/analytics'
@@ -195,6 +196,15 @@ export default function Messages() {
             查询
           </Button>
           <Button onClick={resetFilters}>重置</Button>
+          <Tooltip title="按当前已生效的筛选条件重新加载">
+            <Button
+              icon={<ReloadOutlined />}
+              loading={loading}
+              onClick={() => void load(applied, turnId, sort, page, pageSize)}
+            >
+              刷新
+            </Button>
+          </Tooltip>
           {turnId && (
             <Tag
               closable
