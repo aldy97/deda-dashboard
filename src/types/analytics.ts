@@ -363,6 +363,8 @@ export interface LlmFailureItem {
   /** timeout / rate_limit / parse_error / upstream_error / empty_response */
   failureReason: string | null
   latencyMs: number | null
+  /** 对话轮次 ID；后台任务/存量数据为 null */
+  turnId: string | null
   deviceId: string | null
   createdAt: string
 }
@@ -372,6 +374,30 @@ export interface LlmRecentFailuresResponse {
   page: number
   pageSize: number
   items: LlmFailureItem[]
+}
+
+/** 单轮调用链路上的一次 LLM 调用（GET /analytics/llm/by-turn） */
+export interface LlmTurnCall {
+  id: string
+  scene: string
+  model: string
+  /** small / main */
+  tier: string
+  success: boolean
+  failureReason: string | null
+  latencyMs: number | null
+  /** 首包时间：仅流式场景有值 */
+  firstTokenMs: number | null
+  promptTokens: number | null
+  completionTokens: number | null
+  totalTokens: number | null
+  createdAt: string
+}
+
+export interface LlmTurnChainResponse {
+  turnId: string
+  /** createdAt 升序（后端固定） */
+  calls: LlmTurnCall[]
 }
 
 // ---- 记忆档案 ----

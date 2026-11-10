@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Table, Tag } from 'antd'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { fetchLlmRecentFailures } from '../../api/analytics'
 import type { LlmRecentFailuresResponse } from '../../types/analytics'
@@ -122,6 +123,13 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
             title: '设备',
             dataIndex: 'deviceId',
             render: (v: string | null) => v ?? '—',
+          },
+          {
+            title: '同轮对话',
+            dataIndex: 'turnId',
+            width: 110,
+            render: (v: string | null) =>
+              v ? <Link to={`/messages?turnId=${v}`}>查看链路</Link> : '—',
           },
         ]}
       />

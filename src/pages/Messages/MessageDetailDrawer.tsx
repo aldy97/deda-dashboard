@@ -14,6 +14,7 @@ import type {
   MessageDetailResponse,
   MessageListItem,
 } from '../../types/analytics'
+import LlmTurnChain from './LlmTurnChain'
 
 /** 与 deda-wechat-app learning-data.ts 的 MODE_LABELS 完全一致（唯一映射来源，勿自行增改） */
 const MODE_LABELS: Record<string, string> = {
@@ -139,11 +140,12 @@ export default function MessageDetailDrawer({
                   </span>
                 ),
               },
-              {
-                key: 'conversationId',
-                label: '厂商对话 ID',
-                children: row.conversationId ?? '—',
-              },
+              // 厂商对话 ID 暂不需要，需要时取消注释
+              // {
+              //   key: 'conversationId',
+              //   label: '厂商对话 ID',
+              //   children: row.conversationId ?? '—',
+              // },
               { key: 'role', label: '角色', children: roleTag(row.role) },
               {
                 key: 'status',
@@ -155,15 +157,27 @@ export default function MessageDetailDrawer({
                 label: '模式',
                 children: modeLabel(row.mode, row.conversationModeKey),
               },
-              {
-                key: 'cefrLevel',
-                label: 'CEFR 等级',
-                children: row.cefrLevel ?? '—',
-              },
+              // CEFR 等级暂不需要，需要时取消注释
+              // {
+              //   key: 'cefrLevel',
+              //   label: 'CEFR 等级',
+              //   children: row.cefrLevel ?? '—',
+              // },
               {
                 key: 'device',
-                label: '设备',
-                children: `${row.device.deviceCode ?? row.device.deviceId}（${row.device.characterKey}）`,
+                label: '设备 ID',
+                children: (
+                  <Typography.Text
+                    copyable={{ text: row.device.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
+                  >
+                    {row.device.deviceId}
+                  </Typography.Text>
+                ),
+              },
+              {
+                key: 'character',
+                label: '产品',
+                children: row.device.characterKey,
               },
               {
                 key: 'spokeAt',
@@ -188,6 +202,10 @@ export default function MessageDetailDrawer({
               },
             ]}
           />
+          <Typography.Title level={5} style={{ marginTop: 16 }}>
+            LLM 调用链路
+          </Typography.Title>
+          <LlmTurnChain turnId={row.turnId} />
           <Typography.Title level={5} style={{ marginTop: 16 }}>
             rawPayload
           </Typography.Title>
