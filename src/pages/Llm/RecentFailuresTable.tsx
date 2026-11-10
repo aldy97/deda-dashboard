@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Table, Tag, Tooltip, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { fetchLlmRecentFailures } from '../../api/analytics'
-import type { LlmRecentFailuresResponse } from '../../types/analytics'
+import { useLlmRecentFailures } from '../../api/queries'
 import { FAILURE_REASON_META, failureReasonLabel, sceneLabel } from './scenes'
 
 /**
@@ -12,9 +11,6 @@ import { FAILURE_REASON_META, failureReasonLabel, sceneLabel } from './scenes'
 export default function RecentFailuresTable({ scene }: { scene?: string }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [data, setData] = useState<LlmRecentFailuresResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   // 场景切换时回第 1 页（render 期间调整，避免双请求）
   const [prevScene, setPrevScene] = useState(scene)
@@ -23,30 +19,18 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
     setPage(1)
   }
 
-  const load = useCallback(
-    async (s: string | undefined, p: number, ps: number) => {
-      setLoading(true)
-      setError(null)
-      try {
-        setData(
-          await fetchLlmRecentFailures({
-            ...(s ? { scene: s } : {}),
-            page: p,
-            pageSize: ps,
-          }),
-        )
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
-  )
-
-  useEffect(() => {
-    void load(scene, page, pageSize)
-  }, [load, scene, page, pageSize])
+  const query = useLlmRecentFailures({
+    ...(scene ? { scene } : {}),
+    page,
+    pageSize,
+  })
+  const data = query.data ?? null
+  const loading = query.isLoading
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   return (
     <div>

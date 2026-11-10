@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Alert,
   Card,
@@ -10,8 +10,7 @@ import {
   Tag,
 } from 'antd'
 import dayjs from 'dayjs'
-import { fetchReportFeedbacks } from '../../api/analytics'
-import type { ReportFeedbackListResponse } from '../../types/analytics'
+import { useReportFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -34,36 +33,20 @@ export default function ReportFeedbackPanel() {
   const [usefulFilter, setUsefulFilter] = useState<UsefulFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [data, setData] = useState<ReportFeedbackListResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(
-    async (r: DayRange, f: UsefulFilter, p: number, ps: number) => {
-      setLoading(true)
-      setError(null)
-      try {
-        setData(
-          await fetchReportFeedbacks({
-            startDate: fmt(r[0]),
-            endDate: fmt(r[1]),
-            isUseful: f === 'all' ? undefined : f === 'useful',
-            page: p,
-            pageSize: ps,
-          }),
-        )
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
-  )
-
-  useEffect(() => {
-    void load(range, usefulFilter, page, pageSize)
-  }, [load, range, usefulFilter, page, pageSize])
+  const query = useReportFeedbacks({
+    startDate: fmt(range[0]),
+    endDate: fmt(range[1]),
+    isUseful: usefulFilter === 'all' ? undefined : usefulFilter === 'useful',
+    page,
+    pageSize,
+  })
+  const data = query.data ?? null
+  const loading = query.isLoading
+  const error = query.error
+    ? query.error instanceof Error
+      ? query.error.message
+      : '加载失败'
+    : null
 
   return (
     <div>

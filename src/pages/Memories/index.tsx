@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Alert,
   Card,
@@ -11,14 +11,7 @@ import {
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import {
-  fetchMemoriesOverview,
-  fetchMemoryDevices,
-} from '../../api/analytics'
-import type {
-  MemoriesOverviewResponse,
-  MemoryDevicesResponse,
-} from '../../types/analytics'
+import { useMemoriesOverview, useMemoryDevices } from '../../api/queries'
 import { MEMORY_KEYS, memoryKeyLabel } from './memoryMeta'
 
 /**
@@ -27,39 +20,26 @@ import { MEMORY_KEYS, memoryKeyLabel } from './memoryMeta'
  */
 export default function Memories() {
   const navigate = useNavigate()
-  const [overview, setOverview] = useState<MemoriesOverviewResponse | null>(null)
-  const [devices, setDevices] = useState<MemoryDevicesResponse | null>(null)
   const [keyword, setKeyword] = useState('')
   const [appliedKeyword, setAppliedKeyword] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (kw: string, p: number, ps: number) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [ov, list] = await Promise.all([
-        fetchMemoriesOverview(),
-        fetchMemoryDevices({
-          ...(kw ? { keyword: kw } : {}),
-          page: p,
-          pageSize: ps,
-        }),
-      ])
-      setOverview(ov)
-      setDevices(list)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load(appliedKeyword, page, pageSize)
-  }, [load, appliedKeyword, page, pageSize])
+  const overviewQuery = useMemoriesOverview()
+  const devicesQuery = useMemoryDevices({
+    ...(appliedKeyword ? { keyword: appliedKeyword } : {}),
+    page,
+    pageSize,
+  })
+  const overview = overviewQuery.data ?? null
+  const devices = devicesQuery.data ?? null
+  const loading = overviewQuery.isLoading || devicesQuery.isLoading
+  const queryError = overviewQuery.error ?? devicesQuery.error
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : '加载失败'
+    : null
 
   return (
     <div>

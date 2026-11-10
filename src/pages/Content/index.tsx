@@ -1,17 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
 import {
-  fetchContentAdventure,
-  fetchContentLearning,
-  fetchContentParentReport,
-  fetchQualityConversation,
-} from '../../api/analytics'
-import type {
-  ContentAdventureResponse,
-  ContentLearningResponse,
-  ContentParentReportResponse,
-  QualityConversationResponse,
-} from '../../types/analytics'
+  useContentAdventure,
+  useContentLearning,
+  useContentParentReport,
+  useQualityConversation,
+} from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -28,40 +22,30 @@ const formatPct = (rate: number | null) =>
  */
 export default function Content() {
   const [range, setRange] = useState<DayRange>(defaultRange(30))
-  const [adventure, setAdventure] = useState<ContentAdventureResponse | null>(null)
-  const [learning, setLearning] = useState<ContentLearningResponse | null>(null)
-  const [parentReport, setParentReport] =
-    useState<ContentParentReportResponse | null>(null)
-  const [quality, setQuality] = useState<QualityConversationResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async (r: DayRange) => {
-    setLoading(true)
-    setError(null)
-    const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
-    try {
-      const [adventureData, learningData, parentReportData, qualityData] =
-        await Promise.all([
-          fetchContentAdventure(params),
-          fetchContentLearning(params),
-          fetchContentParentReport(params),
-          fetchQualityConversation({ ...params, granularity: 'day' }),
-        ])
-      setAdventure(adventureData)
-      setLearning(learningData)
-      setParentReport(parentReportData)
-      setQuality(qualityData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load(range)
-  }, [load, range])
+  const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
+  const adventureQuery = useContentAdventure(params)
+  const learningQuery = useContentLearning(params)
+  const parentReportQuery = useContentParentReport(params)
+  const qualityQuery = useQualityConversation({ ...params, granularity: 'day' })
+  const adventure = adventureQuery.data ?? null
+  const learning = learningQuery.data ?? null
+  const parentReport = parentReportQuery.data ?? null
+  const quality = qualityQuery.data ?? null
+  const loading =
+    adventureQuery.isLoading ||
+    learningQuery.isLoading ||
+    parentReportQuery.isLoading ||
+    qualityQuery.isLoading
+  const queryError =
+    adventureQuery.error ??
+    learningQuery.error ??
+    parentReportQuery.error ??
+    qualityQuery.error
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : '加载失败'
+    : null
 
   return (
     <div>

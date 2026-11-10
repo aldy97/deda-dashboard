@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
@@ -14,15 +14,13 @@ import {
 } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { fetchInterruptionRate, fetchMessageModes, fetchMessages } from '../../api/analytics'
+import {
+  useInterruptionRate,
+  useMessageModes,
+  useMessages,
+} from '../../api/queries'
 import type { MessagesQuery } from '../../api/analytics'
-import type {
-  InterruptionRateResponse,
-  MessageListItem,
-  MessageListResponse,
-  MessageModesResponse,
-  MessageSort,
-} from '../../types/analytics'
+import type { MessageListItem, MessageSort } from '../../types/analytics'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import { fmt } from '../../utils/date-range'
@@ -87,74 +85,45 @@ export default function Messages() {
   const [sort, setSort] = useState<MessageSort>('spokeAt_desc')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [data, setData] = useState<MessageListResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<MessageListItem | null>(null)
-  // 对话模式选项源（配置表全量启用项 + 消息数参考），挂载时拉一次
-  const [modeOptions, setModeOptions] = useState<MessageModesResponse | null>(
-    null,
-  )
+
+  // 对话模式选项源（配置表全量启用项 + 消息数参考）
+  const modeOptionsQuery = useMessageModes()
+  const modeOptions = modeOptionsQuery.data ?? null
   // AI 回复疑似打断率（仅随日期区间变化；推断口径）
-  const [interruption, setInterruption] =
-    useState<InterruptionRateResponse | null>(null)
-
-  useEffect(() => {
-    fetchMessageModes()
-      .then(setModeOptions)
-      .catch(() => setModeOptions(null))
-  }, [])
-
-  useEffect(() => {
-    const params = applied.range
+  const interruptionQuery = useInterruptionRate(
+    applied.range
       ? { startDate: fmt(applied.range[0]), endDate: fmt(applied.range[1]) }
-      : {}
-    fetchInterruptionRate(params)
-      .then(setInterruption)
-      .catch(() => setInterruption(null))
-  }, [applied.range])
-
-  const load = useCallback(
-    async (
-      f: Filters,
-      tid: string | null,
-      s: MessageSort,
-      p: number,
-      ps: number,
-    ) => {
-      setLoading(true)
-      setError(null)
-      const query: MessagesQuery = {
-        ...(f.range
-          ? { startDate: fmt(f.range[0]), endDate: fmt(f.range[1]) }
-          : {}),
-        ...(f.deviceId.trim() ? { deviceId: f.deviceId.trim() } : {}),
-        ...(f.role ? { role: f.role } : {}),
-        ...(f.status ? { status: f.status } : {}),
-        ...(f.keyword.trim() ? { keyword: f.keyword.trim() } : {}),
-        ...(f.mode ? { mode: f.mode } : {}),
-        ...(f.conversationModeKey
-          ? { conversationModeKey: f.conversationModeKey }
-          : {}),
-        ...(tid ? { turnId: tid } : {}),
-        sort: s,
-        page: p,
-        pageSize: ps,
-      }
-      try {
-        setData(await fetchMessages(query))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
+      : undefined,
   )
+  const interruption = interruptionQuery.data ?? null
 
-  useEffect(() => {
-    void load(applied, turnId, sort, page, pageSize)
-  }, [load, applied, turnId, sort, page, pageSize])
+  const messagesQueryParams: MessagesQuery = {
+    ...(applied.range
+      ? { startDate: fmt(applied.range[0]), endDate: fmt(applied.range[1]) }
+      : {}),
+    ...(applied.deviceId.trim() ? { deviceId: applied.deviceId.trim() } : {}),
+    ...(applied.role ? { role: applied.role } : {}),
+    ...(applied.status ? { status: applied.status } : {}),
+    ...(applied.keyword.trim() ? { keyword: applied.keyword.trim() } : {}),
+    ...(applied.mode ? { mode: applied.mode } : {}),
+    ...(applied.conversationModeKey
+      ? { conversationModeKey: applied.conversationModeKey }
+      : {}),
+    ...(turnId ? { turnId } : {}),
+    sort,
+    page,
+    pageSize,
+  }
+  const messagesQuery = useMessages(messagesQueryParams)
+  const data = messagesQuery.data ?? null
+  const loading = messagesQuery.isLoading
+  const refreshing = messagesQuery.isFetching
+  const error = messagesQuery.error
+    ? messagesQuery.error instanceof Error
+      ? messagesQuery.error.message
+      : '加载失败'
+    : null
 
   const applyFilters = () => {
     setPage(1)
@@ -277,8 +246,8 @@ export default function Messages() {
           <Tooltip title="按当前已生效的筛选条件重新加载">
             <Button
               icon={<ReloadOutlined />}
-              loading={loading}
-              onClick={() => void load(applied, turnId, sort, page, pageSize)}
+              loading={refreshing}
+              onClick={() => void messagesQuery.refetch()}
             >
               刷新
             </Button>

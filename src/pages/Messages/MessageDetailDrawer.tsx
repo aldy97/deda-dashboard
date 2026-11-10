@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   Alert,
   Button,
@@ -9,10 +8,9 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import { fetchMessageDetail, fetchMessages } from '../../api/analytics'
+import { useMessageDetail, useMessages } from '../../api/queries'
 import {
   isAssistantRawPayload,
-  type MessageDetailResponse,
   type MessageListItem,
 } from '../../types/analytics'
 import LlmTurnChain from './LlmTurnChain'
@@ -82,38 +80,28 @@ export default function MessageDetailDrawer({
   onClose: () => void
   onViewTurn: (turnId: string) => void
 }) {
-  const [detail, setDetail] = useState<MessageDetailResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
-  const [turnUserMessages, setTurnUserMessages] = useState<
-    MessageListItem[] | null
-  >(null)
+  // 抽屉打开即拉详情（补 rawPayload）；key 含消息 id，切行自动作废旧请求
+  const detailQuery = useMessageDetail(message?.id ?? null)
+  const detail = detailQuery.data ?? null
+  const loading = detailQuery.isLoading
+  const error = detailQuery.error
+    ? detailQuery.error instanceof Error
+      ? detailQuery.error.message
+      : '加载失败'
+    : null
 
-  useEffect(() => {
-    if (!message) return
-    setDetail(null)
-    setError(null)
-    setLoading(true)
-    fetchMessageDetail(message.id)
-      .then(setDetail)
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : '加载失败'),
-      )
-      .finally(() => setLoading(false))
-    setTurnUserMessages(null)
-    if (message.turnId) {
-      fetchMessages({
-        turnId: message.turnId,
-        sort: 'spokeAt_asc',
-        pageSize: 10,
-      })
-        .then((resp) =>
-          setTurnUserMessages(resp.items.filter((m) => m.role === 'user')),
-        )
-        .catch(() => setTurnUserMessages(null))
-    }
-  }, [message])
+  // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
+  const turnQuery = useMessages(
+    {
+      turnId: message?.turnId ?? '',
+      sort: 'spokeAt_asc',
+      pageSize: 10,
+    },
+    message?.turnId != null,
+  )
+  const turnUserMessages = turnQuery.data
+    ? turnQuery.data.items.filter((m) => m.role === 'user')
+    : null
 
   const row = detail ?? message
 

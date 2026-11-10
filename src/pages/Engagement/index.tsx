@@ -1,20 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Typography } from 'antd'
 import type { Dayjs } from 'dayjs'
 import {
-  fetchDurationDistribution,
-  fetchEngagementSummary,
-  fetchFeatureAdoption,
-  fetchHourlyHeatmap,
-  fetchModeUsage,
-} from '../../api/analytics'
-import type {
-  DurationDistributionResponse,
-  EngagementSummaryResponse,
-  FeatureAdoptionResponse,
-  HourlyHeatmapResponse,
-  ModeUsageResponse,
-} from '../../types/analytics'
+  useDurationDistribution,
+  useEngagementSummary,
+  useFeatureAdoption,
+  useHourlyHeatmap,
+  useModeUsage,
+} from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import InfoTip from '../../components/InfoTip'
@@ -26,7 +19,8 @@ import HourlyHeatmap from './HourlyHeatmap'
 import DurationDistributionChart from './DurationDistributionChart'
 import FeatureAdoptionTable from './FeatureAdoptionTable'
 
-function toErrorMessage(err: unknown): string {
+function toErrorMessage(err: unknown): string | null {
+  if (!err) return null
   return err instanceof Error ? err.message : '加载失败'
 }
 
@@ -38,64 +32,28 @@ function toErrorMessage(err: unknown): string {
 export default function Engagement() {
   // ---- 区间口径（summary / mode-usage / heatmap）----
   const [range, setRange] = useState<DayRange>(defaultRange(7))
-  const [summary, setSummary] = useState<EngagementSummaryResponse | null>(null)
-  const [modeUsage, setModeUsage] = useState<ModeUsageResponse | null>(null)
-  const [heatmap, setHeatmap] = useState<HourlyHeatmapResponse | null>(null)
-  const [rangeLoading, setRangeLoading] = useState(true)
-  const [rangeError, setRangeError] = useState<string | null>(null)
-
-  const loadRange = useCallback(async (r: DayRange) => {
-    setRangeLoading(true)
-    setRangeError(null)
-    const params = { startDate: fmt(r[0]), endDate: fmt(r[1]) }
-    try {
-      const [summaryData, modeData, heatmapData] = await Promise.all([
-        fetchEngagementSummary(params),
-        fetchModeUsage(params),
-        fetchHourlyHeatmap(params),
-      ])
-      setSummary(summaryData)
-      setModeUsage(modeData)
-      setHeatmap(heatmapData)
-    } catch (err) {
-      setRangeError(toErrorMessage(err))
-    } finally {
-      setRangeLoading(false)
-    }
-  }, [])
+  const rangeParams = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
+  const summaryQuery = useEngagementSummary(rangeParams)
+  const modeUsageQuery = useModeUsage(rangeParams)
+  const heatmapQuery = useHourlyHeatmap(rangeParams)
+  const summary = summaryQuery.data ?? null
+  const modeUsage = modeUsageQuery.data ?? null
+  const heatmap = heatmapQuery.data ?? null
+  const rangeLoading =
+    summaryQuery.isLoading || modeUsageQuery.isLoading || heatmapQuery.isLoading
+  const rangeError = toErrorMessage(
+    summaryQuery.error ?? modeUsageQuery.error ?? heatmapQuery.error,
+  )
 
   // ---- 单日口径（duration-distribution / feature-adoption）----
   const [date, setDate] = useState<Dayjs>(today())
-  const [distribution, setDistribution] =
-    useState<DurationDistributionResponse | null>(null)
-  const [adoption, setAdoption] = useState<FeatureAdoptionResponse | null>(null)
-  const [dayLoading, setDayLoading] = useState(true)
-  const [dayError, setDayError] = useState<string | null>(null)
-
-  const loadDay = useCallback(async (d: Dayjs) => {
-    setDayLoading(true)
-    setDayError(null)
-    try {
-      const [distributionData, adoptionData] = await Promise.all([
-        fetchDurationDistribution(fmt(d)),
-        fetchFeatureAdoption(fmt(d)),
-      ])
-      setDistribution(distributionData)
-      setAdoption(adoptionData)
-    } catch (err) {
-      setDayError(toErrorMessage(err))
-    } finally {
-      setDayLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadRange(range)
-  }, [loadRange, range])
-
-  useEffect(() => {
-    void loadDay(date)
-  }, [loadDay, date])
+  const dayStr = fmt(date)
+  const distributionQuery = useDurationDistribution(dayStr)
+  const adoptionQuery = useFeatureAdoption(dayStr)
+  const distribution = distributionQuery.data ?? null
+  const adoption = adoptionQuery.data ?? null
+  const dayLoading = distributionQuery.isLoading || adoptionQuery.isLoading
+  const dayError = toErrorMessage(distributionQuery.error ?? adoptionQuery.error)
 
   return (
     <div>

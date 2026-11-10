@@ -1,16 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Card, Col, Radio, Row, Spin, Typography } from 'antd'
 import {
-  fetchActivationFunnel,
-  fetchRetentionCohorts,
-  fetchRetentionCurve,
-} from '../../api/analytics'
-import type {
-  ActivationFunnelResponse,
-  CohortBasis,
-  RetentionCohortsResponse,
-  RetentionCurveResponse,
-} from '../../types/analytics'
+  useActivationFunnel,
+  useRetentionCohorts,
+  useRetentionCurve,
+} from '../../api/queries'
+import type { CohortBasis } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
@@ -19,7 +14,8 @@ import CohortTable from './CohortTable'
 import RetentionCurve from './RetentionCurve'
 import ActivationFunnel from './ActivationFunnel'
 
-function toErrorMessage(err: unknown): string {
+function toErrorMessage(err: unknown): string | null {
+  if (!err) return null
   return err instanceof Error ? err.message : '加载失败'
 }
 
@@ -32,90 +28,39 @@ export default function Retention() {
   const [cohortRange, setCohortRange] = useState<DayRange>(defaultRange(56))
   const [granularity, setGranularity] = useState<'day' | 'week'>('week')
   const [basis, setBasis] = useState<CohortBasis>('activation')
-  const [cohorts, setCohorts] = useState<RetentionCohortsResponse | null>(null)
-  const [cohortsLoading, setCohortsLoading] = useState(true)
-  const [cohortsError, setCohortsError] = useState<string | null>(null)
-
-  const loadCohorts = useCallback(
-    async (range: DayRange, g: 'day' | 'week', b: CohortBasis) => {
-      setCohortsLoading(true)
-      setCohortsError(null)
-      try {
-        setCohorts(
-          await fetchRetentionCohorts({
-            startDate: fmt(range[0]),
-            endDate: fmt(range[1]),
-            granularity: g,
-            basis: b,
-          }),
-        )
-      } catch (err) {
-        setCohortsError(toErrorMessage(err))
-      } finally {
-        setCohortsLoading(false)
-      }
-    },
-    [],
-  )
+  const cohortsQuery = useRetentionCohorts({
+    startDate: fmt(cohortRange[0]),
+    endDate: fmt(cohortRange[1]),
+    granularity,
+    basis,
+  })
+  const cohorts = cohortsQuery.data ?? null
+  const cohortsLoading = cohortsQuery.isLoading
+  const cohortsError = toErrorMessage(cohortsQuery.error)
 
   // ---- 留存曲线 ----
   const [curveRange, setCurveRange] = useState<DayRange | null>(null)
-  const [curve, setCurve] = useState<RetentionCurveResponse | null>(null)
-  const [curveLoading, setCurveLoading] = useState(true)
-  const [curveError, setCurveError] = useState<string | null>(null)
-
-  const loadCurve = useCallback(async (range: DayRange | null) => {
-    setCurveLoading(true)
-    setCurveError(null)
-    try {
-      setCurve(
-        await fetchRetentionCurve(
-          range
-            ? { cohortStartDate: fmt(range[0]), cohortEndDate: fmt(range[1]) }
-            : undefined,
-        ),
-      )
-    } catch (err) {
-      setCurveError(toErrorMessage(err))
-    } finally {
-      setCurveLoading(false)
-    }
-  }, [])
+  const curveQuery = useRetentionCurve(
+    curveRange
+      ? {
+          cohortStartDate: fmt(curveRange[0]),
+          cohortEndDate: fmt(curveRange[1]),
+        }
+      : undefined,
+  )
+  const curve = curveQuery.data ?? null
+  const curveLoading = curveQuery.isLoading
+  const curveError = toErrorMessage(curveQuery.error)
 
   // ---- 激活漏斗 ----
   const [funnelRange, setFunnelRange] = useState<DayRange>(defaultRange(30))
-  const [funnel, setFunnel] = useState<ActivationFunnelResponse | null>(null)
-  const [funnelLoading, setFunnelLoading] = useState(true)
-  const [funnelError, setFunnelError] = useState<string | null>(null)
-
-  const loadFunnel = useCallback(async (range: DayRange) => {
-    setFunnelLoading(true)
-    setFunnelError(null)
-    try {
-      setFunnel(
-        await fetchActivationFunnel({
-          startDate: fmt(range[0]),
-          endDate: fmt(range[1]),
-        }),
-      )
-    } catch (err) {
-      setFunnelError(toErrorMessage(err))
-    } finally {
-      setFunnelLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadCohorts(cohortRange, granularity, basis)
-  }, [loadCohorts, cohortRange, granularity, basis])
-
-  useEffect(() => {
-    void loadCurve(curveRange)
-  }, [loadCurve, curveRange])
-
-  useEffect(() => {
-    void loadFunnel(funnelRange)
-  }, [loadFunnel, funnelRange])
+  const funnelQuery = useActivationFunnel({
+    startDate: fmt(funnelRange[0]),
+    endDate: fmt(funnelRange[1]),
+  })
+  const funnel = funnelQuery.data ?? null
+  const funnelLoading = funnelQuery.isLoading
+  const funnelError = toErrorMessage(funnelQuery.error)
 
   return (
     <div>

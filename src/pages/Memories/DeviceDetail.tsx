@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Button,
@@ -14,14 +14,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import InfoTip from '../../components/InfoTip'
-import {
-  fetchCurrentMemories,
-  fetchMemoryHistory,
-} from '../../api/analytics'
-import type {
-  CurrentMemoriesResponse,
-  MemoryHistoryResponse,
-} from '../../types/analytics'
+import { useCurrentMemories, useMemoryHistory } from '../../api/queries'
 import {
   CHANGE_TYPE_META,
   MEMORY_KEYS,
@@ -39,64 +32,34 @@ export default function MemoryDetail() {
   const { deviceId = '' } = useParams<{ deviceId: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [current, setCurrent] = useState<CurrentMemoriesResponse | null>(null)
   // 选中槽位同步到 URL（?key=xxx，push 模式，支持前进后退）
   const [selectedKey, setSelectedKey] = useState<string | null>(() => {
     const k = searchParams.get('key')
     return k && (MEMORY_KEYS as readonly string[]).includes(k) ? k : null
   })
-  const [history, setHistory] = useState<MemoryHistoryResponse | null>(null)
-  const [loadingCurrent, setLoadingCurrent] = useState(true)
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
+  const currentQuery = useCurrentMemories(deviceId)
+  const current = currentQuery.data ?? null
+  const loadingCurrent = currentQuery.isLoading
+  const historyQuery = useMemoryHistory(deviceId, selectedKey)
+  const history = historyQuery.data ?? null
+  const loadingHistory = historyQuery.isFetching
+  const queryError = currentQuery.error ?? historyQuery.error
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : '加载失败'
+    : null
+
+  // 默认选中：按 5 槽位白名单顺序找第一个有记忆的槽位；
+  // 都没有则选中第一个槽位（历史可能全是撤回墓碑）。
+  // 不能直接取 memories[0]——后端返回顺序未约定，行为不稳定。
+  // URL 已有合法 key（含前进/后退回来时）则保留，不覆盖。
   useEffect(() => {
-    let cancelled = false
-    setLoadingCurrent(true)
-    setError(null)
-    fetchCurrentMemories(deviceId)
-      .then((data) => {
-        if (cancelled) return
-        setCurrent(data)
-        // 默认选中：按 5 槽位白名单顺序找第一个有记忆的槽位；
-        // 都没有则选中第一个槽位（历史可能全是撤回墓碑）。
-        // 不能直接取 memories[0]——后端返回顺序未约定，行为不稳定。
-        // URL 已有合法 key（含前进/后退回来时）则保留，不覆盖。
-        const keys = new Set(data.memories.map((m) => m.key))
-        setSelectedKey(
-          (prev) => prev ?? MEMORY_KEYS.find((k) => keys.has(k)) ?? MEMORY_KEYS[0],
-        )
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : '加载失败')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingCurrent(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [deviceId])
-
-  const loadHistory = useCallback(
-    async (key: string) => {
-      setLoadingHistory(true)
-      try {
-        setHistory(await fetchMemoryHistory(deviceId, key))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '加载失败')
-      } finally {
-        setLoadingHistory(false)
-      }
-    },
-    [deviceId],
-  )
-
-  useEffect(() => {
-    if (selectedKey) void loadHistory(selectedKey)
-  }, [loadHistory, selectedKey])
+    if (selectedKey || !current) return
+    const keys = new Set(current.memories.map((m) => m.key))
+    setSelectedKey(MEMORY_KEYS.find((k) => keys.has(k)) ?? MEMORY_KEYS[0])
+  }, [current, selectedKey])
 
   // 浏览器前进/后退改变 ?key= 时同步选中槽位
   useEffect(() => {
