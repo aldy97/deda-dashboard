@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Table, Tag } from 'antd'
+import { Alert, Table, Tag, Tooltip } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { fetchLlmRecentFailures } from '../../api/analytics'
@@ -92,13 +92,31 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
           {
             title: '模型',
             dataIndex: 'model',
-            width: 140,
+            width: 180,
             render: (model: string, row) => (
-              <span>
-                <Tag color={row.tier === 'small' ? 'geekblue' : 'gold'}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Tag
+                  color={row.tier === 'small' ? 'geekblue' : 'gold'}
+                  style={{ flexShrink: 0 }}
+                >
                   {row.tier === 'small' ? '小' : '主'}
                 </Tag>
-                {model}
+                <Tooltip title={model}>
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {model}
+                  </span>
+                </Tooltip>
               </span>
             ),
           },
