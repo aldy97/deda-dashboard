@@ -85,6 +85,29 @@ export default function LlmMonitor() {
         />
       )}
 
+      {(() => {
+        // 失败率告警：区间内总调用 ≥ 20 才评估（小样本不误报）；
+        // < 95% 黄色提醒，< 85% 红色告警
+        if (!summary) return null
+        const totalCalls = summary.scenes.reduce((sum, s) => sum + s.calls, 0)
+        if (totalCalls < 20) return null
+        const successes = summary.scenes.reduce(
+          (sum, s) => sum + (s.successRate ?? 0) * s.calls,
+          0,
+        )
+        const rate = successes / totalCalls
+        if (rate >= 0.95) return null
+        const critical = rate < 0.85
+        return (
+          <Alert
+            type={critical ? 'error' : 'warning'}
+            showIcon
+            message={`区间内调用成功率 ${(rate * 100).toFixed(1)}%（${totalCalls} 次调用），${critical ? '已低于 85%，请立即排查上游模型与网络' : '低于 95%，请关注下方失败明细'}`}
+            style={{ marginBottom: 16 }}
+          />
+        )
+      })()}
+
       <Spin spinning={loading}>
         <Card title="分场景汇总">
           {summary && <SceneSummaryTable data={summary} />}

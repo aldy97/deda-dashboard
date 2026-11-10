@@ -62,6 +62,21 @@ function callItem(call: LlmTurnCall) {
               ` · 首包 ${formatMs(call.firstTokenMs)}`}
             {call.totalTokens !== null && ` · ${call.totalTokens} tokens`}
           </Typography.Text>
+          {!call.success && call.failureDetail && (
+            <div
+              style={{
+                marginTop: 4,
+                padding: '4px 8px',
+                background: '#fff1f0',
+                borderRadius: 4,
+                color: '#cf1322',
+                fontSize: 12,
+                wordBreak: 'break-all',
+              }}
+            >
+              {call.failureDetail}
+            </div>
+          )}
         </div>
       </div>
     ),

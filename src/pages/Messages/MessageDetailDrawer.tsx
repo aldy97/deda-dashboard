@@ -9,10 +9,11 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import { fetchMessageDetail } from '../../api/analytics'
-import type {
-  MessageDetailResponse,
-  MessageListItem,
+import { fetchMessageDetail, fetchMessages } from '../../api/analytics'
+import {
+  isAssistantRawPayload,
+  type MessageDetailResponse,
+  type MessageListItem,
 } from '../../types/analytics'
 import LlmTurnChain from './LlmTurnChain'
 
@@ -84,6 +85,10 @@ export default function MessageDetailDrawer({
   const [detail, setDetail] = useState<MessageDetailResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
+  const [turnUserMessages, setTurnUserMessages] = useState<
+    MessageListItem[] | null
+  >(null)
 
   useEffect(() => {
     if (!message) return
@@ -96,6 +101,18 @@ export default function MessageDetailDrawer({
         setError(err instanceof Error ? err.message : '加载失败'),
       )
       .finally(() => setLoading(false))
+    setTurnUserMessages(null)
+    if (message.turnId) {
+      fetchMessages({
+        turnId: message.turnId,
+        sort: 'spokeAt_asc',
+        pageSize: 10,
+      })
+        .then((resp) =>
+          setTurnUserMessages(resp.items.filter((m) => m.role === 'user')),
+        )
+        .catch(() => setTurnUserMessages(null))
+    }
   }, [message])
 
   const row = detail ?? message
@@ -202,6 +219,81 @@ export default function MessageDetailDrawer({
               },
             ]}
           />
+          <Typography.Title level={5} style={{ marginTop: 16 }}>
+            孩子说了什么（ASR 原文）
+          </Typography.Title>
+          {turnUserMessages && turnUserMessages.length > 0 ? (
+            turnUserMessages.map((m) => (
+              <div key={m.id} style={{ marginBottom: 8 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {formatTime(m.spokeAt)}
+                </Typography.Text>
+                <Typography.Paragraph
+                  style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}
+                >
+                  {m.content}
+                </Typography.Paragraph>
+              </div>
+            ))
+          ) : (
+            <Typography.Text type="secondary">
+              {turnUserMessages === null ? '加载中…' : '本轮无孩子发言记录'}
+            </Typography.Text>
+          )}
+          {row.role === 'assistant' && (
+            <>
+              <Typography.Title level={5} style={{ marginTop: 16 }}>
+                孩子实际听到了什么
+              </Typography.Title>
+              {detail && isAssistantRawPayload(detail.rawPayload) ? (
+                <div
+                  style={{
+                    border: `1px solid ${row.status === 'failed' ? '#ffa39e' : '#d9d9d9'}`,
+                    background: row.status === 'failed' ? '#fff1f0' : '#fafafa',
+                    borderRadius: 6,
+                    padding: 12,
+                  }}
+                >
+                  {detail.rawPayload.filler ? (
+                    <div style={{ marginBottom: 8 }}>
+                      <Tag color="geekblue">filler · 已播</Tag>
+                      <Typography.Text>
+                        {detail.rawPayload.filler}
+                      </Typography.Text>
+                    </div>
+                  ) : null}
+                  <div>
+                    {row.status === 'failed' ? (
+                      <Tag color="error">主回答 · 失败/断流</Tag>
+                    ) : (
+                      <Tag color="success">主回答 · 已播</Tag>
+                    )}
+                    {detail.rawPayload.answer ? (
+                      <Typography.Text>
+                        {detail.rawPayload.answer}
+                      </Typography.Text>
+                    ) : (
+                      <Typography.Text type="warning">
+                        （主模型无输出）
+                      </Typography.Text>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <Typography.Paragraph
+                  style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}
+                >
+                  {row.content}
+                  <Typography.Text
+                    type="secondary"
+                    style={{ display: 'block', fontSize: 12, marginTop: 4 }}
+                  >
+                    （该消息无 filler/answer 边界结构，以上为落库全文）
+                  </Typography.Text>
+                </Typography.Paragraph>
+              )}
+            </>
+          )}
           <Typography.Title level={5} style={{ marginTop: 16 }}>
             LLM 调用链路
           </Typography.Title>

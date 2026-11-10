@@ -36,6 +36,7 @@ model LlmUsageLog {
   tier             String   // small / main（冗余字段，查询方便）
   success          Boolean
   failureReason    String?  // timeout / rate_limit / parse_error / upstream_error / empty_response
+  failureDetail    String?  // 失败细节紧凑串（如 "ECONNRESET: socket hang up"），≤200 字符；存量数据为 null
   latencyMs        Int?     // 请求发出 → 完整响应（流式为末 chunk）的总耗时
   firstTokenMs     Int?     // 首包时间：请求发出 → 首个 chunk；仅流式调用有值，非流式恒 null
   promptTokens     Int?
@@ -94,7 +95,7 @@ GET /analytics/llm/trend?startDate=&endDate=&granularity=day&scene=
 ```
 GET /analytics/llm/recent-failures?page=1&pageSize=20&scene=
 → { total, page, pageSize,
-    items: [{ id, scene, tier, model, failureReason, latencyMs, deviceId, createdAt }] }
+    items: [{ id, scene, tier, model, failureReason, failureDetail, latencyMs, deviceId, createdAt }] }
 ```
 
 - pageSize 上限 100；按 createdAt 倒序。
