@@ -8,6 +8,8 @@ import type { DayRange } from '../../utils/date-range'
 import SceneSummaryTable from './SceneSummaryTable'
 import LlmTrendChart from './LlmTrendChart'
 import RecentFailuresTable from './RecentFailuresTable'
+import TurnHandoffCard from './TurnHandoffCard'
+import SlowCallsTable from './SlowCallsTable'
 import { SCENE_META } from './scenes'
 
 /**
@@ -108,8 +110,23 @@ export default function LlmMonitor() {
           {trend && <LlmTrendChart data={trend} />}
         </Card>
 
+        <Card
+          title="轮次衔接健康度（防死空气）"
+          style={{ marginTop: 16 }}
+        >
+          <TurnHandoffCard startDate={fmt(range[0])} endDate={fmt(range[1])} />
+        </Card>
+
         <Card title="最近失败明细" style={{ marginTop: 16 }}>
           <RecentFailuresTable scene={scene} />
+        </Card>
+
+        <Card title="慢调用长尾（成功但慢）" style={{ marginTop: 16 }}>
+          <SlowCallsTable
+            startDate={fmt(range[0])}
+            endDate={fmt(range[1])}
+            scene={scene}
+          />
         </Card>
       </Spin>
     </div>

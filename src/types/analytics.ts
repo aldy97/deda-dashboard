@@ -295,7 +295,7 @@ export interface MessageListItem {
   conversationId: string | null
   role: string
   content: string
-  /** assistant: completed / failed */
+  /** assistant: completed / failed / interrupted（被打断，服务端推断口径） */
   status: string
   mode: string | null
   conversationModeKey: string | null
@@ -303,6 +303,32 @@ export interface MessageListItem {
   spokeAt: string
   createdAt: string
   device: MessageDeviceBrief
+}
+
+/** 对话模式选项源（GET /analytics/messages/modes） */
+export interface MessageModesResponse {
+  categories: Array<{
+    key: string
+    name: string
+    /** 区间内该顶层模式的消息数（仅参考，0 也返回） */
+    messageCount: number
+    modes: Array<{ key: string; name: string; messageCount: number }>
+  }>
+}
+
+/** AI 回复打断率（GET /analytics/messages/interruption-rate；推断口径，非设备真实事件） */
+export interface InterruptionRateResponse {
+  /** 分母：区间内 assistant 消息总数 */
+  assistantTotal: number
+  interrupted: number
+  /** 分母 0 时 null */
+  interruptionRate: number | null
+  byMode: Array<{
+    mode: string
+    assistantTotal: number
+    interrupted: number
+    interruptionRate: number | null
+  }>
 }
 
 export interface MessageListResponse {
@@ -351,8 +377,49 @@ export interface LlmTrendResponse {
     p50LatencyMs: number | null
     /** 首包均值，仅流式场景有值 */
     avgFirstTokenMs: number | null
+    /** 首包分位数（percentile_cont），仅流式场景有样本 */
+    p50FirstTokenMs: number | null
+    p90FirstTokenMs: number | null
     totalTokens: number
   }>
+}
+
+/** 轮次衔接健康度（GET /analytics/llm/turn-handoff，生成侧口径） */
+export interface LlmTurnHandoffResponse {
+  /** 区间内有 chat_main 的轮数 */
+  turnsWithChat: number
+  /** filler + chat_main 双样本齐全的轮数 */
+  turnsWithBoth: number
+  /** 有 chat_main 但无 filler（静默降级缺失）的轮数 */
+  turnsMissingFiller: number
+  /** chat_main.firstTokenMs 为 null 的轮数 */
+  turnsUnknown: number
+  gapThresholdMs: number
+  /** gapMs = chat_main 首包时刻 − filler 生成完成时刻；≤0 为覆盖良好 */
+  gapP50Ms: number | null
+  gapP90Ms: number | null
+  /** 空窗轮数 / 双样本轮数；无样本时 null */
+  gapRate: number | null
+  /** gapMs 倒序前 10 */
+  topGaps: Array<{ turnId: string; gapMs: number; createdAt: string }>
+}
+
+/** 慢调用长尾（GET /analytics/llm/slow-calls，仅成功调用） */
+export interface LlmSlowCallItem {
+  id: string
+  scene: string
+  tier: string
+  model: string
+  latencyMs: number | null
+  firstTokenMs: number | null
+  totalTokens: number | null
+  turnId: string | null
+  deviceId: string | null
+  createdAt: string
+}
+
+export interface LlmSlowCallsResponse {
+  items: LlmSlowCallItem[]
 }
 
 export interface LlmFailureItem {
