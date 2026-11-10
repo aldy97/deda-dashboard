@@ -344,6 +344,25 @@ export interface MessageDetailResponse extends MessageListItem {
   rawPayload: unknown
 }
 
+/**
+ * assistant 消息的 rawPayload 结构化形态（filler/answer 边界，后端 11-09 起写入）；
+ * 更早的历史行没有该结构，UI 需降级展示 content 全文
+ */
+export interface AssistantRawPayload {
+  filler?: string | null
+  answer?: string | null
+}
+
+export function isAssistantRawPayload(
+  raw: unknown,
+): raw is AssistantRawPayload {
+  return (
+    typeof raw === 'object' &&
+    raw !== null &&
+    ('filler' in raw || 'answer' in raw)
+  )
+}
+
 export type MessageSort = 'spokeAt_desc' | 'spokeAt_asc'
 
 // ---- 模型监控 ----
@@ -429,6 +448,8 @@ export interface LlmFailureItem {
   model: string
   /** timeout / rate_limit / parse_error / upstream_error / empty_response */
   failureReason: string | null
+  /** 失败细节紧凑串（如 "ECONNRESET: socket hang up"）；存量数据为 null */
+  failureDetail?: string | null
   latencyMs: number | null
   /** 对话轮次 ID；后台任务/存量数据为 null */
   turnId: string | null
@@ -452,6 +473,8 @@ export interface LlmTurnCall {
   tier: string
   success: boolean
   failureReason: string | null
+  /** 失败细节紧凑串（如 "ECONNRESET: socket hang up"）；存量数据为 null */
+  failureDetail?: string | null
   latencyMs: number | null
   /** 首包时间：仅流式场景有值 */
   firstTokenMs: number | null

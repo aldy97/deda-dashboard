@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Table, Tag, Tooltip } from 'antd'
+import { Alert, Table, Tag, Tooltip, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { fetchLlmRecentFailures } from '../../api/analytics'
@@ -64,6 +64,8 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
         rowKey="id"
         loading={loading}
         dataSource={data?.items ?? []}
+        // 本表只含失败记录：整行红底，滚动扫视时失败一眼可辨
+        rowClassName={() => 'llm-failure-row'}
         pagination={{
           current: page,
           pageSize,
@@ -129,6 +131,32 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
                 {failureReasonLabel(reason)}
               </Tag>
             ),
+          },
+          {
+            title: '细节',
+            dataIndex: 'failureDetail',
+            width: 220,
+            render: (detail: string | null | undefined) =>
+              detail ? (
+                <Tooltip title={detail}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{
+                      fontSize: 12,
+                      display: 'inline-block',
+                      maxWidth: 210,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      verticalAlign: 'bottom',
+                    }}
+                  >
+                    {detail}
+                  </Typography.Text>
+                </Tooltip>
+              ) : (
+                '—'
+              ),
           },
           {
             title: '耗时',
