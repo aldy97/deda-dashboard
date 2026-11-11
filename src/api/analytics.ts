@@ -30,6 +30,7 @@ import type {
   ModeUsageResponse,
   OverviewResponse,
   OverviewTrendResponse,
+  ParentReportListResponse,
   QualityConversationResponse,
   ReportFeedbackListResponse,
   RetentionCohortsResponse,
@@ -125,6 +126,8 @@ export interface ReportFeedbackQuery {
   startDate?: string
   endDate?: string
   isUseful?: boolean
+  /** 业务设备 ID（非数据库 UUID）：单设备过滤，查不到设备返回空页 */
+  deviceId?: string
   page?: number
   /** 1-100，默认 20 */
   pageSize?: number
@@ -145,6 +148,8 @@ export interface UserFeedbackQuery {
   endDate?: string
   /** true = 仅看留了联系方式的反馈 */
   hasContact?: boolean
+  /** 业务设备 ID：经绑定关系反查该设备全部绑定账号的反馈 */
+  deviceId?: string
   page?: number
   pageSize?: number
 }
@@ -156,6 +161,18 @@ export async function fetchUserFeedbacks(
     params,
   })
   return resp.data as UserFeedbackListResponse
+}
+
+// ---- 家长日报（单设备） ----
+
+/** 单设备日报列表：deviceId 必填（业务设备 ID）；设备不存在 404 */
+export async function fetchParentReports(params: {
+  deviceId: string
+  page?: number
+  pageSize?: number
+}): Promise<ParentReportListResponse> {
+  const resp = await apiClient.get('/analytics/parent-reports', { params })
+  return resp.data as ParentReportListResponse
 }
 
 // ---- 使用行为 ----

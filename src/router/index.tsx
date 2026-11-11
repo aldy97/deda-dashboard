@@ -6,6 +6,7 @@ import Overview from '../pages/Overview'
 import Retention from '../pages/Retention'
 import Engagement from '../pages/Engagement'
 import Users from '../pages/Users'
+import UserDeviceDetail from '../pages/Users/DeviceDetail'
 import Content from '../pages/Content'
 import Messages from '../pages/Messages'
 import LlmMonitor from '../pages/Llm'
@@ -46,6 +47,7 @@ export const router = createBrowserRouter(
           ),
         },
         { path: 'users', element: <Users /> },
+        { path: 'users/:deviceId', element: <UserDeviceDetail /> },
         { path: 'content', element: <Content /> },
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },

@@ -8,7 +8,9 @@ import {
   Statistic,
   Table,
   Tag,
+  Typography,
 } from 'antd'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useReportFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
@@ -112,6 +114,39 @@ export default function ReportFeedbackPanel() {
         rowKey="id"
         loading={loading}
         dataSource={data?.items ?? []}
+        expandable={{
+          // 展开行展示反馈对应的日报内容，便于判断「有用/无用」针对的是什么
+          expandedRowRender: (row) => (
+            <div style={{ padding: '4px 0' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {row.report.reportDate} 日报（
+                {row.report.generationStatus === 'completed'
+                  ? '已生成'
+                  : `状态：${row.report.generationStatus}`}
+                ）
+              </Typography.Text>
+              <dl style={{ margin: '8px 0 0', display: 'grid', gap: 6 }}>
+                {(
+                  [
+                    ['表达观察', row.report.expressionObservation],
+                    ['情绪观察', row.report.emotionObservation],
+                    ['思维观察', row.report.thinkingObservation],
+                    ['建议', row.report.suggestion],
+                  ] as const
+                ).map(([label, text]) => (
+                  <div key={label}>
+                    <Typography.Text strong style={{ fontSize: 12 }}>
+                      {label}：
+                    </Typography.Text>
+                    <Typography.Text style={{ fontSize: 12 }}>
+                      {text ?? '—'}
+                    </Typography.Text>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ),
+        }}
         pagination={{
           current: page,
           pageSize,
@@ -130,7 +165,11 @@ export default function ReportFeedbackPanel() {
             title: '设备',
             key: 'device',
             width: 140,
-            render: (_, row) => row.device.deviceCode ?? row.device.deviceId,
+            render: (_, row) => (
+              <Link to={`/users/${encodeURIComponent(row.device.deviceId)}`}>
+                {row.device.deviceCode ?? row.device.deviceId}
+              </Link>
+            ),
           },
           {
             title: '型号',

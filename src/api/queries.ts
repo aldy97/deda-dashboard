@@ -27,6 +27,7 @@ import {
   fetchOverviewTrend,
   fetchQualityConversation,
   fetchReportFeedbacks,
+  fetchParentReports,
   fetchRetentionCohorts,
   fetchRetentionCurve,
   fetchUserFeedbacks,
@@ -112,6 +113,20 @@ export function useUserFeedbacks(query: UserFeedbackQuery) {
   return useQuery({
     queryKey: ['analytics', 'userFeedbacks', query],
     queryFn: () => fetchUserFeedbacks(query),
+    placeholderData: (prev) => prev,
+  })
+}
+
+/** 单设备日报列表（用户详情页）；deviceId 为空串时不发起 */
+export function useParentReports(query: {
+  deviceId: string
+  page?: number
+  pageSize?: number
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'parentReports', query],
+    queryFn: () => fetchParentReports(query),
+    enabled: query.deviceId !== '',
     placeholderData: (prev) => prev,
   })
 }
