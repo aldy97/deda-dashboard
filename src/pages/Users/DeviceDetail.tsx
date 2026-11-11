@@ -7,6 +7,7 @@ import {
   Spin,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import { Link, useParams } from 'react-router-dom'
@@ -16,10 +17,11 @@ import {
   useCurrentMemories,
   useMessages,
   useParentReports,
-  useReportFeedbacks,
   useUserFeedbacks,
 } from '../../api/queries'
 import { memoryKeyLabel } from '../Memories/memoryMeta'
+import { statusTag } from '../Messages/MessageDetailDrawer'
+import type { ParentReportItem } from '../../types/analytics'
 
 const fmtTime = (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm')
 
@@ -30,7 +32,7 @@ const REPORT_STATUS_META: Record<string, { label: string; color: string }> = {
   failed: { label: '生成失败', color: 'error' },
 }
 
-/** 日报长文本单元格：省略 + 悬浮全文 */
+/** 日报长文本单元格：省略 + 可展开全文 */
 function EllipsisText({ text }: { text: string | null }) {
   if (!text) return <Typography.Text type="secondary">—</Typography.Text>
   return (
@@ -43,10 +45,50 @@ function EllipsisText({ text }: { text: string | null }) {
   )
 }
 
+/** 日报行内反馈标注：最新一票定颜色；多绑定账号分别评价时悬浮列全部 */
+function ReportFeedbackTag({ feedbacks }: { feedbacks: ParentReportItem['feedbacks'] }) {
+  if (feedbacks.length === 0) {
+    return <Typography.Text type="secondary">—</Typography.Text>
+  }
+  const latest = [...feedbacks].sort((a, b) =>
+    b.feedbackAt.localeCompare(a.feedbackAt),
+  )[0]
+  const tag = latest.isUseful ? (
+    <Tag color="success">有用</Tag>
+  ) : (
+    <Tag color="error">没用</Tag>
+  )
+  if (feedbacks.length === 1) {
+    const who = latest.user.nickname ?? latest.user.phone
+    return who ? <Tooltip title={`${who} · ${fmtTime(latest.feedbackAt)}`}>{tag}</Tooltip> : tag
+  }
+  return (
+    <Tooltip
+      title={
+        <div>
+          {feedbacks.map((f, i) => (
+            <div key={i}>
+              {f.user.nickname ?? f.user.phone ?? '未知家长'}：
+              {f.isUseful ? '有用' : '没用'}（{fmtTime(f.feedbackAt)}）
+            </div>
+          ))}
+        </div>
+      }
+    >
+      <Space size={4}>
+        {tag}
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          ×{feedbacks.length}
+        </Typography.Text>
+      </Space>
+    </Tooltip>
+  )
+}
+
 /**
  * 单设备用户详情：以设备为锚点聚合该设备（及其绑定家庭）的全部可看数据——
- * 设备信息、记忆槽位、家长日报、日报反馈、使用反馈、近期消息。
- * 入口：用户画像页搜索 / 记忆档案设备列表 / 日报反馈设备列。
+ * 设备信息、记忆槽位、家长日报（反馈内联标注）、使用反馈、近期消息。
+ * 入口：用户画像页搜索 / 记忆档案设备列表 / 日报反馈设备列 / 消息详情设备 ID。
  * 使用反馈口径：该设备全部绑定账号的反馈（Feedback 表只挂 userId，
  * 经绑定关系反查）；匿名反馈（userId 为空）无法归属设备，不在此展示。
  */
@@ -60,10 +102,6 @@ export default function UserDeviceDetail() {
 
   const memoriesQuery = useCurrentMemories(deviceId)
   const memories = memoriesQuery.data ?? null
-
-  const [reportFbPage, setReportFbPage] = useState(1)
-  const reportFbQuery = useReportFeedbacks({ deviceId, page: reportFbPage, pageSize: 10 })
-  const reportFb = reportFbQuery.data ?? null
 
   const [userFbPage, setUserFbPage] = useState(1)
   const userFbQuery = useUserFeedbacks({ deviceId, page: userFbPage, pageSize: 10 })
@@ -112,9 +150,6 @@ export default function UserDeviceDetail() {
                 {deviceId}
               </Typography.Text>
             </Descriptions.Item>
-            <Descriptions.Item label="设备码">
-              {device?.deviceCode ?? '—'}
-            </Descriptions.Item>
             <Descriptions.Item label="产品">
               {device ? <Tag color="blue">{device.characterKey}</Tag> : '—'}
             </Descriptions.Item>
@@ -151,13 +186,13 @@ export default function UserDeviceDetail() {
           )}
         </Card>
 
-        {/* 家长日报 */}
+        {/* 家长日报（反馈内联标注，融合原日报反馈 section） */}
         <Card
           size="small"
           title={
             <Space>
               家长日报
-              <InfoTip title="每日为该设备生成的家长报告（表达/情绪/思维观察 + 建议）。生成失败的日期也会列出，便于排查。" />
+              <InfoTip title="每日为该设备生成的家长报告（表达/情绪/思维观察 + 建议）。生成失败的日期也会列出，便于排查。家长反馈直接标注在对应日报上（多个绑定账号分别评价时悬浮可看全部）。" />
             </Space>
           }
         >
@@ -174,7 +209,7 @@ export default function UserDeviceDetail() {
               onChange: setReportPage,
             }}
             columns={[
-              { title: '日期', dataIndex: 'reportDate', width: 110 },
+              { title: '日期', dataIndex: 'reportDate', width: 100 },
               {
                 title: '状态',
                 dataIndex: 'generationStatus',
@@ -186,6 +221,12 @@ export default function UserDeviceDetail() {
                   }
                   return <Tag color={meta.color}>{meta.label}</Tag>
                 },
+              },
+              {
+                title: '家长反馈',
+                key: 'feedbacks',
+                width: 110,
+                render: (_, row) => <ReportFeedbackTag feedbacks={row.feedbacks} />,
               },
               {
                 title: '表达观察',
@@ -206,54 +247,6 @@ export default function UserDeviceDetail() {
                 title: '建议',
                 dataIndex: 'suggestion',
                 render: (v: string | null) => <EllipsisText text={v} />,
-              },
-            ]}
-          />
-        </Card>
-
-        {/* 日报反馈 */}
-        <Card
-          size="small"
-          title={
-            <Space>
-              日报反馈
-              <InfoTip title="该设备绑定家长对每日日报的有用/无用评价（feedbackAt=最新状态时间，家长可改票）。" />
-            </Space>
-          }
-        >
-          <Table
-            size="small"
-            rowKey="id"
-            loading={reportFbQuery.isFetching}
-            dataSource={reportFb?.items ?? []}
-            pagination={{
-              current: reportFbPage,
-              pageSize: 10,
-              total: reportFb?.total ?? 0,
-              showTotal: (t) => `共 ${t} 条`,
-              onChange: setReportFbPage,
-            }}
-            columns={[
-              { title: '报告日期', dataIndex: 'reportDate', width: 110 },
-              {
-                title: '反馈',
-                dataIndex: 'isUseful',
-                width: 80,
-                render: (v: boolean) =>
-                  v ? <Tag color="success">有用</Tag> : <Tag color="error">无用</Tag>,
-              },
-              {
-                title: '家长',
-                key: 'user',
-                width: 140,
-                render: (_, row) =>
-                  row.user.nickname ?? row.user.phone ?? '—',
-              },
-              {
-                title: '反馈时间',
-                dataIndex: 'feedbackAt',
-                width: 150,
-                render: fmtTime,
               },
             ]}
           />
@@ -312,7 +305,7 @@ export default function UserDeviceDetail() {
           title={
             <Space>
               近期消息
-              <InfoTip title="该设备最近 10 条消息（user=孩子说话，assistant=AI 回复）。点下方链接进消息明细页看完整历史。" />
+              <InfoTip title="该设备最近 10 条消息（孩子/AI）。点下方链接进消息明细页看完整历史。" />
             </Space>
           }
           extra={
@@ -349,14 +342,7 @@ export default function UserDeviceDetail() {
                 title: '状态',
                 dataIndex: 'status',
                 width: 90,
-                render: (v: string) =>
-                  v === 'interrupted' ? (
-                    <Tag color="warning">疑似打断</Tag>
-                  ) : v === 'failed' ? (
-                    <Tag color="error">失败</Tag>
-                  ) : (
-                    <Tag color="success">完成</Tag>
-                  ),
+                render: (v: string) => statusTag(v),
               },
               {
                 title: '内容',

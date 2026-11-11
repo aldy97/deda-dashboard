@@ -15,6 +15,9 @@ export default function LlmTrendChart({ data }: { data: LlmTrendResponse }) {
   const dates = data.series.map((p) => p.date.slice(5))
   const pct = (rate: number | null) =>
     rate === null ? null : Math.round(rate * 10000) / 100
+  // 后端 percentile_cont 返回长小数：P50/P90 在数据源处取整，
+  // tooltip 与第三轴 label 共用同一数据，一处取整两处生效
+  const ms = (v: number | null) => (v === null ? null : Math.round(v))
 
   const option = {
     tooltip: {
@@ -83,7 +86,7 @@ export default function LlmTrendChart({ data }: { data: LlmTrendResponse }) {
         smooth: true,
         connectNulls: false,
         itemStyle: { color: '#fa8c16' },
-        data: data.series.map((p) => p.p50FirstTokenMs),
+        data: data.series.map((p) => ms(p.p50FirstTokenMs)),
       },
       {
         name: '首包 P90',
@@ -93,7 +96,7 @@ export default function LlmTrendChart({ data }: { data: LlmTrendResponse }) {
         connectNulls: false,
         lineStyle: { type: 'dashed' },
         itemStyle: { color: '#fa541c' },
-        data: data.series.map((p) => p.p90FirstTokenMs),
+        data: data.series.map((p) => ms(p.p90FirstTokenMs)),
       },
     ],
   }
