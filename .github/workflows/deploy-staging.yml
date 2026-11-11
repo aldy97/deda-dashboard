@@ -22,12 +22,26 @@ jobs:
           cache: npm
 
       - name: Build
+        env:
+          # ARMS 前端监控 pid，在仓库 Settings → Environments → staging 的变量里配置；
+          # 未配置时构建产物中的监控层为 no-op，不上报任何数据
+          VITE_ARMS_PID: ${{ vars.VITE_ARMS_PID }}
         run: |
           npm ci
           npm run build
 
+      # sourcemap 含完整源码（本仓库为 public），不随产物上服务器；
+      # 存为 Actions artifact（保留 30 天），需要反解混淆堆栈时手动上传 ARMS 控制台
+      - name: Upload sourcemaps artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sourcemaps-staging-${{ github.sha }}
+          path: dist/**/*.map
+          retention-days: 30
+          if-no-files-found: ignore
+
       - name: Pack static assets
-        run: tar -C dist -czf "dashboard-${{ github.sha }}.tar.gz" .
+        run: tar -C dist --exclude='*.map' -czf "dashboard-${{ github.sha }}.tar.gz" .
 
       - name: Setup SSH
         run: |
