@@ -3,10 +3,12 @@ import {
   Button,
   Descriptions,
   Drawer,
+  Space,
   Spin,
   Tag,
   Typography,
 } from 'antd'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMessageDetail, useMessages } from '../../api/queries'
 import {
@@ -56,12 +58,12 @@ export function roleTag(role: string) {
   )
 }
 
+/** 消息状态：完成=绿 / 失败=红 / 被打断=橙（全站统一，含详情抽屉与详情页） */
 export function statusTag(status: string) {
-  return status === 'failed' ? (
-    <Tag color="error">失败</Tag>
-  ) : (
-    <Tag color="success">{status}</Tag>
-  )
+  if (status === 'failed') return <Tag color="error">失败</Tag>
+  if (status === 'interrupted') return <Tag color="warning">被打断</Tag>
+  if (status === 'completed') return <Tag color="success">完成</Tag>
+  return <Tag>{status}</Tag>
 }
 
 const formatTime = (iso: string) => dayjs(iso).format('YYYY-MM-DD HH:mm:ss')
@@ -172,11 +174,17 @@ export default function MessageDetailDrawer({
                 key: 'device',
                 label: '设备 ID',
                 children: (
-                  <Typography.Text
-                    copyable={{ text: row.device.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
-                  >
-                    {row.device.deviceId}
-                  </Typography.Text>
+                  <Space size={4}>
+                    <Link
+                      to={`/users/${encodeURIComponent(row.device.deviceId)}`}
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      {row.device.deviceId}
+                    </Link>
+                    <Typography.Text
+                      copyable={{ text: row.device.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
+                    />
+                  </Space>
                 ),
               },
               {

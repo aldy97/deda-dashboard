@@ -175,9 +175,19 @@ export interface UserFeedbackListResponse {
 }
 
 // ---- 家长日报（单设备，用户详情页用） ----
+/** 日报的家长反馈（一条日报可被多个绑定账号分别评价） */
+export interface ParentReportFeedbackBrief {
+  isUseful: boolean
+  /** = updatedAt：家长可改票，此为最新状态时间（ISO 8601） */
+  feedbackAt: string
+  user: FeedbackUserBrief
+}
+
 export interface ParentReportItem extends ParentReportContent {
   /** 生成所用模型名，未生成为 null */
   generatorModel: string | null
+  /** 该日报的家长反馈；无反馈为空数组 */
+  feedbacks: ParentReportFeedbackBrief[]
 }
 
 export interface ParentReportListResponse {

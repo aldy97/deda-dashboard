@@ -159,15 +159,15 @@ export default function Messages() {
       <Card>
         {interruption && interruption.assistantTotal > 0 && (
           <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-            AI 回复疑似打断率：
+            AI 回复被打断率：
             <Typography.Text strong>
               {interruption.interruptionRate === null
                 ? '—'
                 : `${Math.round(interruption.interruptionRate * 1000) / 10}%`}
             </Typography.Text>
             （{applied.range ? '所选日期区间' : '全部时间'} AI 消息{' '}
-            {interruption.assistantTotal} 条，疑似打断 {interruption.interrupted} 条）
-            <InfoTip title="推断口径：新一轮对话开始时，若上一轮 AI 回复的估算播放窗口（字数 × 120ms，封顶 60s）尚未结束，则记为疑似打断。非设备真实事件；孩子话密、家长插话都会计入。" />
+            {interruption.assistantTotal} 条，被打断 {interruption.interrupted} 条）
+            <InfoTip title="推断口径：新一轮对话开始时，若上一轮 AI 回复的估算播放窗口（字数 × 120ms，封顶 60s）尚未结束，或上一轮还在生成孩子就又开口，则记为被打断。非设备真实事件；孩子话密、家长插话都会计入。" />
           </Typography.Text>
         )}
         <Space wrap style={{ marginBottom: 12 }}>
