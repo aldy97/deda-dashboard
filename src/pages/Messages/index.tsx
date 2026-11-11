@@ -58,12 +58,19 @@ const DEFAULT_FILTERS: Filters = {
  * 点行打开详情抽屉（含 rawPayload）；抽屉内可一键按 turnId 过滤同轮问答。
  */
 export default function Messages() {
-  // 输入中的筛选条件（点「查询」后才生效）
-  const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS)
-  // 已生效的筛选条件
-  const [applied, setApplied] = useState<Filters>(DEFAULT_FILTERS)
-  // turnId 支持 URL 参数（记忆档案版本时间线跳转过来时带上）
+  // turnId / deviceId 支持 URL 参数（记忆档案版本时间线、用户详情页跳转过来时带上）
   const [searchParams, setSearchParams] = useSearchParams()
+  const urlDeviceId = searchParams.get('deviceId') ?? ''
+  // 输入中的筛选条件（点「查询」后才生效）
+  const [draft, setDraft] = useState<Filters>(() => ({
+    ...DEFAULT_FILTERS,
+    deviceId: urlDeviceId,
+  }))
+  // 已生效的筛选条件
+  const [applied, setApplied] = useState<Filters>(() => ({
+    ...DEFAULT_FILTERS,
+    deviceId: urlDeviceId,
+  }))
   const [turnId, setTurnId] = useState<string | null>(() =>
     searchParams.get('turnId'),
   )

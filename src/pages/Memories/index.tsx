@@ -9,7 +9,7 @@ import {
   Table,
   Typography,
 } from 'antd'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMemoriesOverview, useMemoryDevices } from '../../api/queries'
 import { MEMORY_KEYS, memoryKeyLabel } from './memoryMeta'
@@ -153,6 +153,15 @@ export default function Memories() {
             {
               title: '设备 ID（业务 ID）',
               dataIndex: 'deviceId',
+              // 设备 ID 跳用户详情页；行其余区域保持跳记忆详情（stopPropagation 隔离）
+              render: (v: string) => (
+                <Link
+                  to={`/users/${encodeURIComponent(v)}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {v}
+                </Link>
+              ),
             },
             // 设备码列暂不需要（与设备 ID 展示冗余），需要时取消注释
             // {

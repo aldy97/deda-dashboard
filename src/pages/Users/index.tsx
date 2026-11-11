@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
+import { Alert, Card, Col, Input, Row, Spin, Statistic, Typography } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import { useUsersDemographics, useUsersSummary } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
@@ -11,6 +12,7 @@ import Demographics from './Demographics'
  * 区间控件仅影响「区间新增家长」（后端约定：startDate+endDate 同传才返回）。
  */
 export default function Users() {
+  const navigate = useNavigate()
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const summaryQuery = useUsersSummary({
     startDate: fmt(range[0]),
@@ -54,6 +56,17 @@ export default function Users() {
           }}
         />
       </div>
+
+      {/* 单设备详情入口：精确匹配业务设备 ID，跳 /users/:deviceId */}
+      <Input.Search
+        allowClear
+        placeholder="输入设备 ID 查看单个用户详情（设备 ID 见记忆档案/反馈页）"
+        style={{ maxWidth: 420, marginBottom: 16 }}
+        onSearch={(v) => {
+          const id = v.trim()
+          if (id) navigate(`/users/${encodeURIComponent(id)}`)
+        }}
+      />
 
       {error && (
         <Alert

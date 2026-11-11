@@ -112,6 +112,19 @@ export interface FeedbackUserBrief {
   phone: string | null
 }
 
+/** 日报内容（ParentReport 四个观察字段 + 建议 + 生成状态） */
+export interface ParentReportContent {
+  reportDate: string
+  /** pending / generating / completed / failed */
+  generationStatus: string
+  expressionObservation: string | null
+  emotionObservation: string | null
+  thinkingObservation: string | null
+  suggestion: string | null
+  /** ISO 8601，未完成生成为 null */
+  generatedAt: string | null
+}
+
 export interface ReportFeedbackItem {
   id: string
   /** 报告日期 YYYY-MM-DD */
@@ -126,6 +139,8 @@ export interface ReportFeedbackItem {
     deviceCode: string | null
     characterKey: string
   }
+  /** 该反馈对应的日报内容（同设备同 reportDate） */
+  report: ParentReportContent
 }
 
 export interface ReportFeedbackListResponse {
@@ -157,6 +172,24 @@ export interface UserFeedbackListResponse {
   page: number
   pageSize: number
   items: UserFeedbackItem[]
+}
+
+// ---- 家长日报（单设备，用户详情页用） ----
+export interface ParentReportItem extends ParentReportContent {
+  /** 生成所用模型名，未生成为 null */
+  generatorModel: string | null
+}
+
+export interface ParentReportListResponse {
+  total: number
+  page: number
+  pageSize: number
+  device: {
+    deviceId: string
+    deviceCode: string | null
+    characterKey: string
+  }
+  items: ParentReportItem[]
 }
 
 // ---- 使用行为 ----
