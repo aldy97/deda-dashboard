@@ -12,6 +12,8 @@ import type {
   FeatureAdoptionResponse,
   Granularity,
   HourlyHeatmapResponse,
+  IntentSummaryResponse,
+  IntentTrendResponse,
   InterruptionRateResponse,
   LlmRecentFailuresResponse,
   LlmSlowCallsResponse,
@@ -36,6 +38,10 @@ import type {
   ReportFeedbackListResponse,
   RetentionCohortsResponse,
   RetentionCurveResponse,
+  ReviewQueueResponse,
+  ReviewQueueSort,
+  SafetySummaryResponse,
+  SafetyTrendResponse,
   UserFeedbackListResponse,
   UsersDemographicsResponse,
   UsersSummaryResponse,
@@ -413,6 +419,82 @@ export async function fetchLlmCostDaily(params: {
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。
 // /analytics/quality/llm-usage 一期返回 501，二期上线。
+
+// ---- 判定质量监控（decisions） ----
+
+/**
+ * 契约见 deda-server docs/analytics-api.md「判定质量监控（decisions）」。
+ * 与上面 /analytics/llm 的分工：那边是模型调用健康度，这边是模型判定可信度。
+ * 全部接口日期为 YYYY-MM-DD 闭区间，服务端按 Asia/Shanghai 切日。
+ */
+export async function fetchSafetySummary(params: {
+  startDate: string
+  endDate: string
+}): Promise<SafetySummaryResponse> {
+  const resp = await apiClient.get('/analytics/decisions/safety-summary', {
+    params,
+  })
+  return resp.data as SafetySummaryResponse
+}
+
+export async function fetchSafetyTrend(params: {
+  startDate: string
+  endDate: string
+  granularity?: Granularity
+}): Promise<SafetyTrendResponse> {
+  const resp = await apiClient.get('/analytics/decisions/safety-trend', {
+    params,
+  })
+  return resp.data as SafetyTrendResponse
+}
+
+export async function fetchIntentSummary(params: {
+  startDate: string
+  endDate: string
+}): Promise<IntentSummaryResponse> {
+  const resp = await apiClient.get('/analytics/decisions/intent-summary', {
+    params,
+  })
+  return resp.data as IntentSummaryResponse
+}
+
+export async function fetchIntentTrend(params: {
+  startDate: string
+  endDate: string
+  granularity?: Granularity
+}): Promise<IntentTrendResponse> {
+  const resp = await apiClient.get('/analytics/decisions/intent-trend', {
+    params,
+  })
+  return resp.data as IntentTrendResponse
+}
+
+/**
+ * 人工复核队列。服务端恒定附加 asrText IS NOT NULL（调用方无法绕过）：
+ * 只有「拦了」或「判成非 safe 类别」的轮次才留原文，正常轮次不积累儿童语料。
+ * category 走白名单，拼错 400 而非静默返回空；deviceId 是内部 UUID。
+ */
+export interface ReviewQueueQuery {
+  startDate: string
+  endDate: string
+  /** 缺省 = 全部类别；取值 sexual/self_harm/violence/emotional_harm/safe */
+  category?: string
+  /** 内部设备 UUID，非业务 deviceId */
+  deviceId?: string
+  page?: number
+  /** 1-100，默认 20 */
+  pageSize?: number
+  sort?: ReviewQueueSort
+}
+
+export async function fetchReviewQueue(
+  params: ReviewQueueQuery,
+): Promise<ReviewQueueResponse> {
+  const resp = await apiClient.get('/analytics/decisions/review-queue', {
+    params,
+  })
+  return resp.data as ReviewQueueResponse
+}
 
 // ---- 记忆档案 ----
 

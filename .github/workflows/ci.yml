@@ -21,5 +21,9 @@ jobs:
 
       - run: npm run lint
 
+      # vitest（jsdom + @testing-library/react）；--passWithNoTests 保证
+      # 尚无测试的分支合入 staging 后不会因「No test files found」直接红
+      - run: npm run test
+
       # tsc -b 含完整类型检查，随后 vite build 产物即部署产物
       - run: npm run build

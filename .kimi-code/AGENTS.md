@@ -21,18 +21,35 @@ axios（src/api/client.ts）+ echarts + react-router 7。Lint：oxlint。
 
 5. 构建：npm run build（tsc -b && vite build）必须通过，零 TS 错误；
    提交前跑 npm run lint（oxlint）。
+   antd 6 已弃用 Alert 的 message（应改 title），但仓库既有 30+ 处仍用
+   message，新代码保持一致；统一迁移另开 PR，不要夹在功能 PR 里。
 6. TDD 模式为强制要求（见全局铁律第 5 条）：新功能与缺陷修复先补测试再实现。
-7. 注意：本仓库当前未安装任何测试框架（package.json 无 vitest/jest）。
-   落地 TDD 前必须先引入测试基座（建议 vitest + @testing-library/react），
-   新增 dev 依赖前必须先征得熊总同意。
+7. 测试基座已就绪：vitest 5 + jsdom + @testing-library/react（配置见
+   vitest.config.ts，全局替身与缺失的浏览器 API 补齐见 src/test/setup.tsx）。
+   测试文件与被测文件同目录、命名 *.test.ts(x)；一律显式
+   `import { describe, expect, it, vi } from 'vitest'`——globals 刻意关闭，
+   因为 tsconfig.app.json 的 types 只有 vite/client，解析不到全局 describe/it。
+   新增 dev 依赖前仍必须先征得熊总同意。
+   ⚠️ 本机 ~/.npm/_cacache 有 root 属主条目，npm ci / npm install 会 EACCES：
+   加 `--cache /tmp/deda-dash-npm-cache` 绕过，禁止用 sudo。
+   断言 echarts 图表时：结构读替身渲染出的 data-option（JSON），
+   tooltip.formatter 这类函数字段过不了 JSON.stringify，
+   改从 src/test/echartsOptions.ts 的活对象注册表取。
 
 ## 测试硬性要求
 
-8. unit 与 integration 测试合计覆盖率必须 ≥ 90%（测试基座就绪后生效）。
-   每次变更后主动跑覆盖率并汇报结果；低于 90% 的变更不得交付。
+8. 覆盖率口径：只考核**本次新增/改动的文件**，行覆盖率 ≥ 90%；
+   既有未测文件不因本次改动被追溯要求。每次变更后跑
+   `npm run test:coverage` 并汇报；低于口径的变更不得交付。
+   禁止为了达标删断言或加空断言。
+   改动既有大文件（如 src/api/analytics.ts、src/api/queries.ts）时，
+   文件级百分比会被大量既有未测代码拉低，须用
+   `npx vitest run --coverage --coverage.reporter=json` 生成
+   coverage-final.json，核对「新增行与未覆盖行零交集」，而不是只看文件级数字。
 
 ## 子任务验收命令（多代理协作协议第 3 条锚点）
 
 主代理审查子代理产出时，必须亲自运行：
-`npm run build`（tsc -b && vite build）通过 + `npm run lint`（oxlint）通过。
-（测试基座就绪后追加 vitest 相关命令。）
+`npm run build`（tsc -b && vite build）零 TS 错误 + `npm run lint`（oxlint）0 error
++ `npm run test`（vitest run）全绿 + `npm run test:coverage` 满足第 8 条口径。
+

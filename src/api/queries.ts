@@ -9,6 +9,8 @@ import {
   fetchEngagementSummary,
   fetchFeatureAdoption,
   fetchHourlyHeatmap,
+  fetchIntentSummary,
+  fetchIntentTrend,
   fetchInterruptionRate,
   fetchLlmCallsByTurn,
   fetchLlmRecentFailures,
@@ -31,6 +33,9 @@ import {
   fetchParentReports,
   fetchRetentionCohorts,
   fetchRetentionCurve,
+  fetchReviewQueue,
+  fetchSafetySummary,
+  fetchSafetyTrend,
   fetchUserFeedbacks,
   fetchUsersDemographics,
   fetchUsersSummary,
@@ -39,6 +44,7 @@ import type {
   MessagesQuery,
   OverviewTrendParams,
   ReportFeedbackQuery,
+  ReviewQueueQuery,
   UserFeedbackQuery,
 } from './analytics'
 import type { CohortBasis, Granularity } from '../types/analytics'
@@ -390,5 +396,59 @@ export function useLlmCost(params: {
   return useQuery({
     queryKey: ['analytics', 'llmCost', params],
     queryFn: () => fetchLlmCostDaily(params),
+  })
+}
+
+// ---- 判定质量监控（decisions） ----
+// 分母 0 时后端返回 rate=null（不是 0），组件层一律渲染「—」。
+
+export function useSafetySummary(params: {
+  startDate: string
+  endDate: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'safetySummary', params],
+    queryFn: () => fetchSafetySummary(params),
+  })
+}
+
+export function useSafetyTrend(params: {
+  startDate: string
+  endDate: string
+  granularity?: Granularity
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'safetyTrend', params],
+    queryFn: () => fetchSafetyTrend(params),
+  })
+}
+
+export function useIntentSummary(params: {
+  startDate: string
+  endDate: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'intentSummary', params],
+    queryFn: () => fetchIntentSummary(params),
+  })
+}
+
+export function useIntentTrend(params: {
+  startDate: string
+  endDate: string
+  granularity?: Granularity
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'intentTrend', params],
+    queryFn: () => fetchIntentTrend(params),
+  })
+}
+
+/** 人工复核队列（本期只读；reviewLabel 写接口留待二期） */
+export function useReviewQueue(query: ReviewQueueQuery) {
+  return useQuery({
+    queryKey: ['analytics', 'reviewQueue', query],
+    queryFn: () => fetchReviewQueue(query),
+    placeholderData: (prev) => prev,
   })
 }
