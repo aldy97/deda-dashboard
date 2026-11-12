@@ -119,3 +119,114 @@ GET /analytics/llm/recent-failures?page=1&pageSize=20&scene=
 4. **最近失败明细表**：服务端分页；失败原因 Tag 着色（timeout 橙 / rate_limit 红 / parse_error 紫 / upstream_error 灰）
 
 文件结构：`src/pages/Llm/index.tsx` + `SceneSummaryTable.tsx` + `LlmTrendChart.tsx` + `RecentFailuresTable.tsx`；类型与 api 函数加入 `src/types/analytics.ts` / `src/api/analytics.ts`（风格同现有页面）。
+
+## 七、费用口径
+
+### 7.1 接口
+
+```
+GET /analytics/llm/cost-daily?startDate=&endDate=
+→ { currency: "CNY",
+    pricing: { version, peakNote, lines: [{ model, band, kind, tierLabel, label, cnyPerMillionTokens }] },
+    range: { startDate, endDate, requestedStartDate, requestedEndDate, clamped, days },
+    sources: {
+      aliyun: { status, kind, latestBillDate, latestFetchedAt, modelSplit, daysWithData, message },
+      deepseek: { status, kind, pricingVersion, rows, pricedRows, cacheHitRows, upperBoundRows, cacheTokenAvailable }
+    },
+    series: [{ date, smallCny, mainCny, otherCny, totalCny, smallTokens, mainTokens,
+               smallCnyPerMillionTokens, mainCnyPerMillionTokens, smallSource, mainSource,
+               mainAccuracy, settled }],
+    totals: { smallCny, mainCny, otherCny, totalCny, partial, days, unpricedRows, noTokenRows, unpricedTokens },
+    month: { cycle, daysInCycle, daysWithData, toDateCny, toDateSmallCny, toDateMainCny,
+             projectedEndCny, prevSamePeriodCny, deltaPct },
+    unitEconomics: [{ model, tier, source, cny, tokens, pricedTokens, cnyPerMillionTokens,
+                      tokenActiveDevices, daysWithData, cnyPerDevicePerDay, unpricedRows, noTokenRows }],
+    reconciliation: { status, days, smallEstimatedCny, smallBilledCny, deltaPct }
+  }
+```
+
+### 7.2 数据源与口径
+
+| 维度 | 小模型（qwen-flash） | 主模型（deepseek-flash） |
+|---|---|---|
+| 数据源 | 阿里云 BSS 账单，落库表 `llm_cost_daily`（由 `BillingSyncService` 每 6h 幂等补拉 T-1~T-3） | `llm_usage_logs` 埋点，按写库时的定价快照（`costMicroCny`）逐行估算 |
+| 精度 | 账单日 `settled=true` 时为真值；`settled=false` 为暂估 | 始终估算（无账单真值），精度字段 `mainAccuracy` 分 exact / upper_bound / mixed |
+| 延迟 | 账单延迟 ≤24h 出账（实例信息 48h）；**终账**在次月 3 日 12 点后可查，当月数据不作对账依据 | 即时，埋点写入后立即可查询 |
+
+#### 逐日「合计」的缺源口径（重要，容易踩）
+
+后端逐日装配 `totalCny = smallMicro + otherMicro + mainMicro`，其中**缺账单日的 `smallMicro` 取 0**
+（`deda-server/src/modules/analytics/llm-cost.service.ts` 的逐日装配段）。因此「当日有埋点、账单还没出」时：
+`smallCny` 如实为 `null`（页面显示「—」），而 `totalCny` 是一个**只含主模型的实数** —— 合计与分项不自洽，
+且从数字本身看不出缺源。账单同步只补拉 T-1~T-3，**最近 1–3 天必然处于该状态**，不是边角情况。
+
+`totals.partial` 只覆盖区间级（区间内有任一账单行即为 `false`），救不了逐日。前端统一用
+`src/pages/Llm/cost-series.ts` 的 `dayTotalPartial()` 判定（图B / 明细表共用一份，勿各写一遍）：
+
+```ts
+totalCny !== null && (smallCny === null || (mainCny === null && mainTokens > 0))
+```
+
+`mainTokens === 0` 表示当天确实没有主模型调用，**不算缺源**。落地表现：
+
+- 明细表「合计 ¥」列在缺源日加 warning 色 `*`，列头 InfoTip 解释，表尾统计缺源天数；
+- 图B 累计折线在缺源日与 `totalCny === null` 日**断开**（`connectNulls: false`），既不平推前值也不补 0
+  （平推前值等于宣称「当日花费 0」）；代价是断点之后的累计值偏低（不含未知日），已在图B InfoTip 声明；
+- 图B tooltip 追加 `dayTotalMissing()` 的说明，如「合计不含小模型（当日账单未出）」。
+
+### 7.3 定价模型
+
+- 后端 `OfficialPriceLine` 结构：`{ model, band, kind, tierLabel, label, cnyPerMillionTokens }`
+- `band`：peak / off_peak / null；`kind`：input_miss / input_hit / output
+- 定价版本号在 `pricing.version`，**前端不硬编码价格，也不硬编码档位标签**：图 C 的参考线值与
+  qwen-flash 的 `tierLabel` 一律从 `pricing.lines` 推导（后端按 `QWEN_FLASH_TIERS` 升序 push，
+  取 `model==='qwen-flash' && band===null` 的第一条即最低档）。写死 `'0-128k'` 之类字面量的话，
+  后端一改档位格式，参考线会静默消失（`filter` 返回空数组，不报错）
+- 图 C 只画 `input_miss` 与 `output` 两种 kind（日单价是输入/输出混合值，`input_hit` 单独画无对照意义）；
+  主模型取 `off_peak` 一档作量级锚点，`label` 里已带「空闲」字样
+
+### 7.4 对账逻辑
+
+- 只对小模型（有账单真值）做估算 vs 账单对账，且**只比 `settled=true` 的账单日**
+- `reconciliation.status === 'ok'`：有已终账账单日，`smallEstimatedCny` vs `smallBilledCny` 计算 `deltaPct`
+- `deltaPct > 15%` 时前端 Alert 提示排查
+- `deltaPct === null` 表示账单真值为 0 无法计算偏差
+- `status === 'insufficient'`：尚无已终账账单日，无法对账
+
+### 7.5 月末预测与账期解耦
+
+- `month.projectedEndCny`：本月至今**有数据天数**（`daysWithData`）的日均 run-rate 外推至月末
+- `month.deltaPct`：与上月同期的变化（上月 1 日至同一日）；上月同期无数据时为 `null`
+- **`month` 块固定跟随「昨日所在账期」（后端 `cycle = 昨日.slice(0,7)`），与请求区间解耦。**
+  用户用历史预设选「上月」时，曲线画的是上月、`month` 说的仍是本月 —— 所以图B 的 markLine label
+  必须带账期：`月末预测（{month.cycle}）¥X`，否则张冠李戴
+- `toDateCny` / `toDateSmallCny` / `toDateMainCny` / `prevSamePeriodCny` **均可为 null**，
+  后端逐字段按「该账期内是否存在该数据源」判定：无账单行 → 小模型 null；无已计价主模型行 →
+  主模型 null；两者都无 → 全部 null。**此时卡片必须显示「—」，绝不显示 ¥0.0000**
+  （拿不到数据 ≠ 花了 0 元）。反之「有数据源但金额为 0」（如全额被代金券抵扣）仍须显示 ¥0.0000
+- `month.partial`：账期内缺账单或缺主模型埋点 → true，卡片⑤ 打 Tag「不完整」+ InfoTip。
+  它的窗口是**账期**，`totals.partial` 的窗口是**请求区间**，两者可能不一致且都是对的，
+  InfoTip 里要写明各自窗口，否则看起来像自相矛盾
+- `cacheTokenAvailable` 有个坑：它的语义是「区间内是否有行拿到缓存命中数」，`pricedRows===0` 时
+  必然为 false。卡片② **必须先判 `pricedRows > 0`** 再打「估算·含上界」，否则会给一个不存在的
+  估算打标；`pricedRows===0` 时应打「未计价」，并说明历史行需跑 `scripts/backfill-llm-cost.ts`
+- 当月账单为暂估值（未终账），UI 标注 InfoTip 说明
+
+### 7.6 前端组件
+
+| 组件 | 文件 | 说明 |
+|---|---|---|
+| CostCards | `src/pages/Llm/CostCards.tsx` | 5 张指标卡片：区间合计、主模型、小模型、单设备日均、本月。缺源一律显式占位：`unconfigured`→「未接入账单」、`no_data`→「暂无账单」、`totals.partial`→「合计不完整」、`month.partial`→「不完整」、`modelSplit=false`→「账号合计」、`pricedRows===0`→「未计价」、`pricedRows>0` 且 `mainAccuracy` 含 upper_bound/mixed→「估算·含上界」 |
+| CostByModelChart | `src/pages/Llm/CostByModelChart.tsx` | 图A：小模型（实线，账单）/主模型（虚线，估算）/其他每日费用折线；`settled===false` 区间用 markArea 标「暂估」；`otherCny` 全为 0/null 时不画第三条 |
+| CostTotalChart | `src/pages/Llm/CostTotalChart.tsx` | 图B：每日总费用 + 累计面积（缺源日断开，见 7.2）+ 月末预测 markLine（label 带账期） |
+| CostUnitPriceChart | `src/pages/Llm/CostUnitPriceChart.tsx` | 图C：百万 token 单价趋势 + 定价参考线（值与档位均从 `pricing.lines` 推导） |
+| CostDailyTable | `src/pages/Llm/CostDailyTable.tsx` | 每日明细表（日期默认倒序）+ 对账条；缺源日合计带 `*`，表尾统计缺源天数 / 未计价行 / 无 token 行 |
+| cost-series.ts | `src/pages/Llm/cost-series.ts` | `dayTotalPartial()` / `dayTotalMissing()`：逐日合计缺源判定的唯一口径 |
+| cost-format.ts | `src/pages/Llm/cost-format.ts` | 金额格式化：null→—，≥1 元 2 位小数，<1 元 4 位小数，负数保留负号（退款/调账） |
+
+费用区块在模型监控页顶部、「分场景汇总」之上，有独立日期区间控件（`AnalyticsRangePicker` 的
+`excludeToday`，默认近 30 天历史口径、终点＝昨日）与独立 Spin / 错误 Alert。
+**它刻意不套页面级 `<Spin spinning={loading}>`** —— 否则主区间加载时费用区块会被一起蒙遮罩、转两个圈。
+
+通用铁律：金额 `null` 一律显示「—」，折线 `connectNulls: false`，**任何情况下不得把缺数据当 0**；
+y 轴不设 `min: 0`（退款/调账为负数）。

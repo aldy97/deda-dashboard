@@ -19,6 +19,7 @@ import type {
   LlmTurnChainResponse,
   LlmTurnHandoffResponse,
   LlmTrendResponse,
+  LlmCostResponse,
   MemoriesOverviewResponse,
   CurrentMemoriesResponse,
   MemoryDevicesResponse,
@@ -399,6 +400,15 @@ export async function fetchLlmSlowCalls(params: {
 }): Promise<LlmSlowCallsResponse> {
   const resp = await apiClient.get('/analytics/llm/slow-calls', { params })
   return resp.data as LlmSlowCallsResponse
+}
+
+/** 费用日维度数据（GET /analytics/llm/cost-daily）；endDate 服务端钳到昨日 */
+export async function fetchLlmCostDaily(params: {
+  startDate: string
+  endDate: string
+}): Promise<LlmCostResponse> {
+  const resp = await apiClient.get('/analytics/llm/cost-daily', { params })
+  return resp.data as LlmCostResponse
 }
 
 // fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。

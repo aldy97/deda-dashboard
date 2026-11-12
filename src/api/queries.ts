@@ -13,6 +13,7 @@ import {
   fetchLlmCallsByTurn,
   fetchLlmRecentFailures,
   fetchLlmSlowCalls,
+  fetchLlmCostDaily,
   fetchLlmSummary,
   fetchLlmTrend,
   fetchLlmTurnHandoff,
@@ -379,5 +380,15 @@ export function useLlmSlowCalls(params: {
   return useQuery({
     queryKey: ['analytics', 'llmSlowCalls', params],
     queryFn: () => fetchLlmSlowCalls(params),
+  })
+}
+
+export function useLlmCost(params: {
+  startDate: string
+  endDate: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'llmCost', params],
+    queryFn: () => fetchLlmCostDaily(params),
   })
 }

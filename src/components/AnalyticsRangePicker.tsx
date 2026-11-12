@@ -2,7 +2,9 @@ import { DatePicker } from 'antd'
 import TodayOngoingTag from './TodayOngoingTag'
 import {
   RANGE_PRESETS,
+  RANGE_PRESETS_HISTORICAL,
   disableFuture,
+  disableFromToday,
   includesToday,
 } from '../utils/date-range'
 import type { DayRange } from '../utils/date-range'
@@ -14,11 +16,18 @@ interface Props {
   allowClear?: boolean
   size?: 'small' | 'middle' | 'large'
   placeholder?: [string, string]
+  /**
+   * 费用/账单类页面：今日数据不完整，一律禁选（默认 false 保持现状）。
+   * true 时 disabledDate 用 disableFromToday，presets 用 RANGE_PRESETS_HISTORICAL，
+   * 且不渲染 TodayOngoingTag（区间不可能含今日）。
+   */
+  excludeToday?: boolean
 }
 
 /**
  * 全 dashboard 统一的日期区间控件。封装铁律：
- * 今日可选（仅禁未来）+ 预设「今日/昨日/近7天/近30天」+ 覆盖今日时标注「今日数据进行中」。
+ * - 默认：今日可选（仅禁未来）+ 预设「今日/昨日/近7天/近30天」+ 覆盖今日时标注「今日数据进行中」。
+ * - excludeToday=true（费用/账单类页面）：禁选今日及未来 + 历史口径预设 + 不标注进行中。
  * 新页面不要绕过本组件直接写 DatePicker.RangePicker。
  */
 export default function AnalyticsRangePicker({
@@ -27,6 +36,7 @@ export default function AnalyticsRangePicker({
   allowClear = false,
   size,
   placeholder,
+  excludeToday = false,
 }: Props) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -34,14 +44,14 @@ export default function AnalyticsRangePicker({
         allowClear={allowClear}
         size={size}
         placeholder={placeholder}
-        disabledDate={disableFuture}
-        presets={RANGE_PRESETS}
+        disabledDate={excludeToday ? disableFromToday : disableFuture}
+        presets={excludeToday ? RANGE_PRESETS_HISTORICAL : RANGE_PRESETS}
         value={value}
         onChange={(dates) =>
           onChange(dates?.[0] && dates?.[1] ? [dates[0], dates[1]] : null)
         }
       />
-      {includesToday(value) && <TodayOngoingTag />}
+      {!excludeToday && includesToday(value) && <TodayOngoingTag />}
     </span>
   )
 }

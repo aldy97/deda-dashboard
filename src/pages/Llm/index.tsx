@@ -1,9 +1,18 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Alert, Card, Select, Spin, Typography } from 'antd'
-import { useLlmSummary, useLlmTrend } from '../../api/queries'
+import { useLlmCost, useLlmSummary, useLlmTrend } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
-import { defaultRange, fmt } from '../../utils/date-range'
+import {
+  defaultRange,
+  fmt,
+  historicalRange,
+} from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
+import CostByModelChart from './CostByModelChart'
+import CostCards from './CostCards'
+import CostDailyTable from './CostDailyTable'
+import CostTotalChart from './CostTotalChart'
+import CostUnitPriceChart from './CostUnitPriceChart'
 import SceneSummaryTable from './SceneSummaryTable'
 import LlmTrendChart from './LlmTrendChart'
 import RecentFailuresTable from './RecentFailuresTable'
@@ -36,6 +45,36 @@ export default function LlmMonitor() {
       : '加载失败'
     : null
 
+  // ---- 费用区块（独立 range，默认近 30 天历史口径） ----
+  const [costRange, setCostRange] = useState<DayRange>(historicalRange(30))
+  const costParams = useMemo(
+    () => ({ startDate: fmt(costRange[0]), endDate: fmt(costRange[1]) }),
+    [costRange],
+  )
+  const costDays = costRange[1].diff(costRange[0], 'day') + 1
+  const prevStartDate = useMemo(
+    () => fmt(costRange[0].subtract(costDays, 'day')),
+    [costRange, costDays],
+  )
+  const prevEndDate = useMemo(
+    () => fmt(costRange[0].subtract(1, 'day')),
+    [costRange],
+  )
+  const costQuery = useLlmCost(costParams)
+  const prevCostQuery = useLlmCost({
+    startDate: prevStartDate,
+    endDate: prevEndDate,
+  })
+  const costData = costQuery.data ?? null
+  const prevCostData = prevCostQuery.data ?? null
+  const costLoading = costQuery.isLoading || prevCostQuery.isLoading
+  const costError = costQuery.error ?? prevCostQuery.error
+  const costErrorMsg = costError
+    ? costError instanceof Error
+      ? costError.message
+      : '费用数据加载失败'
+    : null
+
   return (
     <div>
       <div
@@ -53,7 +92,7 @@ export default function LlmMonitor() {
             模型监控
           </Typography.Title>
           <Typography.Text type="secondary">
-            主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值
+            主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值。费用数据截至昨日
           </Typography.Text>
         </div>
         <AnalyticsRangePicker
@@ -96,6 +135,69 @@ export default function LlmMonitor() {
           />
         )
       })()}
+
+      {/* ===== 费用区块：独立 range + 独立 Spin，刻意不套页面级 loading 遮罩 ===== */}
+      <Card
+        title="费用"
+        style={{ marginBottom: 16 }}
+        extra={
+          <AnalyticsRangePicker
+            value={costRange}
+            onChange={(r) => {
+              if (r) setCostRange(r)
+            }}
+            excludeToday
+          />
+        }
+      >
+        {costErrorMsg && (
+          <Alert
+            type="error"
+            showIcon
+            message="费用数据加载失败"
+            description={costErrorMsg}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        <Spin spinning={costLoading}>
+          {costData && (
+            <>
+              <CostCards data={costData} previousTotals={prevCostData?.totals} />
+              <Card
+                title="按模型费用趋势"
+                size="small"
+                style={{ marginTop: 16 }}
+              >
+                <CostByModelChart data={costData.series} />
+              </Card>
+              <Card
+                title="总费用趋势（含累计）"
+                size="small"
+                style={{ marginTop: 16 }}
+              >
+                <CostTotalChart
+                  series={costData.series}
+                  month={costData.month}
+                />
+              </Card>
+              <Card
+                title="百万 token 单价趋势"
+                size="small"
+                style={{ marginTop: 16 }}
+              >
+                <CostUnitPriceChart data={costData} />
+              </Card>
+              <Card
+                title="每日明细与对账"
+                size="small"
+                style={{ marginTop: 16 }}
+              >
+                <CostDailyTable data={costData} />
+              </Card>
+            </>
+          )}
+        </Spin>
+      </Card>
 
       <Spin spinning={loading}>
         <Card title="分场景汇总">
