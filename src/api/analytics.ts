@@ -10,6 +10,12 @@ import type {
   DurationDistributionResponse,
   EngagementSummaryResponse,
   FeatureAdoptionResponse,
+  FleetChurnRiskResponse,
+  FleetDeviceDetailResponse,
+  FleetDevicesResponse,
+  FleetFirmwareDistributionResponse,
+  FleetPresenceTrendResponse,
+  FleetSummaryResponse,
   Granularity,
   HourlyHeatmapResponse,
   InterruptionRateResponse,
@@ -411,8 +417,68 @@ export async function fetchLlmCostDaily(params: {
   return resp.data as LlmCostResponse
 }
 
-// fleet 组接口为二期（依赖 device_presence_daily 落库），契约未定义，勿提前调用。
 // /analytics/quality/llm-usage 一期返回 501，二期上线。
+
+// ---- 设备舰队 ----
+/** 契约见 deda-server/docs/fleet-analytics-spec.md；与 fleet.service.ts 逐项对齐 */
+
+/** date 缺省 = 昨天（T-1）；非法日期 → 400 */
+export async function fetchFleetSummary(
+  date?: string,
+): Promise<FleetSummaryResponse> {
+  const resp = await apiClient.get('/analytics/fleet/summary', {
+    params: date ? { date } : {},
+  })
+  return resp.data as FleetSummaryResponse
+}
+
+/** 区间上限 62 天，超出 → 400 */
+export async function fetchFleetPresenceTrend(params: {
+  startDate: string
+  endDate: string
+}): Promise<FleetPresenceTrendResponse> {
+  const resp = await apiClient.get('/analytics/fleet/presence-trend', {
+    params,
+  })
+  return resp.data as FleetPresenceTrendResponse
+}
+
+/** 统计当前全量在册设备固件分布 */
+export async function fetchFleetFirmwareDistribution(): Promise<FleetFirmwareDistributionResponse> {
+  const resp = await apiClient.get('/analytics/fleet/firmware-distribution')
+  return resp.data as FleetFirmwareDistributionResponse
+}
+
+/** days 缺省 7，范围 1-90，越界 → 400 */
+export async function fetchFleetChurnRisk(
+  days?: number,
+): Promise<FleetChurnRiskResponse> {
+  const resp = await apiClient.get('/analytics/fleet/churn-risk', {
+    params: days !== undefined ? { days } : {},
+  })
+  return resp.data as FleetChurnRiskResponse
+}
+
+/** keyword 最长 50 字符；pageSize 最大 100（超限静默 clamp） */
+export async function fetchFleetDevices(params: {
+  keyword?: string
+  page?: number
+  pageSize?: number
+}): Promise<FleetDevicesResponse> {
+  const resp = await apiClient.get('/analytics/fleet/devices', { params })
+  return resp.data as FleetDevicesResponse
+}
+
+/** deviceId = 业务 ID（小写 MAC）；查不到 → 404 */
+export async function fetchFleetDeviceDetail(
+  deviceId: string,
+  days?: number,
+): Promise<FleetDeviceDetailResponse> {
+  const resp = await apiClient.get(`/analytics/fleet/devices/${deviceId}`, {
+    params: days !== undefined ? { days } : {},
+  })
+  return resp.data as FleetDeviceDetailResponse
+}
 
 // ---- 记忆档案 ----
 

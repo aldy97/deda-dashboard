@@ -13,7 +13,7 @@ import LlmMonitor from '../pages/Llm'
 import Memories from '../pages/Memories'
 import MemoryDetail from '../pages/Memories/DeviceDetail'
 import Feedback from '../pages/Feedback'
-import PlaceholderPage from '../pages/PlaceholderPage'
+import Fleet from '../pages/Fleet'
 import { TOKEN_KEY } from '../api/client'
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -36,16 +36,7 @@ export const router = createBrowserRouter(
         { path: 'overview', element: <Overview /> },
         { path: 'retention', element: <Retention /> },
         { path: 'engagement', element: <Engagement /> },
-        {
-          path: 'fleet',
-          element: (
-            <PlaceholderPage
-              title="设备舰队"
-              description="开机率趋势、实时在线数、固件版本分布、流失预警池、单设备明细下钻。"
-              apis={['二期：依赖 device_presence_daily 落库，契约待定义']}
-            />
-          ),
-        },
+        { path: 'fleet', element: <Fleet /> },
         { path: 'users', element: <Users /> },
         { path: 'users/:deviceId', element: <UserDeviceDetail /> },
         { path: 'content', element: <Content /> },
