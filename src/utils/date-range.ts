@@ -8,6 +8,7 @@ import timezone from 'dayjs/plugin/timezone'
  * - 时区统一 Asia/Shanghai（setDefault 影响此后所有 dayjs()，含时间戳渲染）；
  * - 「今日」一律可选，仅禁选未来日期；
  * - 默认区间含今日；today() 每次调用重新求值，避免页面挂过夜后跨午夜陈旧。
+ * - 历史口径（不含今日）用于费用类页面：账单延迟 24h 出账、今日数字必然偏低。
  */
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -54,4 +55,40 @@ export const RANGE_PRESETS: Array<{
   },
   { label: '近 7 天', value: () => defaultRange(7) },
   { label: '近 30 天', value: () => defaultRange(30) },
+]
+
+/** 昨日零点（Asia/Shanghai） */
+export const yesterday = () => today().subtract(1, 'day')
+
+/** 近 days 天，终点＝昨日（费用/账单类页面专用：今日数据不完整） */
+export const historicalRange = (days: number): DayRange => [
+  yesterday().subtract(days - 1, 'day'),
+  yesterday(),
+]
+
+/** 禁选今日及未来（费用/账单类页面专用） */
+export const disableFromToday = (d: Dayjs) => !d.isBefore(today(), 'day')
+
+/**
+ * RangePicker 历史口径预设（不含今日），用于费用/账单类页面：
+ * 三条的终点都是昨日 + 上月的整月。
+ * value 用函数形式，点击时才求值（跨午夜安全）。
+ */
+export const RANGE_PRESETS_HISTORICAL: Array<{
+  label: string
+  value: () => DayRange
+}> = [
+  {
+    label: '昨日',
+    value: () => [yesterday(), yesterday()],
+  },
+  { label: '近 7 天', value: () => historicalRange(7) },
+  { label: '近 30 天', value: () => historicalRange(30) },
+  {
+    label: '上月',
+    value: () => {
+      const lastMonth = today().subtract(1, 'month')
+      return [lastMonth.startOf('month'), lastMonth.endOf('month')]
+    },
+  },
 ]

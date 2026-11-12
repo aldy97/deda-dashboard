@@ -533,6 +533,138 @@ export interface LlmTurnChainResponse {
   calls: LlmTurnCall[]
 }
 
+// ---- 模型监控：费用 ----
+/** 契约见 docs/llm-monitoring-spec.md「七、费用口径」及 deda-server llm-cost.service.ts */
+export type AliyunSourceStatus = 'ok' | 'no_data' | 'unconfigured'
+export type MainAccuracy = 'exact' | 'upper_bound' | 'mixed'
+
+export interface LlmCostRange {
+  startDate: string
+  endDate: string
+  requestedStartDate: string
+  requestedEndDate: string
+  clamped: boolean
+  days: number
+}
+
+export interface LlmCostAliyunSource {
+  status: AliyunSourceStatus
+  kind: 'bill'
+  latestBillDate: string | null
+  latestFetchedAt: string | null
+  modelSplit: boolean
+  daysWithData: number
+  message: string | null
+}
+
+export interface LlmCostDeepseekSource {
+  status: 'ok'
+  kind: 'estimated'
+  pricingVersion: string
+  rows: number
+  pricedRows: number
+  cacheHitRows: number
+  upperBoundRows: number
+  cacheTokenAvailable: boolean
+}
+
+export interface LlmCostSeriesItem {
+  date: string
+  smallCny: number | null
+  mainCny: number | null
+  otherCny: number | null
+  totalCny: number | null
+  smallTokens: number
+  mainTokens: number
+  smallCnyPerMillionTokens: number | null
+  mainCnyPerMillionTokens: number | null
+  smallSource: 'bill' | 'none'
+  mainSource: 'estimated' | 'none'
+  mainAccuracy: MainAccuracy | null
+  settled: boolean | null
+}
+
+export interface LlmCostTotals {
+  smallCny: number | null
+  mainCny: number | null
+  otherCny: number | null
+  totalCny: number | null
+  partial: boolean
+  days: number
+  unpricedRows: number
+  noTokenRows: number
+  unpricedTokens: number
+}
+
+export interface LlmCostMonth {
+  cycle: string
+  daysInCycle: number
+  daysWithData: number
+  /** 账期内无任何数据源 → null（拿不到数据 ≠ ¥0）；有数据但金额为 0 → 仍是 0 */
+  toDateCny: number | null
+  toDateSmallCny: number | null
+  toDateMainCny: number | null
+  projectedEndCny: number | null
+  prevSamePeriodCny: number | null
+  deltaPct: number | null
+  /**
+   * 账期内缺账单或缺主模型埋点 → true，此时 toDateCny 只含已有源，不是真实总额。
+   * 窗口是「昨日所在账期」，与请求区间无关，可能与 totals.partial 不一致。
+   */
+  partial: boolean
+}
+
+export interface LlmUnitEconomicsRow {
+  model: string
+  tier: 'small' | 'main' | 'unknown'
+  source: 'bill' | 'estimated'
+  cny: number
+  tokens: number
+  pricedTokens: number
+  cnyPerMillionTokens: number | null
+  tokenActiveDevices: number
+  daysWithData: number
+  cnyPerDevicePerDay: number | null
+  unpricedRows: number
+  noTokenRows: number
+}
+
+export interface LlmCostReconciliation {
+  status: 'ok' | 'insufficient'
+  days: number
+  smallEstimatedCny: number
+  smallBilledCny: number
+  deltaPct: number | null
+}
+
+export interface LlmOfficialPriceLine {
+  model: string
+  band: 'peak' | 'off_peak' | null
+  kind: 'input_miss' | 'input_hit' | 'output'
+  tierLabel: string | null
+  label: string
+  cnyPerMillionTokens: number
+}
+
+export interface LlmCostResponse {
+  currency: 'CNY'
+  pricing: {
+    version: string
+    peakNote: string
+    lines: LlmOfficialPriceLine[]
+  }
+  range: LlmCostRange
+  sources: {
+    aliyun: LlmCostAliyunSource
+    deepseek: LlmCostDeepseekSource
+  }
+  series: LlmCostSeriesItem[]
+  totals: LlmCostTotals
+  month: LlmCostMonth
+  unitEconomics: LlmUnitEconomicsRow[]
+  reconciliation: LlmCostReconciliation
+}
+
 // ---- 记忆档案 ----
 /** 全局汇总（GET /analytics/memories/overview） */
 export interface MemoriesOverviewResponse {
