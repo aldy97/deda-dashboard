@@ -30,3 +30,9 @@ axios（src/api/client.ts）+ echarts + react-router 7。Lint：oxlint。
 
 8. unit 与 integration 测试合计覆盖率必须 ≥ 90%（测试基座就绪后生效）。
    每次变更后主动跑覆盖率并汇报结果；低于 90% 的变更不得交付。
+
+## 子任务验收命令（多代理协作协议第 3 条锚点）
+
+主代理审查子代理产出时，必须亲自运行：
+`npm run build`（tsc -b && vite build）通过 + `npm run lint`（oxlint）通过。
+（测试基座就绪后追加 vitest 相关命令。）
