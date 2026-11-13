@@ -41,6 +41,8 @@ axios（src/api/client.ts）+ echarts + react-router 7。Lint：oxlint。
    新增 dev 依赖前仍必须先征得熊总同意。
    ⚠️ 本机 ~/.npm/_cacache 有 root 属主条目，npm ci / npm install 会 EACCES：
    加 `--cache /tmp/deda-dash-npm-cache` 绕过，禁止用 sudo。
+   ⚠️ CI 跑在 UTC、本地是 Asia/Shanghai：断言格式化后的时间**不要硬编码钟点**，
+   要么按运行环境算出期望值，要么断言格式正则，否则本地绿、CI 红。
    断言 echarts 图表时：结构读替身渲染出的 data-option（JSON），
    tooltip.formatter 这类函数字段过不了 JSON.stringify，
    改从 src/test/echartsOptions.ts 的活对象注册表取。
