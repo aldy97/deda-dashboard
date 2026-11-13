@@ -1,6 +1,10 @@
 /**
  * LLM 场景静态元数据（与 docs/llm-monitoring-spec.md 的调用点盘点一致）。
  * 后端只下发 scene key，中文名与语义由前端维护。
+ *
+ * 分工：这里解释「模型调用健康吗」（scene 枚举，供性能/价格 tab 用）；
+ * 「模型的判定可信吗」（safetySource / safetyCategory / intent / intentSource
+ * 枚举）在 ./decisions.ts，供安全/意图 tab 用。
  */
 export interface SceneMeta {
   label: string

@@ -665,6 +665,154 @@ export interface LlmCostResponse {
   reconciliation: LlmCostReconciliation
 }
 
+// ---- 判定质量监控（decisions） ----
+/**
+ * 契约见 deda-server docs/analytics-api.md「判定质量监控（decisions）」。
+ * 与 llm_usage_logs 的分工：那边回答「模型调用健康吗」（成功率/延迟/token/费用），
+ * 这边回答「模型的判定可信吗」（拦了多少、放行里有多少其实没审、意图有多少是兜底兜出来的）。
+ * 两者按 turnId 可互查。
+ *
+ * ⚠️ 口径：埋点在每个 return 之前而非 finally，未捕获异常中断的轮次没有判定记录，
+ * 因此「判定记录数 ≤ 对话轮次数」，差值不能解读成漏审。页面文案必须写明。
+ *
+ * 枚举字段一律用 string 而非字面量联合（沿用 LlmSceneSummary.scene 的既有惯例）：
+ * 后端新增取值时看板降级显示原始 key，而不是渲染成空白。
+ */
+
+/** 安全判定层级：null = 本轮未产生层级结论（未评估或模型异常） */
+export type SafetyLayer = 'L1' | 'L2' | null
+
+/**
+ * 安全类别：sexual / self_harm / violence / emotional_harm / safe；
+ * null = 未能判定（非法标签 / fail-open），与 safe 严格区分，不可合并展示。
+ */
+export type SafetyCategory = string | null
+
+/**
+ * 安全判定来源：l1_regex / l2_model / l2_invalid_label / l2_fail_open / not_evaluated。
+ * 看板必须按它分桶而非按 category——后三类都表现为「放行」但成因与处置完全不同，
+ * 混进 safe 就会把静默降级读成正常放行。
+ */
+export type SafetySource = string
+
+/** 对话意图（七标签）：free_chat / adventure_story / english_story / idiom_story / sleep_story / free_story / sleep_config */
+export type TurnIntent = string | null
+
+/**
+ * 意图决策来源：model / fallback_invalid_label / fallback_error / pre_filter_skip /
+ * continuation / session_sticky / explicit_exit / not_routed / adventure_takeover / no_device。
+ * 7 条决策出口里有 4 条根本不调小模型，排查「孩子说要听故事却在闲聊」必须能区分成因。
+ */
+export type TurnIntentSource = string | null
+
+export interface SafetySummaryResponse {
+  total: number
+  blockedCount: number
+  /** 分母 0 时为 null（不是 0）：前端渲染「—」，不能显示 0% */
+  blockRate: number | null
+  /** 按严重度排序（sexual→self_harm→violence→emotional_harm→safe→null），不按计数 */
+  byCategory: Array<{
+    category: SafetyCategory
+    count: number
+    blockedCount: number
+  }>
+  byLayer: Array<{ layer: SafetyLayer; count: number }>
+  bySource: Array<{ source: SafetySource; count: number }>
+  /** L2 调用异常 → 放行（静默降级，靠 L3 大模型 prompt 兜底） */
+  failOpenCount: number
+  /** L2 有响应但标签不在契约内 → 放行（静默降级，升高=prompt 退化） */
+  invalidLabelCount: number
+  /** 本轮根本没做 L2（冒险状态机在编排上早于 L2 接管）→ 已知盲区 */
+  notEvaluatedCount: number
+  /** 不拦截但注入共情引导 system 消息，是行为改变点，判得准不准只能人工复核 */
+  emotionalHarmCount: number
+  /** 留有原文、可进复核队列的条数 */
+  reviewableCount: number
+}
+
+export interface SafetyTrendPoint {
+  /** day=YYYY-MM-DD；week=该周周一；month=YYYY-MM */
+  date: string
+  total: number
+  blockedCount: number
+  /** 无数据桶补零且比率为 null */
+  blockRate: number | null
+  failOpenCount: number
+  invalidLabelCount: number
+  notEvaluatedCount: number
+  emotionalHarmCount: number
+}
+
+export interface SafetyTrendResponse {
+  granularity: Granularity
+  series: SafetyTrendPoint[]
+}
+
+export interface IntentSummaryResponse {
+  total: number
+  /** intent 为 null = 本轮没走到意图路由；按计数倒序 */
+  byIntent: Array<{ intent: TurnIntent; count: number }>
+  bySource: Array<{ source: TurnIntentSource; count: number }>
+  /** source=model 的条数 */
+  modelInvokedCount: number
+  /** source=model 的占比，跌了说明小模型在失效；分母 0 为 null */
+  modelInvokedRate: number | null
+  /** fallback_invalid_label + fallback_error */
+  fallbackCount: number
+  fallbackRate: number | null
+  /** 被 L1/L2 拦截，未分类 */
+  notRoutedCount: number
+  /** 冒险接管，未分类（与 safetySource=not_evaluated 是同一批轮次） */
+  adventureTakeoverCount: number
+  /** intent × source 交叉，排查路由错位（说要听故事却在闲聊）用这张表 */
+  matrix: Array<{
+    intent: TurnIntent
+    source: TurnIntentSource
+    count: number
+  }>
+}
+
+export interface IntentTrendPoint {
+  date: string
+  total: number
+  modelInvoked: number
+  fallbackCount: number
+  byIntent: Array<{ intent: TurnIntent; count: number }>
+}
+
+export interface IntentTrendResponse {
+  granularity: Granularity
+  series: IntentTrendPoint[]
+}
+
+export interface ReviewQueueItem {
+  turnId: string
+  /** 内部设备 UUID（非业务 deviceId）；匿名链路为 null */
+  deviceId: string | null
+  /** 本期恒为 baidu-rtc；老 WS 链路不埋点 */
+  channel: string
+  createdAt: string
+  safetyLayer: SafetyLayer
+  safetyCategory: SafetyCategory
+  safetySource: SafetySource
+  /** L1 命中的规则关键词，便于复核规则误伤 */
+  safetyMatched: string | null
+  /** 儿童语音转写：前端必须默认打码、点击展开，禁止直接投屏 */
+  asrText: string | null
+  intent: TurnIntent
+  intentSource: TurnIntentSource
+}
+
+/** 排序白名单：只允许 createdAt（服务端防注入也防非索引列排序） */
+export type ReviewQueueSort = 'createdAt_desc' | 'createdAt_asc'
+
+export interface ReviewQueueResponse {
+  total: number
+  page: number
+  pageSize: number
+  items: ReviewQueueItem[]
+}
+
 // ---- 记忆档案 ----
 /** 全局汇总（GET /analytics/memories/overview） */
 export interface MemoriesOverviewResponse {
