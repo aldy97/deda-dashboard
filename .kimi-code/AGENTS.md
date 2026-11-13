@@ -23,6 +23,15 @@ axios（src/api/client.ts）+ echarts + react-router 7。Lint：oxlint。
    提交前跑 npm run lint（oxlint）。
    antd 6 已弃用 Alert 的 message（应改 title），但仓库既有 30+ 处仍用
    message，新代码保持一致；统一迁移另开 PR，不要夹在功能 PR 里。
+   其余 antd 6 弃用写法：新代码不要新增 Modal 的 maskClosable（改
+   mask={{ closable: false }}）与 Drawer 的 destroyOnClose（改 destroyOnHidden）；
+   Drawer 的 width、Space 的 direction 仓库既有代码仍在用，保持一致即可。
+   全站没有配 ConfigProvider locale，antd 内置文案默认是英文（Table 列筛选的
+   Reset/OK、空态 No data、Pagination 等）；新用到内置文案的组件就地传
+   locale 补中文（如 Table 的 locale={{ filterConfirm, filterReset }}），
+   不要在功能 PR 里顺手加全局 ConfigProvider。
+   antd 两字中文按钮的可访问名会被插空格（「确 定」「取 消」），
+   测试里查按钮用 /确\s*定/ 这类正则，不要用全等字符串。
 6. TDD 模式为强制要求（见全局铁律第 5 条）：新功能与缺陷修复先补测试再实现。
 7. 测试基座已就绪：vitest 5 + jsdom + @testing-library/react（配置见
    vitest.config.ts，全局替身与缺失的浏览器 API 补齐见 src/test/setup.tsx）。
