@@ -667,6 +667,40 @@ export function useAdventureLint() {
   })
 }
 
+/**
+ * 「按发布标准」校验**服务端那一份**内容。
+ *
+ * getEpisode 返回的 lint 是按草稿标准算的（forPublish=false），只覆盖存草稿的门槛；
+ * 发布与回滚走的是 forPublish=true，会多出一条 PREDECESSOR_NOT_PUBLISHED
+ * （第 N 集不能先于 1..N-1 发布）。编辑器必须看到真正的发布门槛，
+ * 否则会出现「界面说没问题、点发布才被拒」。
+ *
+ * 内容来自服务端而不是键盘，所以适合做缓存查询；键里带乐观锁双令牌，
+ * 别人存过一次这份校验就必须重算。本地改动的校验仍走 useAdventureLint（防抖 mutation）。
+ */
+export function useAdventurePublishLint(
+  episodeId: string | null,
+  content: EpisodeContent | null,
+  tokens: { baseVersionId: string | null; baseDraftUpdatedAt: string | null },
+) {
+  return useQuery({
+    queryKey: [
+      ...ADVENTURE_QUERY_ROOT,
+      'publish-lint',
+      episodeId,
+      tokens.baseVersionId,
+      tokens.baseDraftUpdatedAt,
+    ],
+    queryFn: () =>
+      checkContent({
+        episodeId: episodeId!,
+        content: content!,
+        forPublish: true,
+      }),
+    enabled: episodeId !== null && content !== null,
+  })
+}
+
 export function useAdventureSimulate() {
   return useMutation({
     mutationFn: ({

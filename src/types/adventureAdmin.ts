@@ -210,8 +210,14 @@ export interface EpisodeDetail {
   summary: EpisodeSummary
   content: EpisodeContent
   contentSource: ContentSource
-  /** 乐观锁基线，存草稿时必须原样带回 */
+  /** 乐观锁基线之一，存草稿时必须原样带回 */
   baseVersionId: string | null
+  /**
+   * 乐观锁基线之二：当前草稿行的 updatedAt，没有草稿时为 null。
+   * 草稿是**可变行**——原地保存后 id 和 version 都不变，只比 baseVersionId
+   * 检测不到「我加载之后别人往同一行里又存了一次」，那种情况会静默互相覆盖。
+   */
+  baseDraftUpdatedAt: string | null
   lint: LintReport
   impact: EpisodeImpact
 }
@@ -344,6 +350,8 @@ export interface CreateEpisodeResult {
 
 export interface SaveDraftResult extends CreateEpisodeResult {
   created: boolean
+  /** 保存后的新并发令牌；编辑器必须改用它继续保存，否则会被自己上一次保存顶成 409 */
+  draftUpdatedAt: string | null
 }
 
 export interface PublishResult {
@@ -604,8 +612,10 @@ export interface LintRequest {
 export interface SaveDraftRequest {
   content: EpisodeContent
   reason: string
-  /** 乐观锁基线；不传 = 明确不参与并发保护 */
+  /** 乐观锁基线之一；两个令牌都不传 = 明确不参与并发保护 */
   baseVersionId?: string | null
+  /** 乐观锁基线之二：草稿行的 updatedAt（来自 EpisodeDetail 或上一次保存的返回值） */
+  baseDraftUpdatedAt?: string | null
   /** 明知有人在改也要覆盖（UI 上是单独的红色按钮） */
   force?: boolean
 }
