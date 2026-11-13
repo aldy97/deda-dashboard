@@ -700,8 +700,11 @@ export type TurnIntent = string | null
 
 /**
  * 意图决策来源：model / fallback_invalid_label / fallback_error / pre_filter_skip /
- * continuation / session_sticky / explicit_exit / not_routed / adventure_takeover / no_device。
- * 7 条决策出口里有 4 条根本不调小模型，排查「孩子说要听故事却在闲聊」必须能区分成因。
+ * continuation / session_sticky / explicit_exit / force_sleep / sleep_window_closed /
+ * not_routed / adventure_takeover / no_device。
+ * 9 条决策出口里只有 model 一条代表「小模型结论被直接采纳」（fallback_* 是兜底关键词，
+ * 其余 6 条由规则/会话状态决定），排查「孩子说要听故事却在闲聊」必须能区分成因。
+ * pre_filter_skip 已随前置关键词过滤移除而停用，保留只为让历史行正确分桶。
  */
 export type TurnIntentSource = string | null
 
