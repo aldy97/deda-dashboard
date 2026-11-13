@@ -70,13 +70,16 @@ jobs:
           mv /opt/deda/dashboard/prod.new /opt/deda/dashboard/prod
           EOF
 
-      # 备案期间：域名未生效，健康检查 = 落盘校验。
-      # 备案后替换为：curl -fsS --retry 8 --retry-delay 5 https://<域名>/dashboard/
-      - name: Health check (on-disk, pre-ICP)
+      # 备案已完成（沪ICP备2026060466号-1）：健康检查走真实域名，
+      # 同时保留落盘校验兜底（域名侧故障时能区分是产物问题还是链路问题）
+      - name: Health check (domain + on-disk)
         run: |
           ssh "${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}" bash -s <<'EOF'
           set -e
           test -f /opt/deda/dashboard/prod/index.html
           grep -q '/dashboard/assets/' /opt/deda/dashboard/prod/index.html
           echo "OK: $(ls /opt/deda/dashboard/prod/assets | wc -l) asset files deployed"
+          curl -fsS --retry 8 --retry-delay 5 --retry-all-errors \
+            https://valleyletters.com/dashboard/ > /dev/null
+          echo "OK: https://valleyletters.com/dashboard/ reachable"
           EOF
