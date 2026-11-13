@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Card, Tabs, Typography } from 'antd'
 import { useSearchParams } from 'react-router-dom'
+import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queries'
 import CapabilityBanner from './CapabilityBanner'
+import CreateEpisodeDialog from './CreateEpisodeDialog'
 import EpisodeTable from './EpisodeTable'
 import EpisodeDetailDrawer from './EpisodeDetailDrawer'
 import AuditLog from './AuditLog'
 import HealthPanel from './HealthPanel'
+import ImportExport from './ImportExport'
 
 /**
  * 冒险内容工作台（Adventure Studio）。
@@ -15,14 +18,15 @@ import HealthPanel from './HealthPanel'
  * 这是「已发布的故事不允许原地修改」能成立的实现基础，而不是一条纪律要求。
  *
  * 四个 tab 各自回答一个问题：
- * - 故事集：现在有哪些集、谁在改、改到哪一版
+ * - 故事集：现在有哪些集、谁在改、改到哪一版（新建与逐集编辑都从这里进）
+ * - 跨环境搬运：staging 验证过的整份配置怎么搬到 prod（导出 → dry-run → 手输确认码）
  * - 审计流水：谁在什么时候、以什么理由做了什么（含跨环境搬运与自愈动作）
  * - 自愈与兜底：孩子那一侧有没有兜住，兜底自己是不是也在失败
  *
  * 两条沿用「模型监控」页的约束：activeKey 与 URL 的 ?tab= 双向同步（可以直接分享链接），
  * 且只挂载当前 tab 的子组件（每个 tab 各自持有请求，一次性全挂载会并发打出十几个请求）。
  */
-const TAB_KEYS = ['episodes', 'audit', 'recovery'] as const
+const TAB_KEYS = ['episodes', 'transfer', 'audit', 'recovery'] as const
 
 type TabKey = (typeof TAB_KEYS)[number]
 
@@ -35,6 +39,9 @@ export default function AdventureStudio() {
   const requested = searchParams.get('tab')
   const activeKey: TabKey = isTabKey(requested) ? requested : 'episodes'
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const authoring = useAdventureAuthoring()
+  const capabilities = useAdventureCapabilities().data ?? null
 
   return (
     <div>
@@ -61,8 +68,16 @@ export default function AdventureStudio() {
               label: '故事集',
               children:
                 activeKey === 'episodes' ? (
-                  <EpisodeTable onOpen={(episodeId) => setSelectedEpisodeId(episodeId)} />
+                  <EpisodeTable
+                    onOpen={(episodeId) => setSelectedEpisodeId(episodeId)}
+                    onCreate={authoring ? () => setCreateOpen(true) : undefined}
+                  />
                 ) : null,
+            },
+            {
+              key: 'transfer',
+              label: '跨环境搬运',
+              children: activeKey === 'transfer' ? <ImportExport /> : null,
             },
             {
               key: 'audit',
@@ -82,6 +97,18 @@ export default function AdventureStudio() {
         episodeId={selectedEpisodeId}
         onClose={() => setSelectedEpisodeId(null)}
       />
+
+      {/* 用 && 挂载而不是 open 开关：每次打开都是全新表单，集号与理由都不沿用上一次 */}
+      {createOpen && capabilities && (
+        <CreateEpisodeDialog
+          capabilities={capabilities}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(episodeId) => {
+            setCreateOpen(false)
+            setSelectedEpisodeId(episodeId)
+          }}
+        />
+      )}
     </div>
   )
 }

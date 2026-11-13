@@ -1,34 +1,44 @@
 import { useState } from 'react'
-import type { ReactNode } from 'react'
 import { Alert, Modal, Select, Space, Spin, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import InfoTip from '../../components/InfoTip'
+import type { ApiError } from '../../api/client'
 import {
+  useAdventureAuthoring,
+  useAdventureEpisode,
   useAdventureVersion,
   useAdventureVersionDiff,
   useAdventureVersions,
+  useRevertAdventureEpisode,
 } from '../../api/queries'
 import type { VersionSummary } from '../../types/adventureAdmin'
 import ContentPreview from './ContentPreview'
+import ReasonDialog from './ReasonDialog'
 import SegmentDiffList from './SegmentDiffList'
 import { fmtDateTime, shortHash, versionStatusMeta } from './labels'
 
 /**
- * 版本时间线 + 两版对比。
+ * 版本时间线 + 两版对比 + 快速回滚。
  *
- * 「快速回滚」的入口在这里（P8 接上按钮），因为回滚的前提是**先看清要回到哪一版**：
- * 时间线只增不改，任何一版都能被复制成新版本重新发布，历史一行都不会被改。
+ * 回滚入口放在这里，因为它的前提是**先看清要回到哪一版**：先在时间线上找到那一版、
+ * 用逐段差异确认它确实是要的内容，再点回滚。放到别处就变成「凭记忆回滚」。
  *
- * 默认对比「当前发布版 vs 它的上一版」——这是出事后第一个要看的差异。
- * 只有一版时不出对比（没有可比的），而不是硬凑成「自己和自己比」。
+ * 回滚不是把历史改回去，而是把目标快照**复制成一个新版本再发布**：历史一行都不改，
+ * 时间线只增不减，所以回滚本身也可以再被回滚。已经分配到旧快照的设备仍锁在自己
+ * 那一版上，不会被这次回滚中途换掉。
+ *
+ * 只有 published / superseded 的行能作为回滚目标——草稿和已作废的版本都不是
+ * 「曾经上线过、被验证过」的内容（服务端同样会拒：VERSION_NOT_REVERTABLE）。
+ * 当前发布版不给按钮：回到自己等于凭空多一个内容相同的版本。
  *
  * 由父组件用 key={episodeId} 挂载，所以这里不需要处理「切换到另一集」的残留状态。
  */
 interface Props {
   episodeId: string
-  /** 「回滚到这一版」按钮插槽；只读环境下不传，操作列自然只剩「查看内容」 */
-  renderRowAction?: (version: VersionSummary) => ReactNode
 }
+
+/** 可作为回滚目标的状态：草稿与已作废的都不是「曾经上线过」的内容 */
+const REVERTABLE_STATUSES: VersionSummary['status'][] = ['published', 'superseded']
 
 function VersionContentModal({
   episodeId,
@@ -68,11 +78,22 @@ function VersionContentModal({
   )
 }
 
-export default function VersionHistory({ episodeId, renderRowAction }: Props) {
+export default function VersionHistory({ episodeId }: Props) {
   const versionsQuery = useAdventureVersions(episodeId)
   const versions = versionsQuery.data ?? []
+  const authoring = useAdventureAuthoring()
+  // 详情已被抽屉层拉过，这里命中同一份缓存，不会多打一次请求
+  const detailQuery = useAdventureEpisode(episodeId)
+  const detail = detailQuery.data ?? null
+  const revert = useRevertAdventureEpisode()
 
   const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
+  const [revertTarget, setRevertTarget] = useState<VersionSummary | null>(null)
+  const [revertNote, setRevertNote] = useState<{
+    tone: 'success' | 'warning'
+    text: string
+  } | null>(null)
+  const revertError = (revert.error as ApiError | null) ?? null
 
   // 默认对比「当前发布版 vs 它的上一版」——出事后第一个要看的差异。
   // 每次渲染直接算而不用 useMemo：版本行最多几十条，算一次的成本远低于
@@ -196,7 +217,11 @@ export default function VersionHistory({ episodeId, renderRowAction }: Props) {
           <Typography.Link onClick={() => setPreviewVersionId(row.id)}>
             查看内容
           </Typography.Link>
-          {renderRowAction?.(row)}
+          {authoring && REVERTABLE_STATUSES.includes(row.status) && !row.isCurrent && (
+            <Typography.Link onClick={() => setRevertTarget(row)}>
+              回滚到这一版
+            </Typography.Link>
+          )}
         </Space>
       ),
     },
@@ -283,11 +308,80 @@ export default function VersionHistory({ episodeId, renderRowAction }: Props) {
         )}
       </div>
 
+      {revertNote && (
+        <Alert
+          style={{ marginTop: 16 }}
+          type={revertNote.tone}
+          showIcon
+          closable
+          onClose={() => setRevertNote(null)}
+          message={revertNote.text}
+        />
+      )}
+
       <VersionContentModal
         episodeId={episodeId}
         versionId={previewVersionId}
         onClose={() => setPreviewVersionId(null)}
       />
+
+      {revertTarget && detail && (
+        <ReasonDialog
+          key={revertTarget.id}
+          open
+          title={`回滚到 v${revertTarget.version}（${versionStatusMeta(revertTarget.status).label}）`}
+          okText="确认回滚并发布"
+          danger
+          pending={revert.isPending}
+          error={revertError}
+          confirmText={detail.summary.businessKey}
+          confirmLabel="回滚确认"
+          impact={detail.impact}
+          impactVariant="publish"
+          onCancel={() => setRevertTarget(null)}
+          description={
+            <Space orientation="vertical" size={6} style={{ width: '100%' }}>
+              <Typography.Text>
+                回滚 = 把 v{revertTarget.version} 的快照（{fmtDateTime(revertTarget.publishedAt ?? revertTarget.createdAt)}
+                {revertTarget.publishedBy ? `，由 ${revertTarget.publishedBy} 发布` : ''}）
+                复制成一个**新版本**并立刻发布。历史一行都不会被改，所以这次回滚本身也可以再被回滚。
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                已经在播的设备仍锁在自己开始时的快照上，不会被中途换掉；只有之后新分配的设备拿到回滚后的版本。
+              </Typography.Text>
+              <Typography.Text type="danger">
+                回滚会**立即生效**，不像存草稿那样可以先看看。请确认上面的逐段差异就是你要退回的那一份内容。
+              </Typography.Text>
+            </Space>
+          }
+          onSubmit={({ reason, confirmText }) => {
+            revert.mutate(
+              {
+                episodeId,
+                targetVersionId: revertTarget.id,
+                reason,
+                confirmText: confirmText ?? '',
+              },
+              {
+                onSuccess: (res) => {
+                  setRevertTarget(null)
+                  setRevertNote(
+                    res.draftStillPending
+                      ? {
+                          tone: 'warning',
+                          text: `已回滚：v${res.revertedToVersion} 的内容被复制成 v${res.newVersion} 并发布为当前版本。注意——你的草稿还在（未被这次回滚带走），下一次发布仍会覆盖它。`,
+                        }
+                      : {
+                          tone: 'success',
+                          text: `已回滚：v${res.revertedToVersion} 的内容被复制成 v${res.newVersion} 并发布为当前版本。`,
+                        },
+                  )
+                },
+              },
+            )
+          }}
+        />
+      )}
     </Spin>
   )
 }

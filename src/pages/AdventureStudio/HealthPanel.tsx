@@ -23,6 +23,7 @@ import type {
   RepairRecord,
   SweepReport,
 } from '../../types/adventureAdmin'
+import RecoveryActions from './RecoveryActions'
 import { fmtDateTime, fmtDuration, recoveryCodeMeta } from './labels'
 
 /**
@@ -35,8 +36,8 @@ import { fmtDateTime, fmtDuration, recoveryCodeMeta } from './labels'
  * - 引擎失败：最近哪台设备、在哪个阶段掉了链子，有没有成功平移到下一集？
  *
  * 熔断器是**授权回滚**：它只标记与告警，绝不自动改内容、绝不自动切版本。
- * 解除降级（reset）是人的动作，必须写理由并留审计——所以按钮不在这里裸放，
- * 走统一的理由弹窗（见 RecoveryActions）。
+ * 解除降级（reset）是人的动作，必须写理由并留审计——所以按钮不裸放在面板上，
+ * 走统一的理由弹窗（见 RecoveryActions，挂在这张卡片的末尾）。
  *
  * degraded=true 时熔断器**故意不工作**：Redis 读不到计数就熔断，会把所有设备判成故障，
  * 那比漏报危险得多。面板必须把这个「我知道我看不见」的状态明确摆出来。
@@ -194,6 +195,8 @@ function BreakerCard({ snapshot }: { snapshot: RecoveryHealthSnapshot }) {
             },
           ]}
         />
+
+        <RecoveryActions snapshot={snapshot} />
       </Space>
     </Card>
   )
