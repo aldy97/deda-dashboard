@@ -112,11 +112,42 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
       <Col xs={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Statistic
-            title="实时在线"
+            title={
+              <>
+                实时在线
+                <InfoTip title="实时口径：Redis device:link:{MAC} 的 lastSeenAt 落在 15 秒窗口内。与「当日开机」的天级口径不可互相校验；Redis 查询失败显示 -（不是 0）" />
+              </>
+              }
             value={today.onlineNow ?? '-'}
             suffix={today.onlineNow !== null ? '台' : ''}
           />
-          <Tag style={{ marginTop: 8 }}>二期接入</Tag>
+        </Card>
+      </Col>
+      <Col xs={12} md={6}>
+        <Card style={{ height: '100%' }}>
+          <Statistic
+            title={
+              <>
+                当日开机
+                <InfoTip title="天级口径：device_presence_daily 当日有行的去重设备数（设备心跳按 5 分钟聚合）。显示 - 表示该日早于落库上线日（无数据），不是 0 台开机" />
+              </>
+              }
+            value={today.devicesPoweredOn ?? '-'}
+            suffix={today.devicesPoweredOn !== null ? '台' : ''}
+          />
+        </Card>
+      </Col>
+      <Col xs={12} md={6}>
+        <Card style={{ height: '100%' }}>
+          <Statistic
+            title={
+              <>
+                开机率
+                <InfoTip title="当日开机设备 ÷ 已激活设备（distinct deviceId）。分母为 0 或当日开机无数据时显示 -。与「激活率」分母口径不同（已入库 vs 已激活），两者不可互比" />
+              </>
+              }
+            value={pct(today.powerOnRate)}
+          />
         </Card>
       </Col>
     </Row>
