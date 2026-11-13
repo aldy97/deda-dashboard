@@ -47,9 +47,50 @@ axios（src/api/client.ts）+ echarts + react-router 7。Lint：oxlint。
    `npx vitest run --coverage --coverage.reporter=json` 生成
    coverage-final.json，核对「新增行与未覆盖行零交集」，而不是只看文件级数字。
 
+## 本期豁免：Adventure Studio（2026-11-14，熊总口径）
+
+冒险内容工作台本期**不为界面代码写单测**：第 6 条与第 8 条对下面列出的范围不适用。
+依据是熊总本次任务的明确口径「dashboard 先不做测试」，不是本文件的默认规则，
+也不构成后续新增页面的先例。
+
+豁免范围：`src/pages/AdventureStudio/**` 全部界面代码，以及 `src/api/adventureAdmin.ts`
+与 `src/api/queries.ts` 里 adventure 那一批 hook（均为本特性新增）。
+**不**豁免的是 `src/api/client.ts`：它是全站共用文件，改坏会影响每一个页面，
+所以按第 6、8 条配了测试（`src/api/client.test.ts`，行覆盖 91.89%）。
+
+已经补的测试（`src/api/client.test.ts` + `src/api/adventureAdmin.test.tsx`，15 例）
+守的是本特性风险最高、且回归在界面上完全看不出来的那部分契约：草稿双令牌
+（baseVersionId + baseDraftUpdatedAt）必须原样透传、保存后必须采用返回的新令牌、
+发布标准校验的 queryKey 必须带双令牌、写成功后必须作废整组 adventure 缓存、
+409 的领域码必须挂到 Error 上、内容管理台的 403 不得清 token。
+这 15 例做过变异验证：把上述任一契约改坏，对应用例都会红。
+
+没补的部分与理由：`adventureAdmin.ts` 其余读接口（13/49 语句已覆盖）与
+queries.ts 里那批 hook 都是 `apiClient.get/post` 的一行包装，没有分支逻辑；
+本期口径是 dashboard 不做测试，把预算花在这里性价比低于服务端。
+Adventure Studio 的界面代码 0% 覆盖，改由下面第 2 条的实机冒烟兜。
+
+替代验证口径：
+
+1. 契约不得靠猜：字段、枚举、阈值、错误码一律以 deda-server 的实现 +
+   该仓 `docs/analytics-api.md`「冒险内容管理（Adventure Studio）」为准，
+   前端不重复实现任何校验规则（两套阈值必然漂移）。
+2. 写路径必须被真实点通。本期的替代验证是把页面挂进 jsdom、打真实的 deda-server
+   （authoring profile）跑临时冒烟，覆盖存草稿（含连存两次不被自己的令牌锁死）/
+   同事抢先保存后必须 409 并给出两条出路 / 发布 / 快速回滚 / 下架与恢复上架
+   （输错业务键不放行）/ 导出 → dry-run 预览 → 手输确认码导入 / 自愈动作 /
+   新建与作废（业务键永久占用）/ 只读账号不清 token / 审计流水。
+   临时冒烟文件交付前删除、不进仓库（避免与第 7 条「测试文件与被测文件同目录」
+   的约定打架，也避免留下一份没人维护的测试）。
+3. 因此 `npm run test:coverage` 的报告里，Adventure Studio 的新增文件会以 0%
+   出现，这是预期结果，不算违反第 8 条；核对覆盖率时把这些文件排除后再看数字。
+4. 恢复口径：将来给 dashboard 补测试时优先补这一块——它是全站唯一会直接改动
+   儿童内容的界面，风险高于任何报表页。
+
 ## 子任务验收命令（多代理协作协议第 3 条锚点）
 
 主代理审查子代理产出时，必须亲自运行：
 `npm run build`（tsc -b && vite build）零 TS 错误 + `npm run lint`（oxlint）0 error
-+ `npm run test`（vitest run）全绿 + `npm run test:coverage` 满足第 8 条口径。
++ `npm run test`（vitest run）全绿 + `npm run test:coverage` 满足第 8 条口径
+（Adventure Studio 按上一节豁免）。
 
