@@ -109,7 +109,7 @@ export interface IntentSourceMeta {
   description: string
 }
 
-/** 十项：7 条决策出口 + 3 条编排层来源 */
+/** 十二项：9 条决策出口 + 3 条编排层来源（与后端 TURN_INTENT_SOURCES 对齐） */
 export const INTENT_SOURCE_META: Record<string, IntentSourceMeta> = {
   model: {
     label: '小模型判定',
@@ -136,7 +136,8 @@ export const INTENT_SOURCE_META: Record<string, IntentSourceMeta> = {
     color: 'cyan',
     notRouted: false,
     description:
-      'isRoutingCandidate 正则未命中，直接判 free_chat 不调模型。占比过高=词表覆盖不足，' +
+      '【已停用】前置关键词过滤（isRoutingCandidate）已随哄睡时段治理移除，此后不再产生新数据；' +
+      '取值保留只为让上线前的历史行正确分桶。看历史数据时：占比过高=当时路由词表覆盖不足，' +
       '孩子说了想听故事却进不了故事模式。',
   },
   continuation: {
@@ -149,13 +150,32 @@ export const INTENT_SOURCE_META: Record<string, IntentSourceMeta> = {
     label: '会话粘滞',
     color: 'geekblue',
     notRouted: false,
-    description: '会话 TTL 内保持既有模式（英语/成语/哄睡故事），不调模型。',
+    description:
+      '会话 TTL 内，模型判为 free_chat 时维持既有模式（英语/成语/哄睡故事）。' +
+      '注意本轮是调过模型的，只是结论被会话状态否掉；模型给出其它标签则一律采纳。',
   },
   explicit_exit: {
     label: '显式退出',
     color: 'purple',
     notRouted: false,
     description: '孩子明确说要退出当前模式 → free_chat，不调模型。',
+  },
+  force_sleep: {
+    label: '强制哄睡·forceSleep',
+    color: 'magenta',
+    notRouted: false,
+    description:
+      '家长设的 forceSleep 生效：enabled && forceSleep && 在哄睡时段内 → 直接 sleep_story，' +
+      '不调模型，且压过孩子的显式退出。量只应出现在 sleepTime 之后；白天出现=sleepTime 配错或时区异常。',
+  },
+  sleep_window_closed: {
+    label: '哄睡时段外·降级闲聊',
+    color: 'purple',
+    notRouted: false,
+    description:
+      '孩子表达困意、模型也判了 sleep_story，但当前北京时间不在 sleepTime → 当日 24:00 窗口内 ' +
+      '→ 降级 free_chat 且不写会话。白天有量是正常的；深夜（窗口内）仍有量=sleepTime 配置与预期不符。' +
+      '本轮调过模型，只是结论被规则否掉，故不计入 modelInvokedCount。',
   },
   not_routed: {
     label: '未路由·被安全拦截',
@@ -207,8 +227,9 @@ export const SAFETY_CATEGORY_CHART_COLOR: Record<string, string> = {
 export const SAFETY_UNKNOWN_CHART_COLOR = '#bfbfbf'
 
 /**
- * 意图来源图表色：绿=模型真判过，青/蓝/紫=规则接管（正常，不调模型），
- * 橙红=兜底（结果不可信），红=被拦截，灰=冒险接管盲区，金=匿名链路（应接近 0）。
+ * 意图来源图表色：绿=模型真判过，青/蓝/紫=规则接管（正常，模型结论不是最终意图），
+ * 洋红=forceSleep 强制哄睡（家长意志压过孩子），橙红=兜底（结果不可信），
+ * 红=被拦截，灰=冒险接管盲区，金=匿名链路（应接近 0）。
  */
 export const INTENT_SOURCE_CHART_COLOR: Record<string, string> = {
   model: '#52c41a',
@@ -218,6 +239,8 @@ export const INTENT_SOURCE_CHART_COLOR: Record<string, string> = {
   continuation: '#1677ff',
   session_sticky: '#2f54eb',
   explicit_exit: '#722ed1',
+  force_sleep: '#eb2f96',
+  sleep_window_closed: '#b37feb',
   not_routed: '#f5222d',
   adventure_takeover: '#8c8c8c',
   no_device: '#faad14',
@@ -287,12 +310,19 @@ export interface IntentStage {
   description: string
 }
 
-/** 未调模型但确实走到了意图路由的来源（规则/会话状态机接管） */
+/**
+ * 走到了意图路由、但最终意图不是「模型结论被直接采纳」的来源（规则/会话状态机接管）。
+ * sleep_window_closed 本轮其实调过模型，只是结论被哄睡时段门禁否掉；后端
+ * modelInvokedCount 只统计 source=model，所以它必须落在这里，否则
+ * routed = model + rule + fallback 恒等式破裂。
+ */
 const RULE_SOURCES = [
   'pre_filter_skip',
   'continuation',
   'session_sticky',
   'explicit_exit',
+  'force_sleep',
+  'sleep_window_closed',
 ]
 
 /** 根本没走到意图路由的来源 */
@@ -357,7 +387,9 @@ export function buildIntentStages(
       count: rule,
       rate: rate(rule),
       description:
-        '正则未命中直接闲聊、会话续接、会话粘滞、显式退出——四类都不调模型。pre_filter_skip 占比过高=路由词表覆盖不足。',
+        '会话续接、会话粘滞、显式退出、强制哄睡（forceSleep）、哄睡时段门禁降级——最终意图由规则/会话状态给出。' +
+        'sleep_window_closed 本轮调过模型，只是结论被规则否掉，故不计入「小模型给出结论」。' +
+        '正则未命中直接闲聊（pre_filter_skip）已停用，只有历史数据会落进这一层。',
     },
     {
       key: 'fallback',
@@ -379,7 +411,8 @@ export interface IntentMatrixRow {
 
 /**
  * intent × source 交叉透视。行列都按总计数倒序（与后端 matrix 的排序口径一致），
- * 排查「孩子说要听故事却在闲聊」时，看 sleep_story 那一行的 pre_filter_skip 列。
+ * 排查「孩子说要听故事却在闲聊」时，看 free_chat 那一行的 sleep_window_closed 列
+ * （想哄睡但被时段门禁降级，落库 intent 是降级后的 free_chat）与 session_sticky 列。
  */
 export function pivotIntentMatrix(
   matrix: Array<{ intent: string | null; source: string | null; count: number }>,

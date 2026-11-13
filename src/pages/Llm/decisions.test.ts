@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   INTENT_META,
+  INTENT_SOURCE_CHART_COLOR,
   INTENT_SOURCE_META,
   NULL_BUCKET,
   SAFETY_CATEGORY_META,
@@ -95,13 +96,40 @@ describe('判定枚举的中文名与着色', () => {
     expect(Object.keys(INTENT_META)).toHaveLength(7)
   })
 
-  it('意图来源十项齐全，编排层三项单独标注', () => {
+  it('意图来源十二项齐全，编排层三项单独标注', () => {
     expect(intentSourceLabel('model')).toBe('小模型判定')
     expect(intentSourceLabel('pre_filter_skip')).toBe('正则未命中·直接闲聊')
     expect(intentSourceLabel('adventure_takeover')).toBe('冒险接管')
     expect(intentSourceLabel('no_device')).toBe('匿名链路')
     expect(intentSourceLabel(null)).toBe('未知来源')
-    expect(Object.keys(INTENT_SOURCE_META)).toHaveLength(10)
+    expect(Object.keys(INTENT_SOURCE_META)).toHaveLength(12)
+  })
+
+  it('哄睡治理两枚新来源有中文名，且排在编排层三项之前', () => {
+    expect(intentSourceLabel('force_sleep')).toBe('强制哄睡·forceSleep')
+    expect(intentSourceLabel('sleep_window_closed')).toBe('哄睡时段外·降级闲聊')
+    const keys = Object.keys(INTENT_SOURCE_META)
+    expect(keys.slice(-3)).toEqual(['not_routed', 'adventure_takeover', 'no_device'])
+    expect(keys.indexOf('force_sleep')).toBeLessThan(keys.indexOf('not_routed'))
+    expect(keys.indexOf('sleep_window_closed')).toBeLessThan(
+      keys.indexOf('not_routed'),
+    )
+  })
+
+  it('pre_filter_skip 标注已停用，session_sticky 说明本轮其实调过模型', () => {
+    // 前置关键词过滤已随哄睡门禁一起移除，取值保留只为让历史行正确分桶
+    expect(INTENT_SOURCE_META['pre_filter_skip'].description).toContain('已停用')
+    // 旧文案「不调模型」是错的：现在只有模型判 free_chat 才维持既有模式
+    expect(INTENT_SOURCE_META['session_sticky'].description).toContain(
+      '模型判为 free_chat',
+    )
+    expect(INTENT_SOURCE_META['session_sticky'].description).not.toContain('不调模型')
+  })
+
+  it('每个意图来源都有图表色，避免新增取值在 echarts 里渲染成默认黑', () => {
+    expect(Object.keys(INTENT_SOURCE_CHART_COLOR).sort()).toEqual(
+      Object.keys(INTENT_SOURCE_META).sort(),
+    )
   })
 
   it('元数据表覆盖全部枚举值，避免新增取值漏配着色', () => {
@@ -215,6 +243,38 @@ describe('buildIntentStages 决策路径', () => {
     expect(byKey.rule).toBe(800)
     expect(byKey.fallback).toBe(50)
     expect(byKey.routed).toBe(byKey.model + byKey.rule + byKey.fallback)
+  })
+
+  it('哄睡两枚新来源归入 rule 层，routed = model + rule + fallback 仍成立', () => {
+    // sleep_window_closed 本轮其实调过模型，但后端 modelInvokedCount 只统计
+    // source=model（口径是「模型判定被直接采纳」），所以前端必须把它算进 rule，
+    // 否则恒等式破裂、漏斗四层加起来对不上 routed。
+    const withSleep = intentSummary([
+      { source: 'model', count: 100 },
+      { source: 'continuation', count: 200 },
+      { source: 'force_sleep', count: 60 },
+      { source: 'sleep_window_closed', count: 40 },
+      { source: 'fallback_error', count: 20 },
+      { source: 'not_routed', count: 25 },
+    ])
+    const byKey = Object.fromEntries(
+      buildIntentStages(withSleep).map((s) => [s.key, s.count]),
+    )
+    expect(byKey.total).toBe(445)
+    expect(byKey.routed).toBe(420)
+    expect(byKey.model).toBe(100)
+    expect(byKey.rule).toBe(300)
+    expect(byKey.fallback).toBe(20)
+    expect(byKey.routed).toBe(byKey.model + byKey.rule + byKey.fallback)
+  })
+
+  it('rule 层说明写明哄睡两枚来源，并提示 sleep_window_closed 调过模型', () => {
+    const rule = buildIntentStages(healthy).find((s) => s.key === 'rule')
+    expect(rule?.description).toContain('强制哄睡')
+    expect(rule?.description).toContain('时段门禁')
+    expect(rule?.description).toContain('调过模型')
+    // pre_filter_skip 已停用，但历史数据仍会落进这一层，说明里保留其名字
+    expect(rule?.description).toContain('正则未命中直接闲聊')
   })
 
   it('rate 相对 total，total 为 0 时全部为 null', () => {

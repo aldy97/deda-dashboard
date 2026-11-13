@@ -16,8 +16,9 @@ const STAGE_COLOR: Record<string, string> = {
  * 条形 + 显式计数与占比更容易读出「模型到底管了多少轮」。
  * total 层刻意不渲染（概览卡已有「判定轮次」，同一数字出现两次只会互相干扰）。
  *
- * 排查「孩子说要听故事却在闲聊」时看 rule 层：pre_filter_skip 占比过高
- * 说明路由词表覆盖不足，孩子说了意图但正则没命中，直接被判成自由聊天。
+ * 排查「孩子说要听故事却在闲聊」时看 rule 层：会话续接/粘滞占比过高说明孩子出不来故事
+ * 模式；sleep_window_closed 在深夜（哄睡时段内）仍有量说明 sleepTime 配置与预期不符。
+ * pre_filter_skip 已停用，只有历史数据会落进这一层。
  */
 export default function IntentFunnel({
   summary,
