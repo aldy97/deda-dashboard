@@ -883,3 +883,148 @@ export interface MemoryHistoryResponse {
   /** version 升序 */
   versions: MemoryVersionItem[]
 }
+
+// ---- 设备舰队 ----
+/** 契约见 deda-server/docs/fleet-analytics-spec.md；与 fleet.service.ts 逐项对齐 */
+
+export interface DeviceRealtime {
+  online: boolean
+  battery: number | null
+  volume: number | null
+  version: string | null
+  charging: boolean | null
+  /** epoch 毫秒，透传 Redis 原值；其余时间字段都是 ISO 8601 */
+  lastSeenAt: number | null
+}
+
+/** GET /analytics/fleet/summary */
+export interface FleetSummaryResponse {
+  date: string
+  totalDevices: number
+  activatedDevices: number
+  /** 天级口径；早于 presenceSince → null */
+  devicesPoweredOn: number | null
+  powerOnRate: number | null
+  /** 实时口径（15 秒窗口） */
+  onlineNow: number | null
+  lowBatteryNow: number | null
+  lowBatteryThreshold: number
+  /** device_presence_daily 最小 date；表为空 → null */
+  presenceSince: string | null
+}
+
+/** GET /analytics/fleet/presence-trend */
+export interface FleetPresenceTrendPoint {
+  date: string
+  devicesPoweredOn: number | null
+  powerOnRate: number | null
+  reportCount: number | null
+}
+
+export interface FleetPresenceTrendResponse {
+  startDate: string
+  endDate: string
+  presenceSince: string | null
+  series: FleetPresenceTrendPoint[]
+}
+
+/** GET /analytics/fleet/firmware-distribution */
+export interface FirmwareBucket {
+  firmwareVersion: string
+  devices: number
+}
+
+export interface FleetFirmwareDistributionResponse {
+  total: number
+  buckets: FirmwareBucket[]
+}
+
+/** GET /analytics/fleet/churn-risk */
+export interface ChurnRiskDevice {
+  deviceId: string
+  characterKey: string
+  firmwareVersion: string | null
+  /** ISO 8601，可为 null（createdAt basis 即从未活跃） */
+  lastActiveAt: string | null
+  daysInactive: number
+  basis: 'presence' | 'message' | 'createdAt'
+}
+
+export interface FleetChurnRiskResponse {
+  days: number
+  asOf: string
+  count: number
+  devices: ChurnRiskDevice[]
+}
+
+/** GET /analytics/fleet/devices */
+export interface FleetDeviceItem {
+  deviceId: string
+  deviceUuid: string
+  characterKey: string
+  deviceCode: string | null
+  firmwareVersion: string | null
+  /** Prisma Device.macAddress 可空；为空时后端用 deviceId 查 Redis */
+  macAddress: string | null
+  createdAt: string
+  boundUsers: number
+  /** Redis 查询失败 → null */
+  realtime: DeviceRealtime | null
+  /** 近 7 自然日（含今天）有 presence 行的天数 */
+  presenceDays7d: number
+  lastPresenceDate: string | null
+  turns7d: number
+}
+
+export interface FleetDevicesResponse {
+  page: number
+  pageSize: number
+  total: number
+  items: FleetDeviceItem[]
+}
+
+/** GET /analytics/fleet/devices/:deviceId */
+export interface BoundUser {
+  userId: string
+  isOwner: boolean
+  boundAt: string
+}
+
+export interface PresenceDay {
+  date: string
+  reportCount: number
+  firstSeenAt: string
+  lastSeenAt: string
+}
+
+export interface DailyTurn {
+  date: string
+  turns: number
+}
+
+export interface DeviceTotals {
+  presenceDays: number
+  turns: number
+}
+
+export interface FleetDeviceDetailResponse {
+  deviceId: string
+  deviceUuid: string
+  characterKey: string
+  deviceCode: string | null
+  firmwareVersion: string | null
+  macAddress: string | null
+  wifiName: string | null
+  ipAddress: string | null
+  networkType: string | null
+  timezone: string | null
+  createdAt: string
+  realtime: DeviceRealtime | null
+  /** 只暴露 userId + isOwner + boundAt，不含任何 PII */
+  boundUsers: BoundUser[]
+  /** 近 days 天，按 date 升序；无行的日期不补（前端自行渲染日历断点） */
+  presence: PresenceDay[]
+  /** 近 days 天，按 date 升序，无消息日补 0 */
+  dailyTurns: DailyTurn[]
+  totals: DeviceTotals
+}

@@ -8,6 +8,12 @@ import {
   fetchDurationDistribution,
   fetchEngagementSummary,
   fetchFeatureAdoption,
+  fetchFleetChurnRisk,
+  fetchFleetDeviceDetail,
+  fetchFleetDevices,
+  fetchFleetFirmwareDistribution,
+  fetchFleetPresenceTrend,
+  fetchFleetSummary,
   fetchHourlyHeatmap,
   fetchIntentSummary,
   fetchIntentTrend,
@@ -450,5 +456,58 @@ export function useReviewQueue(query: ReviewQueueQuery) {
     queryKey: ['analytics', 'reviewQueue', query],
     queryFn: () => fetchReviewQueue(query),
     placeholderData: (prev) => prev,
+  })
+}
+
+// ---- 设备舰队 ----
+
+export function useFleetSummary(date: string) {
+  return useQuery({
+    queryKey: ['analytics', 'fleetSummary', date],
+    queryFn: () => fetchFleetSummary(date),
+  })
+}
+
+export function useFleetPresenceTrend(params: {
+  startDate: string
+  endDate: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'fleetPresenceTrend', params],
+    queryFn: () => fetchFleetPresenceTrend(params),
+  })
+}
+
+export function useFleetFirmwareDistribution() {
+  return useQuery({
+    queryKey: ['analytics', 'fleetFirmwareDistribution'],
+    queryFn: fetchFleetFirmwareDistribution,
+  })
+}
+
+export function useFleetChurnRisk(days: number) {
+  return useQuery({
+    queryKey: ['analytics', 'fleetChurnRisk', days],
+    queryFn: () => fetchFleetChurnRisk(days),
+  })
+}
+
+export function useFleetDevices(params: {
+  keyword?: string
+  page?: number
+  pageSize?: number
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'fleetDevices', params],
+    queryFn: () => fetchFleetDevices(params),
+    placeholderData: (prev) => prev,
+  })
+}
+
+export function useFleetDeviceDetail(deviceId: string | null, days: number) {
+  return useQuery({
+    queryKey: ['analytics', 'fleetDeviceDetail', deviceId, days],
+    queryFn: () => fetchFleetDeviceDetail(deviceId!, days),
+    enabled: deviceId !== null,
   })
 }
