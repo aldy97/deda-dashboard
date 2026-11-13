@@ -71,6 +71,20 @@ function makeItem(overrides: Partial<PromptCatalogItem> = {}): PromptCatalogItem
   }
 }
 
+const PUBLISHED_AT = '2026-11-10T09:30:00+08:00'
+
+/**
+ * 列表里的「最近发布」是本地时区格式化出来的，而 CI 跑在 UTC：
+ * 期望值按运行环境算，不硬编码钟点，否则换个时区这条用例就红。
+ */
+function localStamp(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`
+}
+
 const CATALOG: PromptCatalogItem[] = [
   makeItem(),
   makeItem({
@@ -80,7 +94,7 @@ const CATALOG: PromptCatalogItem[] = [
     name: '意图分类',
     source: 'db',
     publishedRevision: 3,
-    publishedAt: '2026-11-10T09:30:00+08:00',
+    publishedAt: PUBLISHED_AT,
     publishedBy: 'admin',
     deviatesFromDefault: true,
     effectiveContent: '改过的正文',
@@ -157,7 +171,7 @@ describe('Prompts 列表渲染', () => {
     expect(screen.getByText('已偏离默认')).toBeInTheDocument()
     expect(screen.getAllByText('从未发布')).toHaveLength(2)
     // 意图分类那行有发布时间与操作人
-    expect(screen.getByText('2026-11-10 09:30')).toBeInTheDocument()
+    expect(screen.getByText(localStamp(PUBLISHED_AT))).toBeInTheDocument()
     expect(screen.getByText('admin')).toBeInTheDocument()
   })
 
