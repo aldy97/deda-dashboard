@@ -5,6 +5,7 @@ import {
   CommentOutlined,
   DashboardOutlined,
   DatabaseOutlined,
+  FileTextOutlined,
   MessageOutlined,
   ReadOutlined,
   RobotOutlined,
@@ -13,6 +14,8 @@ import {
 } from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { TOKEN_KEY } from '../api/client'
+import { useAnalyticsMeta } from '../api/meta'
+import EnvTag from '../components/EnvTag'
 
 const { Sider, Header, Content } = Layout
 
@@ -28,11 +31,17 @@ const MENU_ITEMS = [
   { key: '/fleet', label: '设备舰队', icon: <RobotOutlined /> },
   { key: '/messages', label: '消息明细', icon: <MessageOutlined /> },
   { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
+  // 技术监控之后是运维配置：改的是线上模型行为，不是看数据
+  { key: '/prompts', label: 'Prompt 管理', icon: <FileTextOutlined /> },
 ]
 
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  // 环境标签只信服务端 meta：同一份 dist 会部署到三个环境，构建期常量给不出答案。
+  // 取不到就是「未知环境」，Prompt 管理页据此 fail-closed 禁用全部写操作。
+  const metaQuery = useAnalyticsMeta()
+  const meta = metaQuery.data ?? null
 
   const logout = () => {
     sessionStorage.removeItem(TOKEN_KEY)
@@ -46,12 +55,23 @@ export default function AdminLayout() {
           style={{
             color: '#fff',
             fontWeight: 600,
-            fontSize: 16,
-            padding: '18px 20px',
+            fontSize: 15,
+            padding: '16px 12px 12px',
             letterSpacing: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 6,
+            // Sider 只有 200px：「未知环境」四个字放不下时换行，不截断
+            flexWrap: 'wrap',
           }}
         >
-          Deda Dashboard
+          <span>Deda Dashboard</span>
+          <EnvTag
+            nodeEnv={meta?.nodeEnv}
+            loading={metaQuery.isPending}
+            failed={metaQuery.isError}
+          />
         </div>
         <Menu
           theme="dark"
