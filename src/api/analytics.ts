@@ -302,7 +302,6 @@ export interface MessagesQuery {
   role?: 'user' | 'assistant'
   status?: 'completed' | 'failed' | 'interrupted'
   mode?: string
-  conversationModeKey?: string
   /** 精确匹配，用于查看同一轮问答 */
   turnId?: string
   conversationId?: string
