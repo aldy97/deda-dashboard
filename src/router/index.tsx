@@ -8,6 +8,7 @@ import Engagement from '../pages/Engagement'
 import Users from '../pages/Users'
 import UserDeviceDetail from '../pages/Users/DeviceDetail'
 import Content from '../pages/Content'
+import AdventureStudio from '../pages/AdventureStudio'
 import Messages from '../pages/Messages'
 import LlmMonitor from '../pages/Llm'
 import Memories from '../pages/Memories'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter(
         { path: 'users', element: <Users /> },
         { path: 'users/:deviceId', element: <UserDeviceDetail /> },
         { path: 'content', element: <Content /> },
+        { path: 'adventure', element: <AdventureStudio /> },
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },
         { path: 'llm', element: <LlmMonitor /> },
