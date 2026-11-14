@@ -70,19 +70,28 @@ const formatTime = (iso: string) => dayjs(iso).format('YYYY-MM-DD HH:mm:ss')
 /**
  * 消息详情抽屉：整行字段 + rawPayload 原样 JSON（对标 Prisma Studio 行展开）。
  * 「查看同一轮问答」把 turnId 回填给列表作精确过滤。
+ *
+ * 两种打开方式：列表点行时把整行传进来（先渲染列表字段，详情回来再补 rawPayload）；
+ * 只凭 URL（?messageId=）打开时只有 id，字段全部等详情接口回来。后者让抽屉可分享、
+ * 可刷新还原，也让别的页面（用户详情页的近期消息）能把人直接带到某一条消息上。
  */
 export default function MessageDetailDrawer({
   message,
+  messageId,
   onClose,
   onViewTurn,
 }: {
-  /** 列表行数据；打开后内部再拉详情补 rawPayload */
-  message: MessageListItem | null
+  /** 列表行数据（可空）；有则先渲染，再拉详情补 rawPayload */
+  message?: MessageListItem | null
+  /** 仅凭 URL 打开时的消息 id */
+  messageId?: string | null
   onClose: () => void
   onViewTurn: (turnId: string) => void
 }) {
+  const id = message?.id ?? messageId ?? null
+
   // 抽屉打开即拉详情（补 rawPayload）；key 含消息 id，切行自动作废旧请求
-  const detailQuery = useMessageDetail(message?.id ?? null)
+  const detailQuery = useMessageDetail(id)
   const detail = detailQuery.data ?? null
   const loading = detailQuery.isLoading
   const error = detailQuery.error
@@ -91,26 +100,27 @@ export default function MessageDetailDrawer({
       : '加载失败'
     : null
 
+  const row = detail ?? message ?? null
+
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
+  const turnId = row?.turnId ?? null
   const turnQuery = useMessages(
     {
-      turnId: message?.turnId ?? '',
+      turnId: turnId ?? '',
       sort: 'spokeAt_asc',
       pageSize: 10,
     },
-    message?.turnId != null,
+    turnId !== null,
   )
   const turnUserMessages = turnQuery.data
     ? turnQuery.data.items.filter((m) => m.role === 'user')
     : null
 
-  const row = detail ?? message
-
   return (
     <Drawer
       title="消息详情"
       width={640}
-      open={message !== null}
+      open={id !== null}
       onClose={onClose}
     >
       {row && (

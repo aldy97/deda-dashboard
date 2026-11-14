@@ -6,6 +6,7 @@ import {
   patchParams,
   rangePatch,
   readEnumParam,
+  readOptionalEnumParam,
   readParam,
   readRangeParams,
   useUrlQuery,
@@ -89,6 +90,19 @@ describe('readParam / readEnumParam · 脏 URL 免疫', () => {
     expect(readEnumParam(new URLSearchParams(), 'tab', allowed, 'perf')).toBe(
       'perf',
     )
+  })
+
+  it('可选枚举：命中才用，缺失与非法都是 undefined（不替用户选一个筛选值）', () => {
+    const allowed = ['user', 'assistant'] as const
+    expect(
+      readOptionalEnumParam(new URLSearchParams('role=user'), 'role', allowed),
+    ).toBe('user')
+    expect(
+      readOptionalEnumParam(new URLSearchParams('role=admin'), 'role', allowed),
+    ).toBeUndefined()
+    expect(
+      readOptionalEnumParam(new URLSearchParams(), 'role', allowed),
+    ).toBeUndefined()
   })
 })
 

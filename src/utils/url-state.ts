@@ -65,6 +65,22 @@ export function readEnumParam<T extends string>(
   return fallback
 }
 
+/**
+ * 读可选枚举型键（role / status…）：命中白名单才用，否则 undefined＝「未设置」。
+ * 与 readEnumParam 的区别是没有兜底值——筛选条件缺省就是不筛，不能替用户选一个。
+ */
+export function readOptionalEnumParam<T extends string>(
+  searchParams: URLSearchParams,
+  key: string,
+  allowed: readonly T[],
+): T | undefined {
+  const value = searchParams.get(key)
+  if (value !== null && (allowed as readonly string[]).includes(value)) {
+    return value as T
+  }
+  return undefined
+}
+
 /** 只认 YYYY-MM-DD 且能原样格式化回去的日期，挡掉 ISO 串与 2026-13-40 这类脏值 */
 function parseDay(value: string | null): dayjs.Dayjs | null {
   if (value === null || !DATE_ONLY.test(value)) return null

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
@@ -20,76 +19,50 @@ import {
   useMessages,
 } from '../../api/queries'
 import type { MessagesQuery } from '../../api/analytics'
-import type { MessageListItem, MessageSort } from '../../types/analytics'
+import type { MessageSort } from '../../types/analytics'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import { fmt } from '../../utils/date-range'
-import type { DayRange } from '../../utils/date-range'
+import { readParam, useUrlQuery } from '../../utils/url-state'
 import MessageDetailDrawer, {
   modeLabel,
   roleTag,
 } from './MessageDetailDrawer'
-
-/** 筛选条件（不含分页/排序） */
-interface Filters {
-  range: DayRange | null
-  deviceId: string
-  role?: 'user' | 'assistant'
-  status?: 'completed' | 'failed' | 'interrupted'
-  keyword: string
-  /** 对话模式（平级 mode，对应服务端 messages.mode 原值） */
-  mode?: string
-}
-
-const DEFAULT_FILTERS: Filters = {
-  range: null,
-  deviceId: '',
-  role: undefined,
-  status: undefined,
-  keyword: '',
-  mode: undefined,
-}
+import { EMPTY_FILTERS, filtersFromUrl, filtersToPatch } from './filters'
+import type { Filters } from './filters'
 
 /**
  * 消息明细页：对标 Prisma Studio 的表浏览（过滤 + 排序 + 分页 + 行详情）。
  * 点行打开详情抽屉（含 rawPayload）；抽屉内可一键按 turnId 过滤同轮问答。
+ *
+ * 全部筛选条件、turnId 与打开的消息都在 URL 上（?deviceId=&mode=&startDate=…&messageId=），
+ * 所以「记忆版本时间线 → 同轮问答」「用户详情 → 该设备全部消息」「安全复核队列 → 该轮链路」
+ * 这些跳转能把上下文一起带过来，链接也可以直接发给同事。
  */
 export default function Messages() {
-  // turnId / deviceId 支持 URL 参数（记忆档案版本时间线、用户详情页跳转过来时带上）
-  const [searchParams, setSearchParams] = useSearchParams()
-  const urlDeviceId = searchParams.get('deviceId') ?? ''
-  // 输入中的筛选条件（点「查询」后才生效）
-  const [draft, setDraft] = useState<Filters>(() => ({
-    ...DEFAULT_FILTERS,
-    deviceId: urlDeviceId,
-  }))
-  // 已生效的筛选条件
-  const [applied, setApplied] = useState<Filters>(() => ({
-    ...DEFAULT_FILTERS,
-    deviceId: urlDeviceId,
-  }))
-  const [turnId, setTurnId] = useState<string | null>(() =>
-    searchParams.get('turnId'),
-  )
+  const { searchParams, setQuery } = useUrlQuery()
 
-  /** 设置/清除 turnId 过滤，同时同步 URL（可刷新、可分享） */
-  const applyTurnId = (tid: string | null) => {
-    setTurnId(tid)
-    setPage(1)
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (tid) next.set('turnId', tid)
-        else next.delete('turnId')
-        return next
-      },
-      { replace: true },
-    )
-  }
+  const applied = filtersFromUrl(searchParams)
+  const turnId = readParam(searchParams, 'turnId')
+  const messageId = readParam(searchParams, 'messageId')
+
+  // 输入中的条件（点「查询」才写进 URL）。URL 一变——后退、外部跳转、点查询——
+  // 本地草稿立即作废回到 URL 值。派生而非 effect：少一轮渲染，也不会有中间态。
+  const urlKey = searchParams.toString()
+  const [draftState, setDraftState] = useState<{
+    key: string
+    filters: Filters
+  } | null>(null)
+  const draft = draftState?.key === urlKey ? draftState.filters : applied
+  const setDraft = (next: Filters) => setDraftState({ key: urlKey, filters: next })
+
   const [sort, setSort] = useState<MessageSort>('spokeAt_desc')
-  const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [selected, setSelected] = useState<MessageListItem | null>(null)
+  // 页码挂在「当前生效条件」上：条件一变自动回第 1 页，不会停在越界页码看空表
+  const filterKey = JSON.stringify(applied)
+  const [pageState, setPageState] = useState({ key: filterKey, page: 1 })
+  const page = pageState.key === filterKey ? pageState.page : 1
+  const setPage = (next: number) => setPageState({ key: filterKey, page: next })
 
   // 对话模式选项源（平级 mode 全集 + 区间内消息数参考）
   const modeOptionsQuery = useMessageModes()
@@ -127,15 +100,21 @@ export default function Messages() {
     : null
 
   const applyFilters = () => {
-    setPage(1)
-    setApplied(draft)
+    setQuery(filtersToPatch(draft), { replace: true })
   }
 
   const resetFilters = () => {
-    setDraft(DEFAULT_FILTERS)
-    setApplied(DEFAULT_FILTERS)
-    applyTurnId(null)
+    setDraftState(null)
     setSort('spokeAt_desc')
+    setQuery(
+      { ...filtersToPatch(EMPTY_FILTERS), turnId: null },
+      { replace: true },
+    )
+  }
+
+  /** 设置/清除 turnId 过滤（写 URL，可刷新、可分享） */
+  const applyTurnId = (tid: string | null) => {
+    setQuery({ turnId: tid }, { replace: true })
   }
 
   return (
@@ -262,7 +241,7 @@ export default function Messages() {
           loading={loading}
           dataSource={data?.items ?? []}
           onRow={(row) => ({
-            onClick: () => setSelected(row),
+            onClick: () => setQuery({ messageId: row.id }),
             style: { cursor: 'pointer' },
           })}
           onChange={(_pagination, _filters, sorter) => {
@@ -343,11 +322,12 @@ export default function Messages() {
       </Card>
 
       <MessageDetailDrawer
-        message={selected}
-        onClose={() => setSelected(null)}
+        message={data?.items.find((item) => item.id === messageId) ?? null}
+        messageId={messageId}
+        onClose={() => setQuery({ messageId: null }, { replace: true })}
         onViewTurn={(tid) => {
-          applyTurnId(tid)
-          setSelected(null)
+          // 一次写完：过滤到同轮问答并关掉抽屉，避免留下两条历史记录
+          setQuery({ turnId: tid, messageId: null }, { replace: true })
         }}
       />
     </div>
