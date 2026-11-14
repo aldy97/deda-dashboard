@@ -6,21 +6,20 @@ import {
   Drawer,
   Empty,
   InputNumber,
-  Popover,
   Spin,
   Table,
   Tag,
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import ReactECharts from 'echarts-for-react'
-import type { Dayjs } from 'dayjs'
 import { useFleetDeviceDetail } from '../../api/queries'
 import type {
   BoundUser,
   FleetDeviceDetailResponse,
 } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
+import DailyTurnsChart from '../../components/device/DailyTurnsChart'
+import PresenceCalendar from '../../components/device/PresenceCalendar'
 
 interface Props {
   deviceId: string | null
@@ -68,7 +67,7 @@ export default function DeviceDetailDrawer({ deviceId, onClose }: Props) {
       open={open}
       onClose={close}
       width={640}
-      destroyOnClose
+      destroyOnHidden
       extra={
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 13, color: '#666' }}>回看天数：</span>
@@ -294,144 +293,4 @@ function BoundUsersTable({ users }: { users: BoundUser[] }) {
       pagination={false}
     />
   )
-}
-
-/** 填补无数据的日期，用浅色块表示未开机 */
-function PresenceCalendar({
-  presence,
-  days,
-}: {
-  presence: FleetDeviceDetailResponse['presence']
-  days: number
-}) {
-  const endDate = dayjs().startOf('day')
-  const startDate = endDate.subtract(days - 1, 'day')
-
-  const presenceMap = new Map<string, boolean>()
-  for (const p of presence) {
-    presenceMap.set(p.date, true)
-  }
-
-  const cells: { date: Dayjs; hasData: boolean }[] = []
-  let cursor = startDate
-  while (cursor.isBefore(endDate) || cursor.isSame(endDate, 'day')) {
-    cells.push({
-      date: cursor,
-      hasData: presenceMap.has(cursor.format('YYYY-MM-DD')),
-    })
-    cursor = cursor.add(1, 'day')
-  }
-
-  // 按周一对齐切周：先用 null 补齐首行前导与末行尾部，否则最后一周的日期会
-  // 落在错误的星期列下（dayjs.day()：0=周日 … 6=周六）
-  type Cell = { date: Dayjs; hasData: boolean } | null
-  const leading = cells.length > 0 ? (cells[0].date.day() + 6) % 7 : 0
-  const padded: Cell[] = [
-    ...Array.from({ length: leading }, () => null),
-    ...cells,
-  ]
-  while (padded.length % 7 !== 0) padded.push(null)
-  const weeks: Cell[][] = []
-  for (let i = 0; i < padded.length; i += 7) {
-    weeks.push(padded.slice(i, i + 7))
-  }
-
-  const dayNames = ['一', '二', '三', '四', '五', '六', '日']
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {dayNames.map((n) => (
-          <div
-            key={n}
-            style={{
-              width: 28,
-              textAlign: 'center',
-              fontSize: 11,
-              color: '#999',
-            }}
-          >
-            {n}
-          </div>
-        ))}
-      </div>
-      {weeks.map((week, wi) => (
-        <div key={wi} style={{ display: 'flex', gap: 4 }}>
-          {week.map((cell, ci) =>
-            cell === null ? (
-              <div key={`pad-${ci}`} style={{ width: 28, height: 24 }} />
-            ) : (
-              <Popover
-                key={cell.date.format('YYYY-MM-DD')}
-                content={
-                  <div style={{ fontSize: 12 }}>
-                    <div>{cell.date.format('YYYY-MM-DD')}</div>
-                    <div>{cell.hasData ? '已开机' : '无数据'}</div>
-                  </div>
-                }
-              >
-                <div
-                  style={{
-                    width: 28,
-                    height: 24,
-                    borderRadius: 3,
-                    backgroundColor: cell.hasData ? '#1677ff' : '#f5f5f5',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 10,
-                    color: cell.hasData ? '#fff' : '#bbb',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {cell.date.date()}
-                </div>
-              </Popover>
-            ),
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/** dailyTurns 折线，后端已补 0 */
-function DailyTurnsChart({
-  dailyTurns,
-}: {
-  dailyTurns: FleetDeviceDetailResponse['dailyTurns']
-}) {
-  if (dailyTurns.length === 0) {
-    return (
-      <Empty description="暂无对话数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-    )
-  }
-
-  const dates = dailyTurns.map((p) => p.date.slice(5))
-
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      formatter: (params: Array<{ value: number; dataIndex: number }>) => {
-        const idx = params[0]?.dataIndex ?? 0
-        const point = dailyTurns[idx]
-        return `${point.date}<br/>对话轮次：${point.turns} 轮`
-      },
-    },
-    grid: { left: 48, right: 24, top: 16, bottom: 32 },
-    xAxis: { type: 'category', data: dates, boundaryGap: false },
-    yAxis: { type: 'value', name: '轮', minInterval: 1, min: 0 },
-    series: [
-      {
-        type: 'line',
-        smooth: true,
-        showSymbol: false,
-        itemStyle: { color: '#1677ff' },
-        areaStyle: { color: 'rgba(22, 119, 255, 0.08)' },
-        data: dailyTurns.map((p) => p.turns),
-      },
-    ],
-  }
-
-  return <ReactECharts option={option} style={{ height: 240 }} notMerge />
 }
