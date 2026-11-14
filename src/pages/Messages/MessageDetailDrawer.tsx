@@ -19,33 +19,32 @@ import LlmTurnChain from './LlmTurnChain'
 
 /** 与 deda-wechat-app learning-data.ts 的 MODE_LABELS 完全一致（唯一映射来源，勿自行增改） */
 const MODE_LABELS: Record<string, string> = {
+  // 当前会新写入的平级 mode
   free_chat: '自由对话',
-  free_chat_casual: '自由闲聊',
-  free_chat_roleplay: '角色扮演',
-  free_chat_qa: '百科问答',
   english_chat: '英语对话',
   english_story: '英语故事',
   idiom_story: '成语故事',
+  sleep_story: '哄睡故事',
   adventure_story: '冒险故事',
   free_story: '自由故事',
+  // 以下均为 legacy：仅用于翻译历史消息行，服务端永不新写入
+  free_chat_casual: '自由闲聊',
+  free_chat_roleplay: '角色扮演',
+  free_chat_qa: '百科问答',
   daily_adventure: '每日冒险',
   adventure: '每日冒险',
   story: '故事',
   sleep: '哄睡故事',
-  sleep_story: '哄睡故事',
   bedtime: '哄睡故事',
   music: '音乐',
   device_control: '设备控制',
   unknown: '其他',
 }
 
-export function modeLabel(
-  mode: string | null,
-  conversationModeKey: string | null,
-): string {
-  const key = conversationModeKey ?? mode
-  if (!key) return '—'
-  return MODE_LABELS[key] ?? key
+/** mode 平级化后只认 mode 一个维度；未知值原样透出，缺失显示破折号 */
+export function modeLabel(mode: string | null): string {
+  if (!mode) return '—'
+  return MODE_LABELS[mode] ?? mode
 }
 
 export function roleTag(role: string) {
@@ -162,7 +161,7 @@ export default function MessageDetailDrawer({
               {
                 key: 'mode',
                 label: '模式',
-                children: modeLabel(row.mode, row.conversationModeKey),
+                children: modeLabel(row.mode),
               },
               // CEFR 等级暂不需要，需要时取消注释
               // {

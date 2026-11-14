@@ -37,10 +37,8 @@ interface Filters {
   role?: 'user' | 'assistant'
   status?: 'completed' | 'failed' | 'interrupted'
   keyword: string
-  /** 顶层模式（配置表 category key） */
+  /** 对话模式（平级 mode，对应服务端 messages.mode 原值） */
   mode?: string
-  /** 子模式（配置表 mode key，依赖顶层模式选择） */
-  conversationModeKey?: string
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -50,7 +48,6 @@ const DEFAULT_FILTERS: Filters = {
   status: undefined,
   keyword: '',
   mode: undefined,
-  conversationModeKey: undefined,
 }
 
 /**
@@ -94,7 +91,7 @@ export default function Messages() {
   const [pageSize, setPageSize] = useState(20)
   const [selected, setSelected] = useState<MessageListItem | null>(null)
 
-  // 对话模式选项源（配置表全量启用项 + 消息数参考）
+  // 对话模式选项源（平级 mode 全集 + 区间内消息数参考）
   const modeOptionsQuery = useMessageModes()
   const modeOptions = modeOptionsQuery.data ?? null
   // AI 回复疑似打断率（仅随日期区间变化；推断口径）
@@ -114,9 +111,6 @@ export default function Messages() {
     ...(applied.status ? { status: applied.status } : {}),
     ...(applied.keyword.trim() ? { keyword: applied.keyword.trim() } : {}),
     ...(applied.mode ? { mode: applied.mode } : {}),
-    ...(applied.conversationModeKey
-      ? { conversationModeKey: applied.conversationModeKey }
-      : {}),
     ...(turnId ? { turnId } : {}),
     sort,
     page,
@@ -213,26 +207,8 @@ export default function Messages() {
             placeholder="对话模式"
             style={{ width: 150 }}
             value={draft.mode}
-            onChange={(v) =>
-              // 顶层模式切换时清空子模式（子模式选项依赖顶层）
-              setDraft({ ...draft, mode: v, conversationModeKey: undefined })
-            }
-            options={(modeOptions?.categories ?? []).map((c) => ({
-              label: `${c.name}（${c.messageCount}）`,
-              value: c.key,
-            }))}
-          />
-          <Select
-            allowClear
-            placeholder="子模式"
-            style={{ width: 160 }}
-            disabled={!draft.mode}
-            value={draft.conversationModeKey}
-            onChange={(v) => setDraft({ ...draft, conversationModeKey: v })}
-            options={(
-              modeOptions?.categories.find((c) => c.key === draft.mode)
-                ?.modes ?? []
-            ).map((m) => ({
+            onChange={(v) => setDraft({ ...draft, mode: v })}
+            options={(modeOptions?.modes ?? []).map((m) => ({
               label: `${m.name}（${m.messageCount}）`,
               value: m.key,
             }))}
@@ -346,7 +322,7 @@ export default function Messages() {
               title: '模式',
               key: 'mode',
               width: 100,
-              render: (_, row) => modeLabel(row.mode, row.conversationModeKey),
+              render: (_, row) => modeLabel(row.mode),
             },
             // 状态列暂不需要（一期消息几乎全 completed），需要时取消注释
             // {

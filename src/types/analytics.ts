@@ -234,7 +234,6 @@ export interface ModeUsageResponse {
     date: string
     modes: Array<{
       mode: string
-      conversationModeKey: string | null
       turns: number
       devices: number
     }>
@@ -341,21 +340,23 @@ export interface MessageListItem {
   /** assistant: completed / failed / interrupted（被打断，服务端推断口径） */
   status: string
   mode: string | null
-  conversationModeKey: string | null
   cefrLevel: string | null
   spokeAt: string
   createdAt: string
   device: MessageDeviceBrief
 }
 
-/** 对话模式选项源（GET /analytics/messages/modes） */
+/**
+ * 对话模式选项源（GET /analytics/messages/modes）。
+ * mode 平级化后不再有两级树：服务端返回「当前可写入的 mode 全集 ∪ 区间内实际出现过的 mode」，
+ * 活跃 mode 即使 0 条也返回（恒可选），legacy mode 有数据才返回。
+ */
 export interface MessageModesResponse {
-  categories: Array<{
+  modes: Array<{
     key: string
     name: string
-    /** 区间内该顶层模式的消息数（仅参考，0 也返回） */
+    /** 区间内该 mode 的消息数（仅参考，0 也返回） */
     messageCount: number
-    modes: Array<{ key: string; name: string; messageCount: number }>
   }>
 }
 
