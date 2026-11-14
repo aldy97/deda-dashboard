@@ -234,7 +234,6 @@ export interface ModeUsageResponse {
     date: string
     modes: Array<{
       mode: string
-      conversationModeKey: string | null
       turns: number
       devices: number
     }>
@@ -341,21 +340,23 @@ export interface MessageListItem {
   /** assistant: completed / failed / interrupted（被打断，服务端推断口径） */
   status: string
   mode: string | null
-  conversationModeKey: string | null
   cefrLevel: string | null
   spokeAt: string
   createdAt: string
   device: MessageDeviceBrief
 }
 
-/** 对话模式选项源（GET /analytics/messages/modes） */
+/**
+ * 对话模式选项源（GET /analytics/messages/modes）。
+ * mode 平级化后不再有两级树：服务端返回「当前可写入的 mode 全集 ∪ 区间内实际出现过的 mode」，
+ * 活跃 mode 即使 0 条也返回（恒可选），legacy mode 有数据才返回。
+ */
 export interface MessageModesResponse {
-  categories: Array<{
+  modes: Array<{
     key: string
     name: string
-    /** 区间内该顶层模式的消息数（仅参考，0 也返回） */
+    /** 区间内该 mode 的消息数（仅参考，0 也返回） */
     messageCount: number
-    modes: Array<{ key: string; name: string; messageCount: number }>
   }>
 }
 
@@ -1030,4 +1031,78 @@ export interface FleetDeviceDetailResponse {
   /** 近 days 天，按 date 升序，无消息日补 0 */
   dailyTurns: DailyTurn[]
   totals: DeviceTotals
+}
+
+// ---- Prompt 管理（/analytics/meta、/analytics/prompts*）----
+/**
+ * 契约真相：deda-server `docs/analytics-api.md` →「Prompt 管理」。
+ * 字段与 PromptAdminService 的 PromptCatalogItem / PromptDetail / PromptVersionItem
+ * 以及 AnalyticsMetaController.meta() 逐项对齐，不得自行增删。
+ */
+
+/** GET /analytics/meta：环境标识 + prompt 写策略 */
+export interface AnalyticsMeta {
+  /** development / staging / production；左上角环境标签据此渲染 */
+  nodeEnv: string
+  /** false = 服务端关了写（PROMPT_WRITE_ENABLED=false），前端必须禁用全部写操作 */
+  promptWriteEnabled: boolean
+  /** 仅用于提示文案；禁止预填确认码输入框，否则「手动输入」这道闸形同虚设 */
+  publishConfirmCode: string
+}
+
+export type PromptCategory = 'small_model' | 'main_rules' | 'story' | 'persona'
+
+/** 生效正文来自 DB 已发布版本，还是回落到代码默认值 */
+export type PromptSource = 'db' | 'default'
+
+/** 变量契约由服务端代码定义，DB 里的 renderSchema 仅供展示 */
+export interface PromptVariableSpec {
+  name: string
+  /** true = 必须提供且非空；false = 缺省渲染为空串（可选拼接段） */
+  required: boolean
+  description: string
+}
+
+/** GET /analytics/prompts 的数组元素（恒 17 项） */
+export interface PromptCatalogItem {
+  key: string
+  category: PromptCategory
+  scene: string | null
+  name: string
+  description: string
+  variables: PromptVariableSpec[]
+  maxChars: number
+  /** 代码默认值 */
+  defaultContent: string
+  /** 运行时真正生效的正文（DB published，无则代码默认值） */
+  effectiveContent: string
+  source: PromptSource
+  publishedRevision: number | null
+  draftRevision: number | null
+  publishedAt: string | null
+  publishedBy: string | null
+  /** 生效正文与代码默认值不一致 → 列表标「已偏离默认」 */
+  deviatesFromDefault: boolean
+}
+
+/** GET /analytics/prompts/:key，也是四个写操作的统一返回体 */
+export interface PromptDetail extends PromptCatalogItem {
+  draftContent: string | null
+  draftChangeNote: string | null
+  publishedContent: string | null
+  /** 仅回滚时非 null：本次回滚丢弃的未发布草稿号（正文仍在版本表，可从历史恢复） */
+  discardedDraftRevision: number | null
+}
+
+/** GET /analytics/prompts/:key/versions 的数组元素，按 revision 倒序 */
+export interface PromptVersionItem {
+  revision: number
+  content: string
+  changeNote: string | null
+  authorUsername: string
+  authorDisplayName: string | null
+  createdAt: string
+  publishedAt: string | null
+  isPublished: boolean
+  isDraft: boolean
 }

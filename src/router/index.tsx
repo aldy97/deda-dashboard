@@ -15,6 +15,7 @@ import Memories from '../pages/Memories'
 import MemoryDetail from '../pages/Memories/DeviceDetail'
 import Feedback from '../pages/Feedback'
 import Fleet from '../pages/Fleet'
+import Prompts from '../pages/Prompts'
 import { TOKEN_KEY } from '../api/client'
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -45,6 +46,7 @@ export const router = createBrowserRouter(
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },
         { path: 'llm', element: <LlmMonitor /> },
+        { path: 'prompts', element: <Prompts /> },
         { path: 'memories', element: <Memories /> },
         { path: 'memories/:deviceId', element: <MemoryDetail /> },
         { path: '*', element: <Navigate to="/overview" replace /> },
