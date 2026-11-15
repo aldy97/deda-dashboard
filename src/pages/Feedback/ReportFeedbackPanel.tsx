@@ -16,6 +16,7 @@ import { useReportFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
+import { useUrlQuery, readParam } from '../../utils/url-state'
 
 type UsefulFilter = 'all' | 'useful' | 'not_useful'
 
@@ -29,16 +30,20 @@ const USEFUL_OPTIONS: Array<{ label: string; value: UsefulFilter }> = [
  * 日报反馈：区间内家长对每日报告的有用/无用评价明细。
  * 顶部统计为区间整体有用率（后端口径，不受「有用/无用」筛选影响）。
  * 排序按 feedbackAt（= updatedAt）倒序：改票后记录浮到最前。
+ * URL 支持 ?deviceId= 预筛：从其他页面下钻时带入，渲染可关闭 Tag。
  */
 export default function ReportFeedbackPanel() {
+  const { searchParams, setQuery: setUrlQuery } = useUrlQuery()
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [usefulFilter, setUsefulFilter] = useState<UsefulFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const deviceId = readParam(searchParams, 'deviceId')
   const query = useReportFeedbacks({
     startDate: fmt(range[0]),
     endDate: fmt(range[1]),
     isUseful: usefulFilter === 'all' ? undefined : usefulFilter === 'useful',
+    deviceId: deviceId ?? undefined,
     page,
     pageSize,
   })
@@ -74,6 +79,19 @@ export default function ReportFeedbackPanel() {
           }}
         />
       </div>
+
+      {deviceId && (
+        <Tag
+          closable
+          onClose={() => {
+            setPage(1)
+            setUrlQuery({ deviceId: null }, { replace: true })
+          }}
+          style={{ marginBottom: 12 }}
+        >
+          设备：{deviceId}
+        </Tag>
+      )}
 
       {data && (
         <Row gutter={16} style={{ marginBottom: 16 }}>

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Alert, Radio, Table, Tooltip } from 'antd'
+import { Alert, Radio, Table, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import { useUserFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
+import { useUrlQuery, readParam } from '../../utils/url-state'
 
 type ContactFilter = 'all' | 'hasContact'
 
@@ -17,16 +18,20 @@ const CONTACT_OPTIONS: Array<{ label: string; value: ContactFilter }> = [
  * 使用反馈：家长主动提交的问题/建议（content ≤ 200 字 + 可选联系手机号）。
  * 用户已注销时 user 为 null，显示「已注销用户」；
  * 「账号手机号」来自 users.phone，可能与反馈留的 contact 不同，两列都展示。
+ * URL 支持 ?deviceId= 预筛（服务端经绑定关系反查该设备全部绑定账号），渲染可关闭 Tag。
  */
 export default function UserFeedbackPanel() {
+  const { searchParams, setQuery } = useUrlQuery()
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [contactFilter, setContactFilter] = useState<ContactFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const deviceId = readParam(searchParams, 'deviceId')
   const query = useUserFeedbacks({
     startDate: fmt(range[0]),
     endDate: fmt(range[1]),
     hasContact: contactFilter === 'hasContact' ? true : undefined,
+    deviceId: deviceId ?? undefined,
     page,
     pageSize,
   })
@@ -62,6 +67,19 @@ export default function UserFeedbackPanel() {
           }}
         />
       </div>
+
+      {deviceId && (
+        <Tag
+          closable
+          onClose={() => {
+            setPage(1)
+            setQuery({ deviceId: null }, { replace: true })
+          }}
+          style={{ marginBottom: 12 }}
+        >
+          设备：{deviceId}
+        </Tag>
+      )}
 
       {error && (
         <Alert
