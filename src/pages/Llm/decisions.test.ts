@@ -10,6 +10,7 @@ import {
   formatDecisionRate,
   intentLabel,
   intentSourceLabel,
+  intentToMode,
   isSilentDegradeSource,
   isUnauditedPassSource,
   pivotIntentMatrix,
@@ -335,5 +336,32 @@ describe('pivotIntentMatrix 交叉表', () => {
     ])
     expect(rows[0].counts['model']).toBe(7)
     expect(rows[0].total).toBe(7)
+  })
+})
+
+describe('intentToMode 意图→消息模式映射', () => {
+  it('free_chat / adventure_story / english_story / idiom_story / sleep_story / free_story 直出同名 mode', () => {
+    expect(intentToMode('free_chat')).toBe('free_chat')
+    expect(intentToMode('adventure_story')).toBe('adventure_story')
+    expect(intentToMode('english_story')).toBe('english_story')
+    expect(intentToMode('idiom_story')).toBe('idiom_story')
+    expect(intentToMode('sleep_story')).toBe('sleep_story')
+    expect(intentToMode('free_story')).toBe('free_story')
+  })
+
+  it('sleep_config 不是对话模式，返回 null', () => {
+    expect(intentToMode('sleep_config')).toBeNull()
+  })
+
+  it('null 返回 null', () => {
+    expect(intentToMode(null)).toBeNull()
+  })
+
+  it('未知意图返回 null（后端新增取值时不下钻，不瞎编一个 mode）', () => {
+    expect(intentToMode('some_future_intent')).toBeNull()
+  })
+
+  it('空字符串也返回 null', () => {
+    expect(intentToMode('')).toBeNull()
   })
 })

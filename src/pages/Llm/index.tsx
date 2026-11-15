@@ -1,5 +1,5 @@
 import { Card, Tabs, Typography } from 'antd'
-import { useSearchParams } from 'react-router-dom'
+import { useUrlQuery, readEnumParam } from '../../utils/url-state'
 import CostTab from './tabs/CostTab'
 import IntentTab from './tabs/IntentTab'
 import PerfTab from './tabs/PerfTab'
@@ -20,16 +20,9 @@ import SafetyTab from './tabs/SafetyTab'
  */
 const TAB_KEYS = ['perf', 'cost', 'safety', 'intent'] as const
 
-type TabKey = (typeof TAB_KEYS)[number]
-
-function isTabKey(value: string | null): value is TabKey {
-  return value !== null && (TAB_KEYS as readonly string[]).includes(value)
-}
-
 export default function LlmMonitor() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const requested = searchParams.get('tab')
-  const activeKey: TabKey = isTabKey(requested) ? requested : 'perf'
+  const { searchParams, setQuery } = useUrlQuery()
+  const activeKey = readEnumParam(searchParams, 'tab', TAB_KEYS, 'perf')
 
   return (
     <div>
@@ -45,7 +38,7 @@ export default function LlmMonitor() {
       <Card>
         <Tabs
           activeKey={activeKey}
-          onChange={(key) => setSearchParams({ tab: key })}
+          onChange={(key) => setQuery({ tab: key })}
           items={[
             {
               key: 'perf',

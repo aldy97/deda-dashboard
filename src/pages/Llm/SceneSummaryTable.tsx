@@ -1,4 +1,5 @@
 import { Progress, Table, Tag } from 'antd'
+import { Link } from 'react-router-dom'
 import type { LlmSummaryResponse } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
 import {
@@ -13,6 +14,7 @@ import {
  * 场景总览表：每场景一行的调用量 / 成功率 / 延迟 / 首包 / token / 失败 Top1。
  * fail-open 场景（安全分类、过渡语）带「静默降级」徽标：成功率跌不会报错，必须盯这里。
  * 场景名的 InfoTip 解释来自 SCENE_META（语义与 deda-server 各调用点一致）。
+ * 场景名是到 /prompts?scene= 的 Link，下钻到对应 prompt 管理页。
  */
 export default function SceneSummaryTable({
   data,
@@ -34,7 +36,7 @@ export default function SceneSummaryTable({
             const meta = SCENE_META[scene]
             return (
               <span>
-                {sceneLabel(scene)}
+                <Link to={`/prompts?scene=${scene}`}>{sceneLabel(scene)}</Link>
                 {meta && <InfoTip title={meta.description} />}
                 <Tag color={row.tier === 'small' ? 'geekblue' : 'gold'}>
                   {row.tier === 'small' ? '小模型' : '主模型'}

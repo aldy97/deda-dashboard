@@ -1,10 +1,12 @@
 import { Empty, Table, Tag } from 'antd'
+import { Link } from 'react-router-dom'
 import type { IntentSummaryResponse } from '../../types/analytics'
 import {
   INTENT_META,
   NULL_BUCKET,
   intentLabel,
   intentSourceLabel,
+  intentToMode,
   pivotIntentMatrix,
 } from './decisions'
 
@@ -16,11 +18,17 @@ import {
  *
  * 缺组合渲染「—」而不是 0：0 是「查过、确实没有」，— 是「这个组合没出现过」，
  * 在稀疏矩阵里两者视觉上要分开，否则满屏 0 会淹掉真正有值的格子。
+ *
+ * 模式意图（free_chat / adventure_story 等）的行标签可点，下钻到 /messages?mode=。
  */
 export default function IntentMatrixTable({
   summary,
+  startDate,
+  endDate,
 }: {
   summary: IntentSummaryResponse
+  startDate: string
+  endDate: string
 }) {
   const { sources, rows } = pivotIntentMatrix(summary.matrix)
 
@@ -44,15 +52,28 @@ export default function IntentMatrixTable({
           dataIndex: 'intent',
           fixed: 'left',
           width: 160,
-          render: (intent: string | null) => (
-            <Tag
-              color={
-                intent !== null ? (INTENT_META[intent]?.color ?? 'default') : 'default'
-              }
-            >
-              {intentLabel(intent)}
-            </Tag>
-          ),
+          render: (intent: string | null) => {
+            const tag = (
+              <Tag
+                color={
+                  intent !== null ? (INTENT_META[intent]?.color ?? 'default') : 'default'
+                }
+              >
+                {intentLabel(intent)}
+              </Tag>
+            )
+            const mode = intentToMode(intent)
+            if (mode) {
+              return (
+                <Link
+                  to={`/messages?mode=${mode}&startDate=${startDate}&endDate=${endDate}`}
+                >
+                  {tag}
+                </Link>
+              )
+            }
+            return tag
+          },
         },
         ...sources.map((sourceKey) => ({
           title: columnLabel(sourceKey),

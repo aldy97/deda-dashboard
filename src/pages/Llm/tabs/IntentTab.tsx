@@ -9,6 +9,7 @@ import {
   Statistic,
   Typography,
 } from 'antd'
+import { Link } from 'react-router-dom'
 import { useIntentSummary, useIntentTrend } from '../../../api/queries'
 import AnalyticsRangePicker from '../../../components/AnalyticsRangePicker'
 import InfoTip from '../../../components/InfoTip'
@@ -132,6 +133,16 @@ export default function IntentTab() {
                     value={summary.adventureTakeoverCount}
                     suffix="轮"
                   />
+                  {summary.adventureTakeoverCount > 0 && (
+                    <div>
+                      <Link
+                        to={`/messages?mode=adventure_story&startDate=${params.startDate}&endDate=${params.endDate}`}
+                        style={{ fontSize: 12 }}
+                      >
+                        查看冒险消息 →
+                      </Link>
+                    </div>
+                  )}
                 </Col>
                 <Col>
                   <Statistic title="匿名链路" value={noDeviceCount} suffix="轮" />
@@ -158,7 +169,11 @@ export default function IntentTab() {
             )}
 
             <Card title="意图 × 来源交叉表" style={{ marginTop: 16 }}>
-              <IntentMatrixTable summary={summary} />
+              <IntentMatrixTable
+                summary={summary}
+                startDate={params.startDate}
+                endDate={params.endDate}
+              />
             </Card>
           </>
         )}
