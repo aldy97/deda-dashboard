@@ -24,10 +24,8 @@ import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import { fmt } from '../../utils/date-range'
 import { readParam, useUrlQuery } from '../../utils/url-state'
-import MessageDetailDrawer, {
-  modeLabel,
-  roleTag,
-} from './MessageDetailDrawer'
+import MessageDetailDrawer from './MessageDetailDrawer'
+import { modeLabel, roleTag } from '../../components/message/labels'
 import { EMPTY_FILTERS, filtersFromUrl, filtersToPatch } from './filters'
 import type { Filters } from './filters'
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { modeLabel } from './MessageDetailDrawer'
+import { render, screen } from '@testing-library/react'
+import { modeLabel, roleTag, statusTag } from './labels'
 
 /**
- * 模式标签的翻译契约。
+ * 消息标签的翻译契约（mode / role / status）。
  *
  * mode 平级化之后 conversationModeKey 已从服务端契约中消失，modeLabel 只认 mode 一个维度。
  * 这里考核三件事：
@@ -55,5 +56,35 @@ describe('modeLabel · 边界', () => {
 
   it('服务端新增未知 mode 时原样透出，不渲染 undefined', () => {
     expect(modeLabel('brand_new_mode')).toBe('brand_new_mode')
+  })
+})
+
+describe('roleTag · 角色标签', () => {
+  it('user → 孩子，assistant → AI', () => {
+    render(roleTag('user'))
+    expect(screen.getByText('孩子')).toBeTruthy()
+    render(roleTag('assistant'))
+    expect(screen.getByText('AI')).toBeTruthy()
+  })
+
+  it('服务端新增角色时原样透出，不吞掉', () => {
+    render(roleTag('system'))
+    expect(screen.getByText('system')).toBeTruthy()
+  })
+})
+
+describe('statusTag · 消息状态标签', () => {
+  it('completed / failed / interrupted 三态各有中文标签', () => {
+    render(statusTag('completed'))
+    expect(screen.getByText('完成')).toBeTruthy()
+    render(statusTag('failed'))
+    expect(screen.getByText('失败')).toBeTruthy()
+    render(statusTag('interrupted'))
+    expect(screen.getByText('被打断')).toBeTruthy()
+  })
+
+  it('未知状态原样透出，不渲染成空标签', () => {
+    render(statusTag('queued'))
+    expect(screen.getByText('queued')).toBeTruthy()
   })
 })
