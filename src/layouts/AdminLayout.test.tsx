@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { apiClient, TOKEN_KEY } from '../api/client'
 import AdminLayout from './AdminLayout'
+import { selectedMenuKey } from './menu'
 
 /**
  * 布局层契约：环境标签与 Prompt 管理入口。
@@ -61,6 +62,11 @@ function renderLayout(entry = '/overview') {
             path="/memories/:deviceId"
             element={<div data-testid="page-memory" />}
           />
+          <Route
+            path="/users/:deviceId"
+            element={<div data-testid="page-user-device" />}
+          />
+          <Route path="/adventure" element={<div data-testid="page-adventure" />} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -172,6 +178,94 @@ describe('AdminLayout 菜单与路由', () => {
     expect(
       screen.getByRole('menuitem', { name: /记忆档案/ }),
     ).toHaveClass('ant-menu-item-selected')
+  })
+
+  it('用户详情页 /users/:deviceId 高亮「用户画像」（此前无选中项）', () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout('/users/dev-001')
+
+    expect(screen.getByTestId('page-user-device')).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: /用户画像/ }),
+    ).toHaveClass('ant-menu-item-selected')
+  })
+
+  it('冒险内容工作台 /adventure 高亮「冒险内容」', () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout('/adventure')
+
+    expect(screen.getByTestId('page-adventure')).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: /冒险内容/ }),
+    ).toHaveClass('ant-menu-item-selected')
+  })
+})
+
+/**
+ * 菜单分组：12 项扁平列表已到可读性上限，按阅读动线显式分四组。
+ * 分组标题只是视觉分隔（antd Menu 的 group），不改路由、不加折叠层级。
+ */
+describe('AdminLayout 菜单分组', () => {
+  const GROUPS = ['概览与增长', '用户与内容', '资产与明细', '运维与配置']
+
+  it.each([
+    ['/overview', ['/overview']],
+    ['/users/dev-001', ['/users']],
+    ['/memories/dev-001', ['/memories']],
+    ['/adventure', ['/adventure']],
+    ['/', []],
+  ])('路径 %s 的选中菜单项是 %j', (pathname, expected) => {
+    expect(selectedMenuKey(pathname)).toEqual(expected)
+  })
+
+  it('四个分组标题都渲染出来', () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    for (const title of GROUPS) {
+      expect(screen.getByText(title)).toBeInTheDocument()
+    }
+  })
+
+  it('12 个入口一个不少（分组不能顺手丢菜单项）', () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    const expected = [
+      '总览',
+      '留存与激活',
+      '使用行为',
+      '用户画像',
+      '记忆档案',
+      '内容与质量',
+      '冒险内容',
+      '用户反馈',
+      '设备舰队',
+      '消息明细',
+      '模型监控',
+      'Prompt 管理',
+    ]
+    const items = screen.getAllByRole('menuitem')
+    expect(items).toHaveLength(expected.length)
+    for (const label of expected) {
+      expect(screen.getByRole('menuitem', { name: new RegExp(label) })).toBeInTheDocument()
+    }
   })
 })
 

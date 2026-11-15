@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import PerfTab from './PerfTab'
 import { useLlmSummary, useLlmTrend } from '../../../api/queries'
 import type { LlmSceneSummary } from '../../../types/analytics'
@@ -45,6 +46,11 @@ vi.mock('../../../api/queries', () => ({
 const mockSummary = useLlmSummary as unknown as ReturnType<typeof vi.fn>
 const mockTrend = useLlmTrend as unknown as ReturnType<typeof vi.fn>
 
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="location-search">{location.search}</div>
+}
+
 function scene(overrides: Partial<LlmSceneSummary> = {}): LlmSceneSummary {
   return {
     scene: 'chat_main',
@@ -61,7 +67,7 @@ function scene(overrides: Partial<LlmSceneSummary> = {}): LlmSceneSummary {
   }
 }
 
-function renderTab(scenes: LlmSceneSummary[]) {
+function renderTab(scenes: LlmSceneSummary[], initialEntries = ['/llm']) {
   mockSummary.mockReturnValue({
     data: { scenes },
     isLoading: false,
@@ -73,7 +79,8 @@ function renderTab(scenes: LlmSceneSummary[]) {
     error: null,
   })
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
+      <LocationProbe />
       <PerfTab />
     </MemoryRouter>,
   )
@@ -185,5 +192,71 @@ describe('PerfTab 结构与联动', () => {
 
     expect(screen.getByText('模型监控数据加载失败')).toBeInTheDocument()
     expect(screen.getByText('perf down')).toBeInTheDocument()
+  })
+})
+
+describe('PerfTab URL 场景参数', () => {
+  it('?scene=chat_main → mockTrend 带上场景筛选', () => {
+    renderTab([scene({ calls: 10, successRate: 1 })], ['/llm?scene=chat_main'])
+
+    expect(mockTrend).toHaveBeenLastCalledWith(
+      expect.objectContaining({ scene: 'chat_main' }),
+    )
+  })
+
+  it('从下拉选场景 → URL 增加 ?scene=X（replace 写入）', async () => {
+    const user = userEvent.setup()
+    renderTab([scene({ calls: 10, successRate: 1 })])
+
+    // 打开场景下拉（antd Select placeholder 文本的 div 有 pointer-events: none）
+    // 通过 placeholder 找到父级 .ant-select 元素再点击
+    const placeholder = screen.getByText('全部场景')
+    const selectElement = placeholder.closest('.ant-select')!
+    expect(selectElement).not.toBeNull()
+    await user.click(selectElement)
+    // 点击「主对话回答」选项
+    await user.click(
+      await screen.findByText('主对话回答', {
+        selector: '.ant-select-item-option-content',
+      }),
+    )
+
+    // URL 出现 scene=chat_main
+    expect(screen.getByTestId('location-search').textContent).toBe(
+      '?scene=chat_main',
+    )
+  })
+
+  it('清除场景 → URL 移除 scene 参数', async () => {
+    const user = userEvent.setup()
+    renderTab([scene({ calls: 10, successRate: 1 })], ['/llm?scene=chat_main'])
+
+    // Select 已选中 chat_main，出现清除按钮
+    const clearBtn = document.querySelector('.ant-select-clear')
+    expect(clearBtn).not.toBeNull()
+    await user.click(clearBtn!)
+
+    // URL 不再含 scene
+    expect(screen.getByTestId('location-search').textContent).toBe('')
+    // mockTrend 不再带 scene
+    expect(mockTrend).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ scene: expect.anything() }),
+    )
+  })
+
+  it('?scene=nonsense（非法值）→ 忽略，不传 scene 给 API', () => {
+    renderTab([scene({ calls: 10, successRate: 1 })], ['/llm?scene=nonsense'])
+
+    // readOptionalEnumParam 校验不过，scene 为 undefined，不传给 API
+    expect(mockTrend).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ scene: expect.anything() }),
+    )
+  })
+
+  it('场景传递给 RecentFailuresTable 与 SlowCallsTable', () => {
+    renderTab([scene({ calls: 10, successRate: 1 })], ['/llm?scene=chat_main'])
+
+    expect(screen.getByTestId('recent-failures').dataset.scene).toBe('chat_main')
+    expect(screen.getByTestId('slow-calls').dataset.scene).toBe('chat_main')
   })
 })

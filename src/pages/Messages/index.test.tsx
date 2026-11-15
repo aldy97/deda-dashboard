@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import Messages from './index'
 import type {
@@ -61,7 +61,12 @@ const INTERRUPTION_RESPONSE: InterruptionRateResponse = {
   byMode: [],
 }
 
-function renderPage() {
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="search">{location.search}</div>
+}
+
+function renderPage(entry = '/messages') {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, refetchOnWindowFocus: false },
@@ -69,11 +74,24 @@ function renderPage() {
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/messages']}>
+      <MemoryRouter initialEntries={[entry]}>
         <Messages />
+        <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   )
+}
+
+/** 最后一次 /analytics/messages 调用的查询参数 */
+function lastListParams(): Record<string, unknown> | undefined {
+  const listCalls = callsTo('/analytics/messages')
+  if (listCalls.length === 0) return undefined
+  return (listCalls[listCalls.length - 1][1] as { params?: Record<string, unknown> })
+    ?.params
+}
+
+function search(): string {
+  return screen.getByTestId('search').textContent ?? ''
 }
 
 /** 取出对某个 URL 的所有调用，便于断言真实发出的查询参数 */
@@ -159,5 +177,152 @@ describe('消息明细页 · mode 平级化', () => {
       expect(params?.mode).toBe('free_chat')
       expect(Object.keys(params ?? {})).not.toContain('conversationModeKey')
     })
+  })
+})
+
+/**
+ * URL 即筛选状态。
+ *
+ * 消息明细是全站下钻的落点（记忆版本时间线、用户详情、安全复核队列、慢调用都往这里跳），
+ * 所以筛选条件、turnId 与打开的抽屉都必须在 URL 上：跳过来要带着上下文，
+ * 刷新与分享要能还原现场。这里考核读、写、清三个方向。
+ */
+describe('消息明细页 · URL 即筛选状态', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/messages/modes') {
+        return Promise.resolve({ data: MODES_RESPONSE })
+      }
+      if (url === '/analytics/messages/interruption-rate') {
+        return Promise.resolve({ data: INTERRUPTION_RESPONSE })
+      }
+      if (url.startsWith('/analytics/messages/')) {
+        const id = url.split('/').pop() as string
+        return Promise.resolve({
+          data: {
+            ...makeMessage({ id, role: 'assistant', content: '从前有座山' }),
+            rawPayload: { filler: '嗯——', answer: '从前有座山' },
+          },
+        })
+      }
+      if (url === '/analytics/messages') {
+        return Promise.resolve({
+          data: makeList([
+            makeMessage(),
+            makeMessage({
+              id: 'm-2',
+              turnId: 't-2',
+              role: 'assistant',
+              content: '从前有座山',
+              mode: 'free_chat_casual',
+            }),
+          ]),
+        })
+      }
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  it('带条件进入：URL 上的筛选原样进查询参数', async () => {
+    renderPage(
+      '/messages?deviceId=dev-9&mode=free_chat&role=user&status=completed&keyword=故事&startDate=2026-11-01&endDate=2026-11-07',
+    )
+    await screen.findByText('自由故事')
+
+    const params = lastListParams()
+    expect(params?.deviceId).toBe('dev-9')
+    expect(params?.mode).toBe('free_chat')
+    expect(params?.role).toBe('user')
+    expect(params?.status).toBe('completed')
+    expect(params?.keyword).toBe('故事')
+    expect(params?.startDate).toBe('2026-11-01')
+    expect(params?.endDate).toBe('2026-11-07')
+  })
+
+  it('非法枚举值被忽略，不拿脏值去查后端', async () => {
+    renderPage('/messages?role=admin&status=bogus')
+    await screen.findByText('自由故事')
+
+    const params = lastListParams()
+    expect(params?.role).toBeUndefined()
+    expect(params?.status).toBeUndefined()
+  })
+
+  it('只给一端的日期区间视为未设置', async () => {
+    renderPage('/messages?startDate=2026-11-01')
+    await screen.findByText('自由故事')
+
+    const params = lastListParams()
+    expect(params?.startDate).toBeUndefined()
+    expect(params?.endDate).toBeUndefined()
+  })
+
+  it('输入条件后点「查询」才写进 URL', async () => {
+    renderPage()
+    await screen.findByText('自由故事')
+    expect(search()).toBe('')
+
+    fireEvent.change(
+      screen.getByPlaceholderText('设备 ID（业务 ID）'),
+      { target: { value: 'dev-7' } },
+    )
+    // 只输入不查询：URL 不变，查询参数也不变
+    expect(search()).toBe('')
+    expect(lastListParams()?.deviceId).toBeUndefined()
+
+    fireEvent.click(screen.getByRole('button', { name: /查\s*询/ }))
+    await waitFor(() => expect(search()).toContain('deviceId=dev-7'))
+    await waitFor(() => expect(lastListParams()?.deviceId).toBe('dev-7'))
+  })
+
+  it('重置清掉 URL 上的筛选与 turnId', async () => {
+    renderPage('/messages?deviceId=dev-9&mode=free_chat&turnId=t-1')
+    await screen.findByText('自由故事')
+    expect(search()).toContain('deviceId=dev-9')
+
+    fireEvent.click(screen.getByRole('button', { name: /重\s*置/ }))
+    await waitFor(() => expect(search()).toBe(''))
+    await waitFor(() => expect(lastListParams()?.deviceId).toBeUndefined())
+    expect(screen.queryByText(/同一轮问答/)).toBeNull()
+  })
+
+  it('?turnId= 进入即过滤同轮问答，并渲染可关闭的标签', async () => {
+    renderPage('/messages?turnId=t-2')
+    await screen.findByText('自由故事')
+
+    expect(lastListParams()?.turnId).toBe('t-2')
+    expect(screen.getByText(/同一轮问答：t-2/)).toBeInTheDocument()
+  })
+
+  it('?messageId= 直接打开详情抽屉（分享链接可还原现场）', async () => {
+    renderPage('/messages?messageId=m-2')
+    await screen.findByText('消息详情')
+
+    const detailCalls = mockGet.mock.calls.filter((call: unknown[]) =>
+      String(call[0]).startsWith('/analytics/messages/'),
+    )
+    expect(detailCalls.map((call) => call[0])).toContain('/analytics/messages/m-2')
+  })
+
+  it('点行把 messageId 写进 URL', async () => {
+    renderPage()
+    await screen.findByText('自由故事')
+
+    fireEvent.click(screen.getByText('今天想听什么故事'))
+    await waitFor(() => expect(search()).toContain('messageId=m-1'))
+    expect(await screen.findByText('消息详情')).toBeInTheDocument()
+  })
+
+  it('关闭抽屉清掉 messageId，但保留筛选条件', async () => {
+    renderPage('/messages?deviceId=dev-9&messageId=m-2')
+    await screen.findByText('消息详情')
+
+    const closeBtn = document.querySelector('.ant-drawer-close')
+    expect(closeBtn).not.toBeNull()
+    fireEvent.click(closeBtn as Element)
+
+    await waitFor(() => expect(search()).not.toContain('messageId'))
+    expect(search()).toContain('deviceId=dev-9')
   })
 })

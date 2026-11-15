@@ -251,3 +251,20 @@ describe('ReviewQueueTable 查询参数', () => {
     expect(screen.getByText('queue down')).toBeInTheDocument()
   })
 })
+
+describe('ReviewQueueTable 设备列口径说明', () => {
+  it('设备列标题包含 InfoTip，说明内部 UUID 不通用与两步跳转路径', () => {
+    mockQueue.mockReturnValue({ data: payload, isLoading: false, error: null })
+    renderTable()
+
+    // 找到表头中「设备」列
+    const headers = document.querySelectorAll('th.ant-table-cell')
+    const deviceHeader = Array.from(headers).find(
+      (th) => th.textContent?.includes('设备'),
+    )
+    expect(deviceHeader).toBeDefined()
+    // InfoTip 的问号图标在该列标题内
+    const icon = deviceHeader!.querySelector('[aria-label="question-circle"]')
+    expect(icon).not.toBeNull()
+  })
+})

@@ -88,6 +88,11 @@ export default function MemoryDetail() {
         >
           ← 返回记忆档案
         </Button>
+        <span style={{ marginLeft: 12 }}>
+          <Link to={`/users/${encodeURIComponent(deviceId)}`}>用户详情 →</Link>
+          <span style={{ margin: '0 8px', color: '#d9d9d9' }}>|</span>
+          <Link to={`/messages?deviceId=${encodeURIComponent(deviceId)}`}>该设备全部消息 →</Link>
+        </span>
         <Typography.Title level={4} style={{ margin: 0 }}>
           设备 {deviceId} 的记忆
         </Typography.Title>

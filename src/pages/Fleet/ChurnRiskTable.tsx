@@ -1,5 +1,6 @@
 import { Empty, InputNumber, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import type {
   ChurnRiskDevice,
@@ -23,6 +24,7 @@ interface Props {
   data: FleetChurnRiskResponse
   days: number
   onDaysChange: (days: number) => void
+  onOpenDevice?: (deviceId: string) => void
 }
 
 /**
@@ -30,7 +32,7 @@ interface Props {
  * days 控件（1–90，缺省 7）；列按契约顺序；basis 用 Tag 区分三种来源，
  * createdAt 标注「从未活跃」。
  */
-export default function ChurnRiskTable({ data, days, onDaysChange }: Props) {
+export default function ChurnRiskTable({ data, days, onDaysChange, onOpenDevice }: Props) {
   const { devices, asOf } = data
 
   const columns: ColumnsType<ChurnRiskDevice> = [
@@ -40,6 +42,9 @@ export default function ChurnRiskTable({ data, days, onDaysChange }: Props) {
       key: 'deviceId',
       width: 150,
       ellipsis: true,
+      render: (v: string, r: ChurnRiskDevice) => (
+        <Link to={`/users/${r.deviceId}`}>{v}</Link>
+      ),
     },
     {
       title: '角色',
@@ -83,6 +88,15 @@ export default function ChurnRiskTable({ data, days, onDaysChange }: Props) {
             <InfoTip title="该设备从未产生 presence 或消息记录，lastActiveAt = createdAt（设备入库时间），即从未活跃过。" />
           )}
         </span>
+      ),
+    },
+    // 操作列固定在最后：前面几列的顺序是接口契约顺序，不能被下钻入口挤开
+    {
+      title: '操作',
+      key: 'actions',
+      width: 80,
+      render: (_: unknown, r: ChurnRiskDevice) => (
+        <a onClick={() => onOpenDevice?.(r.deviceId)}>详情</a>
       ),
     },
   ]

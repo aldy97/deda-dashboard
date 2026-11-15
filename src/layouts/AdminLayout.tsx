@@ -1,4 +1,5 @@
 import { Button, Layout, Menu, Typography } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   ApiOutlined,
   AreaChartOutlined,
@@ -17,24 +18,54 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { TOKEN_KEY } from '../api/client'
 import { useAnalyticsMeta } from '../api/meta'
 import EnvTag from '../components/EnvTag'
+import { selectedMenuKey } from './menu'
 
 const { Sider, Header, Content } = Layout
 
-// 顺序按阅读动线：宏观总览 → 增长 → 画像/记忆 → 内容运营 → 资产 → 明细 → 技术监控。
-const MENU_ITEMS = [
-  { key: '/overview', label: '总览', icon: <DashboardOutlined /> },
-  { key: '/retention', label: '留存与激活', icon: <UsergroupAddOutlined /> },
-  { key: '/engagement', label: '使用行为', icon: <AreaChartOutlined /> },
-  { key: '/users', label: '用户画像', icon: <TeamOutlined /> },
-  { key: '/memories', label: '记忆档案', icon: <DatabaseOutlined /> },
-  { key: '/content', label: '内容与质量', icon: <ReadOutlined /> },
-  { key: '/adventure', label: '冒险内容', icon: <CompassOutlined /> },
-  { key: '/feedback', label: '用户反馈', icon: <CommentOutlined /> },
-  { key: '/fleet', label: '设备舰队', icon: <RobotOutlined /> },
-  { key: '/messages', label: '消息明细', icon: <MessageOutlined /> },
-  { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
-  // 技术监控之后是运维配置：改的是线上模型行为，不是看数据
-  { key: '/prompts', label: 'Prompt 管理', icon: <FileTextOutlined /> },
+/**
+ * 菜单按阅读动线分四组：概览与增长 → 用户与内容 → 资产与明细 → 运维与配置。
+ * 分组只是视觉分隔（antd Menu 的 group），不加折叠层级、不改路由——
+ * 12 项扁平排列时「看数据」和「改线上行为」混在一起，分组后运维配置
+ * 天然落在最下面，与它「动手改线上」的性质对齐。
+ */
+const MENU_ITEMS: MenuProps['items'] = [
+  {
+    type: 'group',
+    label: '概览与增长',
+    children: [
+      { key: '/overview', label: '总览', icon: <DashboardOutlined /> },
+      { key: '/retention', label: '留存与激活', icon: <UsergroupAddOutlined /> },
+      { key: '/engagement', label: '使用行为', icon: <AreaChartOutlined /> },
+    ],
+  },
+  {
+    type: 'group',
+    label: '用户与内容',
+    children: [
+      { key: '/users', label: '用户画像', icon: <TeamOutlined /> },
+      { key: '/memories', label: '记忆档案', icon: <DatabaseOutlined /> },
+      { key: '/content', label: '内容与质量', icon: <ReadOutlined /> },
+      { key: '/adventure', label: '冒险内容', icon: <CompassOutlined /> },
+      { key: '/feedback', label: '用户反馈', icon: <CommentOutlined /> },
+    ],
+  },
+  {
+    type: 'group',
+    label: '资产与明细',
+    children: [
+      { key: '/fleet', label: '设备舰队', icon: <RobotOutlined /> },
+      { key: '/messages', label: '消息明细', icon: <MessageOutlined /> },
+    ],
+  },
+  {
+    type: 'group',
+    label: '运维与配置',
+    children: [
+      { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
+      // 技术监控之后是运维配置：改的是线上模型行为，不是看数据
+      { key: '/prompts', label: 'Prompt 管理', icon: <FileTextOutlined /> },
+    ],
+  },
 ]
 
 export default function AdminLayout() {
@@ -78,12 +109,7 @@ export default function AdminLayout() {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[
-            // 记忆详情页 /memories/:deviceId 高亮「记忆档案」菜单
-            location.pathname.startsWith('/memories')
-              ? '/memories'
-              : location.pathname,
-          ]}
+          selectedKeys={selectedMenuKey(location.pathname)}
           items={MENU_ITEMS}
           onClick={({ key }) => navigate(key)}
         />

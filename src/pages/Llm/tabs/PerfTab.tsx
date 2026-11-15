@@ -3,6 +3,7 @@ import { Alert, Card, Select, Spin } from 'antd'
 import { useLlmSummary, useLlmTrend } from '../../../api/queries'
 import AnalyticsRangePicker from '../../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../../utils/date-range'
+import { useUrlQuery, readOptionalEnumParam } from '../../../utils/url-state'
 import type { DayRange } from '../../../utils/date-range'
 import LlmTrendChart from '../LlmTrendChart'
 import RecentFailuresTable from '../RecentFailuresTable'
@@ -15,10 +16,14 @@ import { SCENE_META } from '../scenes'
  * 性能监控 tab：调用健康度（成功率 / 延迟 / 首包 / 失败明细 / 慢调用）。
  * 由原 /llm 单页拆分而来，行为逐项平移：默认近 7 天含今日、场景筛选联动趋势与两张明细表。
  * fail-open 场景（安全分类、过渡语）失败不报错，只能靠本页成功率发现。
+ *
+ * 场景筛选走 URL query ?scene=，跨页下钻（如 /prompts → /llm?tab=perf&scene=chat_main）
+ * 可直接带上下文跳入，筛选变更用 replace 写入不堆历史栈。
  */
 export default function PerfTab() {
   const [range, setRange] = useState<DayRange>(defaultRange(7))
-  const [scene, setScene] = useState<string | undefined>(undefined)
+  const { searchParams, setQuery } = useUrlQuery()
+  const scene = readOptionalEnumParam(searchParams, 'scene', Object.keys(SCENE_META))
   const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
   const summaryQuery = useLlmSummary(params)
   const trendQuery = useLlmTrend({
@@ -94,7 +99,7 @@ export default function PerfTab() {
               placeholder="全部场景"
               style={{ width: 180 }}
               value={scene}
-              onChange={(v) => setScene(v)}
+              onChange={(v) => setQuery({ scene: v || null }, { replace: true })}
               options={Object.entries(SCENE_META).map(([key, meta]) => ({
                 label: meta.label,
                 value: key,

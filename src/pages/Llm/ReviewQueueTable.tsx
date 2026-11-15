@@ -191,7 +191,12 @@ export default function ReviewQueueTable({
             render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
           },
           {
-            title: '设备',
+            title: (
+              <>
+                设备
+                <InfoTip title="内部 UUID，不通用。点轮次进消息明细，再从消息详情的设备 ID 跳用户详情。" />
+              </>
+            ),
             dataIndex: 'deviceId',
             width: 120,
             render: (v: string | null) => (v === null ? '匿名' : `${v.slice(0, 8)}…`),

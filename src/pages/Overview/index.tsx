@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Button, Card, Col, Radio, Row, Spin, Typography } from 'antd'
+import { Link } from 'react-router-dom'
 import type { Dayjs } from 'dayjs'
 import { useOverview, useOverviewTrend } from '../../api/queries'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
@@ -91,6 +92,7 @@ export default function Overview() {
           style={{ marginTop: 16 }}
           extra={
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Link to="/engagement">使用行为 →</Link>
               <TodayOngoingTag />
               <Radio.Group
                 optionType="button"

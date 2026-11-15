@@ -262,6 +262,26 @@ export const intentLabel = (intent: string | null): string => {
   return INTENT_META[intent]?.label ?? intent
 }
 
+/**
+ * 意图标签 → 消息 mode 的映射。
+ * 六个对话模式直出同名 mode；sleep_config（哄睡设置）不是对话模式，返回 null。
+ * 未知/空/null 也返回 null——不下钻总比瞎跳到一个不存在的 mode 强。
+ */
+/** 意图取值里能直出同名消息 mode 的六个对话模式；sleep_config（哄睡设置）不在内 */
+const MODE_INTENTS = new Set([
+  'free_chat',
+  'adventure_story',
+  'english_story',
+  'idiom_story',
+  'sleep_story',
+  'free_story',
+])
+
+export function intentToMode(intent: string | null): string | null {
+  if (!intent) return null
+  return MODE_INTENTS.has(intent) ? intent : null
+}
+
 export const intentSourceLabel = (source: string | null): string => {
   if (source === null) return '未知来源'
   return INTENT_SOURCE_META[source]?.label ?? source

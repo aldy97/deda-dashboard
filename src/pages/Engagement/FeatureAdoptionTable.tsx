@@ -1,9 +1,17 @@
 import { Progress, Table } from 'antd'
+import { Link } from 'react-router-dom'
 import InfoTip from '../../components/InfoTip'
 import type { FeatureAdoptionResponse } from '../../types/analytics'
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
+
+const FEATURE_LINK: Record<string, (start: string, end: string) => string> = {
+  adventure: () => '/adventure?tab=episodes',
+  english: (s, e) => `/messages?mode=english_chat&startDate=${s}&endDate=${e}`,
+  sleep_mode: (s, e) => `/messages?mode=sleep_story&startDate=${s}&endDate=${e}`,
+  habit_plan: () => '/content',
+}
 
 /**
  * 功能渗透率（单日快照，渗透率分母 = 已激活设备）。
@@ -11,8 +19,12 @@ const formatPct = (rate: number | null) =>
  */
 export default function FeatureAdoptionTable({
   data,
+  startDate,
+  endDate,
 }: {
   data: FeatureAdoptionResponse
+  startDate?: string
+  endDate?: string
 }) {
   return (
     <Table
@@ -21,7 +33,12 @@ export default function FeatureAdoptionTable({
       dataSource={data.features}
       pagination={false}
       columns={[
-        { title: '功能', dataIndex: 'label', width: 110 },
+        { title: '功能', dataIndex: 'label', width: 110,
+          render: (label: string, row) => {
+            const href = FEATURE_LINK[row.key]?.(startDate ?? '', endDate ?? '')
+            return href ? <Link to={href}>{label}</Link> : label
+          },
+        },
         {
           title: (
             <>

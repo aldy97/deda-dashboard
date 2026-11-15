@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, Tabs, Typography } from 'antd'
-import { useSearchParams } from 'react-router-dom'
+import { useUrlQuery } from '../../utils/url-state'
 import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queries'
 import CapabilityBanner from './CapabilityBanner'
 import CreateEpisodeDialog from './CreateEpisodeDialog'
@@ -35,10 +35,10 @@ function isTabKey(value: string | null): value is TabKey {
 }
 
 export default function AdventureStudio() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const { searchParams, setQuery } = useUrlQuery()
   const requested = searchParams.get('tab')
   const activeKey: TabKey = isTabKey(requested) ? requested : 'episodes'
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null)
+  const selectedEpisodeId = searchParams.get('episodeId') || null
   const [createOpen, setCreateOpen] = useState(false)
   const authoring = useAdventureAuthoring()
   const capabilities = useAdventureCapabilities().data ?? null
@@ -61,7 +61,7 @@ export default function AdventureStudio() {
       <Card>
         <Tabs
           activeKey={activeKey}
-          onChange={(key) => setSearchParams({ tab: key })}
+          onChange={(key) => setQuery({ tab: key }, { replace: false })}
           items={[
             {
               key: 'episodes',
@@ -69,7 +69,7 @@ export default function AdventureStudio() {
               children:
                 activeKey === 'episodes' ? (
                   <EpisodeTable
-                    onOpen={(episodeId) => setSelectedEpisodeId(episodeId)}
+                    onOpen={(episodeId) => setQuery({ episodeId }, { replace: false })}
                     onCreate={authoring ? () => setCreateOpen(true) : undefined}
                   />
                 ) : null,
@@ -95,7 +95,7 @@ export default function AdventureStudio() {
 
       <EpisodeDetailDrawer
         episodeId={selectedEpisodeId}
-        onClose={() => setSelectedEpisodeId(null)}
+        onClose={() => setQuery({ episodeId: null }, { replace: true })}
       />
 
       {/* 用 && 挂载而不是 open 开关：每次打开都是全新表单，集号与理由都不沿用上一次 */}
@@ -105,7 +105,7 @@ export default function AdventureStudio() {
           onClose={() => setCreateOpen(false)}
           onCreated={(episodeId) => {
             setCreateOpen(false)
-            setSelectedEpisodeId(episodeId)
+            setQuery({ episodeId }, { replace: false })
           }}
         />
       )}

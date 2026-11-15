@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Empty, Input, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import type { FleetDeviceItem } from '../../types/analytics'
 import { useFleetDevices } from '../../api/queries'
 import InfoTip from '../../components/InfoTip'
-import DeviceDetailDrawer from './DeviceDetailDrawer'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
@@ -30,11 +30,14 @@ function relativeTime(epochMs: number | null): string {
  * pageSize 默认 20，最大值 100；固定 createdAt 降序。
  * realtime 为 null 时整组实时列显示 -。
  */
-export default function DeviceTable() {
+interface Props {
+  onOpenDevice?: (deviceId: string) => void
+}
+
+export default function DeviceTable({ onOpenDevice }: Props) {
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
 
   const devicesQuery = useFleetDevices({
     keyword: keyword || undefined,
@@ -50,6 +53,11 @@ export default function DeviceTable() {
       key: 'deviceId',
       width: 150,
       ellipsis: true,
+      render: (v: string, r: FleetDeviceItem) => (
+        <Link to={`/users/${r.deviceId}`} onClick={(e) => e.stopPropagation()}>
+          {v}
+        </Link>
+      ),
     },
     {
       title: '角色',
@@ -168,7 +176,7 @@ export default function DeviceTable() {
       width: 80,
       fixed: 'right',
       render: (_: unknown, r: FleetDeviceItem) => (
-        <a onClick={() => setSelectedDeviceId(r.deviceId)}>详情</a>
+        <a onClick={() => onOpenDevice?.(r.deviceId)}>详情</a>
       ),
     },
   ]
@@ -233,11 +241,6 @@ export default function DeviceTable() {
       ) : (
         <Empty description="暂无设备数据" />
       )}
-
-      <DeviceDetailDrawer
-        deviceId={selectedDeviceId}
-        onClose={() => setSelectedDeviceId(null)}
-      />
     </div>
   )
 }

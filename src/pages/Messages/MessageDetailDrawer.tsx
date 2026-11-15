@@ -16,73 +16,39 @@ import {
   type MessageListItem,
 } from '../../types/analytics'
 import LlmTurnChain from './LlmTurnChain'
-
-/** 与 deda-wechat-app learning-data.ts 的 MODE_LABELS 完全一致（唯一映射来源，勿自行增改） */
-const MODE_LABELS: Record<string, string> = {
-  // 当前会新写入的平级 mode
-  free_chat: '自由对话',
-  english_chat: '英语对话',
-  english_story: '英语故事',
-  idiom_story: '成语故事',
-  sleep_story: '哄睡故事',
-  adventure_story: '冒险故事',
-  free_story: '自由故事',
-  // 以下均为 legacy：仅用于翻译历史消息行，服务端永不新写入
-  free_chat_casual: '自由闲聊',
-  free_chat_roleplay: '角色扮演',
-  free_chat_qa: '百科问答',
-  daily_adventure: '每日冒险',
-  adventure: '每日冒险',
-  story: '故事',
-  sleep: '哄睡故事',
-  bedtime: '哄睡故事',
-  music: '音乐',
-  device_control: '设备控制',
-  unknown: '其他',
-}
-
-/** mode 平级化后只认 mode 一个维度；未知值原样透出，缺失显示破折号 */
-export function modeLabel(mode: string | null): string {
-  if (!mode) return '—'
-  return MODE_LABELS[mode] ?? mode
-}
-
-export function roleTag(role: string) {
-  return role === 'user' ? (
-    <Tag color="blue">孩子</Tag>
-  ) : role === 'assistant' ? (
-    <Tag color="green">AI</Tag>
-  ) : (
-    <Tag>{role}</Tag>
-  )
-}
-
-/** 消息状态：完成=绿 / 失败=红 / 被打断=橙（全站统一，含详情抽屉与详情页） */
-export function statusTag(status: string) {
-  if (status === 'failed') return <Tag color="error">失败</Tag>
-  if (status === 'interrupted') return <Tag color="warning">被打断</Tag>
-  if (status === 'completed') return <Tag color="success">完成</Tag>
-  return <Tag>{status}</Tag>
-}
+import {
+  modeLabel,
+  roleTag,
+  statusTag,
+} from '../../components/message/labels'
 
 const formatTime = (iso: string) => dayjs(iso).format('YYYY-MM-DD HH:mm:ss')
 
 /**
  * 消息详情抽屉：整行字段 + rawPayload 原样 JSON（对标 Prisma Studio 行展开）。
  * 「查看同一轮问答」把 turnId 回填给列表作精确过滤。
+ *
+ * 两种打开方式：列表点行时把整行传进来（先渲染列表字段，详情回来再补 rawPayload）；
+ * 只凭 URL（?messageId=）打开时只有 id，字段全部等详情接口回来。后者让抽屉可分享、
+ * 可刷新还原，也让别的页面（用户详情页的近期消息）能把人直接带到某一条消息上。
  */
 export default function MessageDetailDrawer({
   message,
+  messageId,
   onClose,
   onViewTurn,
 }: {
-  /** 列表行数据；打开后内部再拉详情补 rawPayload */
-  message: MessageListItem | null
+  /** 列表行数据（可空）；有则先渲染，再拉详情补 rawPayload */
+  message?: MessageListItem | null
+  /** 仅凭 URL 打开时的消息 id */
+  messageId?: string | null
   onClose: () => void
   onViewTurn: (turnId: string) => void
 }) {
+  const id = message?.id ?? messageId ?? null
+
   // 抽屉打开即拉详情（补 rawPayload）；key 含消息 id，切行自动作废旧请求
-  const detailQuery = useMessageDetail(message?.id ?? null)
+  const detailQuery = useMessageDetail(id)
   const detail = detailQuery.data ?? null
   const loading = detailQuery.isLoading
   const error = detailQuery.error
@@ -91,26 +57,27 @@ export default function MessageDetailDrawer({
       : '加载失败'
     : null
 
+  const row = detail ?? message ?? null
+
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
+  const turnId = row?.turnId ?? null
   const turnQuery = useMessages(
     {
-      turnId: message?.turnId ?? '',
+      turnId: turnId ?? '',
       sort: 'spokeAt_asc',
       pageSize: 10,
     },
-    message?.turnId != null,
+    turnId !== null,
   )
   const turnUserMessages = turnQuery.data
     ? turnQuery.data.items.filter((m) => m.role === 'user')
     : null
 
-  const row = detail ?? message
-
   return (
     <Drawer
       title="消息详情"
       width={640}
-      open={message !== null}
+      open={id !== null}
       onClose={onClose}
     >
       {row && (
