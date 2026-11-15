@@ -1,4 +1,5 @@
 import { Card, Empty } from 'antd'
+import { Link } from 'react-router-dom'
 import ReactECharts from 'echarts-for-react'
 import InfoTip from '../../components/InfoTip'
 import type { OverviewResponse } from '../../types/analytics'
@@ -38,6 +39,7 @@ export default function FunnelChart({
           <InfoTip title="截至数据日期的累计转化：绑定激活（有绑定记录）→ 首次对话（有过发言）→ 近 7 日仍活跃。出货一级一期无数据自动隐藏；设备解绑会使「激活」小于「首次对话」，属真实口径，漏斗不重排。" />
         </>
       }
+      extra={<Link to="/retention">留存与激活 →</Link>}
     >
       {steps.length === 0 ? (
         <Empty description="暂无数据" />

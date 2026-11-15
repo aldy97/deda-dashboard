@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Alert, Card, Col, Row, Spin, Typography } from 'antd'
+import { useState, useMemo } from 'react'
+import { Alert, Card, Col, Row, Space, Spin, Typography } from 'antd'
+import { Link } from 'react-router-dom'
 import type { Dayjs } from 'dayjs'
 import {
   useDurationDistribution,
@@ -11,8 +12,10 @@ import {
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import InfoTip from '../../components/InfoTip'
+import { modeLabel } from '../../components/message/labels'
 import { defaultRange, fmt, today } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
+import { messagesModeLink, uniqueModes } from './mode-links'
 import SummaryCards from './SummaryCards'
 import ModeUsageChart from './ModeUsageChart'
 import HourlyHeatmap from './HourlyHeatmap'
@@ -54,6 +57,10 @@ export default function Engagement() {
   const adoption = adoptionQuery.data ?? null
   const dayLoading = distributionQuery.isLoading || adoptionQuery.isLoading
   const dayError = toErrorMessage(distributionQuery.error ?? adoptionQuery.error)
+
+  // 图表下方的模式下钻链接：去重保序；区间一起带过去，否则两边数字对不上
+  const modes = useMemo(() => uniqueModes(modeUsage), [modeUsage])
+  const rangeDateStr = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
 
   return (
     <div>
@@ -129,6 +136,22 @@ export default function Engagement() {
           style={{ marginTop: 16 }}
         >
           {modeUsage && <ModeUsageChart data={modeUsage} />}
+          {modes.length > 0 && (
+            <Space wrap style={{ marginTop: 8 }}>
+              {modes.map((m) => (
+                <Link
+                  key={m}
+                  to={messagesModeLink(
+                    m,
+                    rangeDateStr.startDate,
+                    rangeDateStr.endDate,
+                  )}
+                >
+                  {modeLabel(m)}
+                </Link>
+              ))}
+            </Space>
+          )}
         </Card>
 
         <Card
@@ -157,7 +180,7 @@ export default function Engagement() {
             <Card
               title={`功能渗透率（截至 ${date.format('MM-DD')}）`}
             >
-              {adoption && <FeatureAdoptionTable data={adoption} />}
+              {adoption && <FeatureAdoptionTable data={adoption} startDate={rangeDateStr.startDate} endDate={rangeDateStr.endDate} />}
             </Card>
           </Col>
         </Row>

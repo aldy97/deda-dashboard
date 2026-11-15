@@ -5,6 +5,7 @@ import {
   Flex,
   Input,
   Progress,
+  Space,
   Spin,
   Table,
   Typography,
@@ -155,12 +156,20 @@ export default function Memories() {
               dataIndex: 'deviceId',
               // 设备 ID 跳用户详情页；行其余区域保持跳记忆详情（stopPropagation 隔离）
               render: (v: string) => (
-                <Link
-                  to={`/users/${encodeURIComponent(v)}`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {v}
-                </Link>
+                <Space size={4}>
+                  <Link
+                    to={`/users/${encodeURIComponent(v)}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {v}
+                  </Link>
+                  <Link
+                    to={`/messages?deviceId=${encodeURIComponent(v)}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    消息
+                  </Link>
+                </Space>
               ),
             },
             // 设备码列暂不需要（与设备 ID 展示冗余），需要时取消注释

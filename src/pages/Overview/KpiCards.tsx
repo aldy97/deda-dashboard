@@ -1,4 +1,5 @@
 import { Card, Col, Row, Statistic, Tag, Typography } from 'antd'
+import { Link } from 'react-router-dom'
 import type { OverviewResponse } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
 
@@ -29,7 +30,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
   return (
     <Row gutter={[16, 16]}>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/fleet">设备舰队 →</Link>}
+        >
           <Statistic
             title="累计激活设备"
             value={totals.devicesActivated}
@@ -41,7 +45,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/fleet">设备舰队 →</Link>}
+        >
           <Statistic
             title={
               <>
@@ -54,7 +61,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/users">用户画像 →</Link>}
+        >
           <Statistic
             title="累计家长用户"
             value={totals.usersRegistered}
@@ -63,7 +73,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/engagement">使用行为 →</Link>}
+        >
           <Statistic
             title={
               <>
@@ -78,7 +91,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/engagement">使用行为 →</Link>}
+        >
           <Statistic
             title="活跃设备日均使用时长"
             value={Math.round(today.avgDurationSecondsPerActiveDevice / 60)}
@@ -88,7 +104,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/engagement">使用行为 →</Link>}
+        >
           <Statistic
             title="人均对话轮次"
             value={today.avgTurnsPerActiveDevice}
@@ -97,7 +116,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/retention">留存与激活 →</Link>}
+        >
           <Statistic
             title={
               <>
@@ -110,7 +132,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/fleet">设备舰队 →</Link>}
+        >
           <Statistic
             title={
               <>
@@ -124,7 +149,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/fleet">设备舰队 →</Link>}
+        >
           <Statistic
             title={
               <>
@@ -138,7 +166,10 @@ export default function KpiCards({ data }: { data: OverviewResponse }) {
         </Card>
       </Col>
       <Col xs={12} md={6}>
-        <Card style={{ height: '100%' }}>
+        <Card
+          style={{ height: '100%' }}
+          extra={<Link to="/fleet">设备舰队 →</Link>}
+        >
           <Statistic
             title={
               <>
