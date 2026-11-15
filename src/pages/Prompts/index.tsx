@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { Alert, Button, Drawer, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import { Link } from 'react-router-dom'
 import EnvTag from '../../components/EnvTag'
 import {
   UNKNOWN_ENV_VIEW,
@@ -11,6 +11,8 @@ import {
 import { useAnalyticsMeta } from '../../api/meta'
 import { usePromptCatalog } from '../../api/prompts'
 import type { PromptCatalogItem, PromptCategory } from '../../types/analytics'
+import { useUrlQuery, readParam, readOptionalEnumParam } from '../../utils/url-state'
+import { SCENE_META } from '../Llm/scenes'
 import PromptEditor from './PromptEditor'
 import {
   CATEGORY_LABEL,
@@ -37,7 +39,13 @@ function fmtTime(iso: string | null): string {
 }
 
 export default function Prompts() {
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const { searchParams, setQuery } = useUrlQuery()
+  const selectedKey = readParam(searchParams, 'key')
+  const sceneFilter = readOptionalEnumParam(
+    searchParams,
+    'scene',
+    Object.keys(SCENE_META),
+  )
   const metaQuery = useAnalyticsMeta()
   const catalogQuery = usePromptCatalog()
 
@@ -54,6 +62,10 @@ export default function Prompts() {
       : null
 
   const items = catalogQuery.data ?? []
+
+  const filteredItems = sceneFilter
+    ? items.filter((i) => i.scene === sceneFilter)
+    : items
 
   const columns: ColumnsType<PromptCatalogItem> = [
     {
@@ -82,7 +94,12 @@ export default function Prompts() {
       title: '调用场景',
       dataIndex: 'scene',
       width: 130,
-      render: (scene: string | null) => sceneLabel(scene),
+      render: (scene: string | null) =>
+        scene ? (
+          <Link to={`/llm?tab=perf&scene=${scene}`}>{sceneLabel(scene)}</Link>
+        ) : (
+          sceneLabel(scene)
+        ),
     },
     {
       title: '生效来源',
@@ -133,7 +150,7 @@ export default function Prompts() {
       title: '操作',
       width: 96,
       render: (_, item) => (
-        <Button size="small" onClick={() => setSelectedKey(item.key)}>
+        <Button size="small" onClick={() => setQuery({ key: item.key })}>
           查看/编辑
         </Button>
       ),
@@ -207,14 +224,28 @@ export default function Prompts() {
         />
       )}
 
+      {sceneFilter && (
+        <Tag
+          closable
+          onClose={() => setQuery({ scene: null }, { replace: true })}
+          style={{ marginBottom: 12 }}
+        >
+          调用场景：{sceneLabel(sceneFilter)}
+        </Tag>
+      )}
+
       <Table<PromptCatalogItem>
         rowKey="key"
         size="middle"
         // 全站没配 ConfigProvider locale，Table 内置文案默认是英文 Reset/OK；
         // 这是仓库里第一个带列筛选的表格，就地补中文，别让它露出英文按钮
-        locale={{ filterConfirm: '确定', filterReset: '重置' }}
+        locale={{
+          filterConfirm: '确定',
+          filterReset: '重置',
+          ...(sceneFilter ? { emptyText: '该场景没有绑定可编辑 prompt' } : {}),
+        }}
         columns={columns}
-        dataSource={items}
+        dataSource={filteredItems}
         loading={catalogQuery.isLoading}
         pagination={false}
       />
@@ -231,20 +262,30 @@ export default function Prompts() {
           ) : undefined
         }
         open={selectedKey !== null}
-        onClose={() => setSelectedKey(null)}
+        onClose={() => setQuery({ key: null }, { replace: true })}
         width={900}
         // antd 6 改名：关闭即销毁编辑器，不留上一个 prompt 的状态
         destroyOnHidden
       >
-        {selectedKey && (
-          <PromptEditor
-            promptKey={selectedKey}
-            env={env}
-            writable={writable}
-            disabledReason={disabledReason}
-            confirmCodeHint={meta?.publishConfirmCode ?? ''}
-          />
-        )}
+        {selectedKey &&
+          (items.some((i) => i.key === selectedKey) ? (
+            <PromptEditor
+              promptKey={selectedKey}
+              env={env}
+              writable={writable}
+              disabledReason={disabledReason}
+              confirmCodeHint={meta?.publishConfirmCode ?? ''}
+            />
+          ) : catalogQuery.isLoading ? null : (
+            // ?key= 现在可分享，就会有人拿着下线 prompt 的旧链接进来；
+            // 给一句人话，别让他对着一个空抽屉猜
+            <Alert
+              type="warning"
+              showIcon
+              message="目录里没有这个 prompt"
+              description={`${selectedKey} 可能已下线，或链接来自旧版本。`}
+            />
+          ))}
       </Drawer>
     </div>
   )

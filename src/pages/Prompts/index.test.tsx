@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import Prompts from './index'
 import type { AnalyticsMeta, PromptCatalogItem } from '../../types/analytics'
@@ -128,20 +128,26 @@ function stubServer(opts: {
   })
 }
 
-function createWrapper() {
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="location-search">{location.search}</div>
+}
+
+function renderPage(entry = '/prompts') {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, refetchOnWindowFocus: false },
       mutations: { retry: false },
     },
   })
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  }
-}
-
-function renderPage() {
-  return render(<Prompts />, { wrapper: createWrapper() })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[entry]}>
+        <LocationProbe />
+        <Prompts />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
 }
 
 beforeEach(() => {
@@ -299,13 +305,17 @@ describe('Prompts 抽屉与编辑器联动', () => {
     expect(editor.dataset.disabledReason).toContain('PROMPT_WRITE_ENABLED')
   })
 
-  it('关闭抽屉即卸载编辑器，不留下一个 prompt 的状态', async () => {
+  it('关闭抽屉即卸载编辑器，URL 同步清除 key 参数', async () => {
     stubServer()
     renderPage()
 
     await screen.findByText('小象 Elly 人设')
     await userEvent.click(screen.getAllByRole('button', { name: '查看/编辑' })[0])
     expect(await screen.findByTestId('prompt-editor')).toBeInTheDocument()
+    // URL 包含选中 key
+    expect(screen.getByTestId('location-search').textContent).toBe(
+      '?key=persona_elly',
+    )
 
     const close = document.querySelector('.ant-drawer-close')
     expect(close).not.toBeNull()
@@ -314,6 +324,8 @@ describe('Prompts 抽屉与编辑器联动', () => {
     await waitFor(() =>
       expect(screen.queryByTestId('prompt-editor')).not.toBeInTheDocument(),
     )
+    // URL 不再含有 key
+    expect(screen.getByTestId('location-search').textContent).toBe('')
   })
 })
 
@@ -366,5 +378,114 @@ describe('Prompts 列筛选', () => {
       expect(screen.queryByText('哄睡故事')).not.toBeInTheDocument(),
     )
     expect(screen.getByText('意图分类')).toBeInTheDocument()
+  })
+})
+
+describe('Prompts URL key 参数——抽屉联动', () => {
+  it('?key=persona_elly → 自动打开抽屉，编辑器收到对应 key', async () => {
+    stubServer()
+    renderPage('/prompts?key=persona_elly')
+
+    const editor = await screen.findByTestId('prompt-editor')
+    expect(editor.dataset.promptKey).toBe('persona_elly')
+    expect(screen.getByText('Prompt 详情')).toBeInTheDocument()
+  })
+
+  it('?key=不存在的 key → 抽屉打开并说明目录里没有，不挂编辑器', async () => {
+    stubServer()
+    renderPage('/prompts?key=nonexistent')
+
+    // Drawer 打开了（selectedKey 不为 null），但 catalog 里没这个 key
+    expect(screen.getByText('Prompt 详情')).toBeInTheDocument()
+    expect(screen.queryByTestId('prompt-editor')).not.toBeInTheDocument()
+    // ?key= 可分享，就会有人拿着已下线 prompt 的旧链接进来：给一句人话而不是空抽屉
+    expect(
+      await screen.findByText('目录里没有这个 prompt'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/nonexistent 可能已下线/)).toBeInTheDocument()
+  })
+})
+
+describe('Prompts URL scene 参数——场景下钻', () => {
+  it('?scene=chat_main → 出现场景过滤 Tag 并过滤表格', async () => {
+    stubServer()
+    renderPage('/prompts?scene=chat_main')
+
+    // 场景筛选 Tag
+    expect(await screen.findByText(/调用场景：/)).toBeInTheDocument()
+    // "主对话回答" 出现在场景过滤 Tag 中（表格 Link 需等 catalog 加载，Tag 同步渲染）
+    const mainChatEls = screen.getAllByText(/主对话回答/)
+    expect(mainChatEls.length).toBeGreaterThanOrEqual(1)
+
+    // 只有 scene=chat_main 的项可见（catalog 异步加载，用 findBy）
+    expect(await screen.findByText('小象 Elly 人设')).toBeInTheDocument()
+    // 其他项的 scene 不是 chat_main
+    await waitFor(() =>
+      expect(screen.queryByText('意图分类')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByText('哄睡故事')).not.toBeInTheDocument()
+  })
+
+  it('关闭场景 Tag → URL 移除 scene 参数', async () => {
+    const user = userEvent.setup()
+    stubServer()
+    renderPage('/prompts?scene=chat_main')
+
+    await screen.findByText(/调用场景：/)
+
+    // antd Tag closable 用 close icon
+    const closeIcon = document.querySelector(
+      '.ant-tag .anticon-close, .ant-tag-close-icon',
+    )
+    expect(closeIcon).not.toBeNull()
+    await user.click(closeIcon!)
+
+    // URL 不再含 scene
+    expect(screen.getByTestId('location-search').textContent).toBe('')
+  })
+
+  it('?scene=filler → 过滤后无匹配项，显示空态文案', async () => {
+    stubServer()
+    renderPage('/prompts?scene=filler')
+
+    expect(
+      await screen.findByText('该场景没有绑定可编辑 prompt'),
+    ).toBeInTheDocument()
+  })
+
+  it('?scene=nonsense（非法值）→ 忽略，不筛选', async () => {
+    stubServer()
+    renderPage('/prompts?scene=nonsense')
+
+    // 非法值被 readOptionalEnumParam 忽略，所有项都可见
+    expect(await screen.findByText('小象 Elly 人设')).toBeInTheDocument()
+    expect(screen.getByText('意图分类')).toBeInTheDocument()
+    expect(screen.getByText('哄睡故事')).toBeInTheDocument()
+    // 没有场景 Tag
+    expect(screen.queryByText(/调用场景：/)).not.toBeInTheDocument()
+  })
+
+  it('场景列渲染为到 /llm?tab=perf&scene=<scene> 的链接', async () => {
+    stubServer()
+    renderPage()
+
+    await screen.findByText('小象 Elly 人设')
+
+    // 调用场景列包含链接（persona_elly scene=chat_main → 主对话回答）
+    const link = screen.getByRole('link', { name: '主对话回答' })
+    expect(link.getAttribute('href')).toBe('/llm?tab=perf&scene=chat_main')
+  })
+})
+
+describe('Prompts key 与 scene 共存', () => {
+  it('?key=persona_elly&scene=chat_main → 抽屉打开且过滤生效', async () => {
+    stubServer()
+    renderPage('/prompts?key=persona_elly&scene=chat_main')
+
+    // 抽屉打开
+    const editor = await screen.findByTestId('prompt-editor')
+    expect(editor.dataset.promptKey).toBe('persona_elly')
+    // 场景 Tag 也在
+    expect(screen.getByText(/调用场景：/)).toBeInTheDocument()
   })
 })
