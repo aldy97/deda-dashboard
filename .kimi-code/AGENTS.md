@@ -105,3 +105,47 @@ Adventure Studio 的界面代码 0% 覆盖，改由下面第 2 条的实机冒�
 + `npm run test`（vitest run）全绿 + `npm run test:coverage` 满足第 8 条口径
 （Adventure Studio 按上一节豁免）。
 
+
+## URL 查询状态契约（跨页下钻，2026-11-15）
+
+全站的可跳转入口与「刷新/分享能还原现场」共用一套 query 契约。唯一读写入口是
+`src/utils/url-state.ts`（`useUrlQuery` / `patchParams` / `readParam` /
+`readEnumParam` / `readOptionalEnumParam` / `readRangeParams` / `rangePatch`）。
+不要在页面里直接 `setSearchParams({ ... })` 整表覆盖——那会把别的模块写进同一条
+query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm` 同时有 `tab` 与 `scene`）。
+
+1. 写入语义：`patchParams` 只改被点名的键，值为 `null` / `undefined` / `''` 时删键。
+   **筛选条件**用 `setQuery(patch, { replace: true })`（连续改筛选不该堆一长串历史）；
+   **抽屉与 tab** 用默认的 push（浏览器后退＝关掉抽屉、回到上一个 tab）。
+2. 读取语义：枚举型参数（tab / scene / mode）走 `readEnumParam` /
+   `readOptionalEnumParam`，非法值**在读取时兜底**，不要写 effect 去「修正」URL
+   （`/llm`、`/adventure`、`/feedback` 一律如此）。日期只认 `YYYY-MM-DD`，
+   经 `readRangeParams` 校验：单端缺失、格式非法、区间倒挂都算「未设置」。
+3. 各页参数如下。新增可跳转入口时，参数名以目标页的常量/filters 模块为准
+   （如 `src/pages/Messages/filters.ts`、`src/pages/Llm/scenes.ts`），不要凭记忆拼：
+
+   | 路由 | 查询参数 |
+   | --- | --- |
+   | `/overview`、`/retention`、`/content`、`/engagement`、`/memories` | 无（只作为出口链接的起点） |
+   | `/messages` | `deviceId` `turnId` `messageId`（抽屉）`role` `status` `keyword` `mode` `startDate` `endDate` |
+   | `/users/:deviceId` | `messageId`（抽屉） |
+   | `/fleet` | `deviceId`（抽屉） |
+   | `/memories/:deviceId` | `key` |
+   | `/llm` | `tab`=perf\|cost\|safety\|intent；`scene`（仅 perf tab 读） |
+   | `/prompts` | `key`（抽屉）`scene`（预筛，可关闭 Tag） |
+   | `/feedback` | `tab`=report\|user\|parentReport；`deviceId`（预筛，report 与 user 两个 tab 都吃） |
+   | `/adventure` | `tab`=episodes\|transfer\|audit\|recovery；`episodeId`（抽屉） |
+
+4. 跨页下钻必须把上下文一起带过去：跳消息明细要带 `mode` + `startDate`/`endDate`，
+   否则从「近 30 天模式分布」落到默认近 7 天，两边数字对不上，看着像数据错了。
+5. 权限门控的出口（如「内容与质量 → 冒险内容工作台」）在缺 `adventure-content`
+   scope 时渲染**禁用态 + 可见说明文案**，不要隐藏——隐藏会让人以为功能不存在。
+   判据是 capabilities 能否读到（服务端 `ContentAdminGuard` 对 capabilities 与
+   episodes 用同一个 scope），**不是** `authoring`：`authoring=false` 只表示当前
+   环境只读（`CONTENT_ADMIN_PROFILE`），查看入口照常可用。
+6. 共享的纯函数与常量不要从组件文件里往外导（oxlint `only-export-components`）：
+   放独立模块，例如 `src/layouts/menu.ts`、`src/pages/Messages/filters.ts`、
+   `src/components/message/labels.tsx`、`src/pages/Engagement/mode-links.ts`。
+7. 设备 360 的正文只有一份：`src/components/device/DeviceProfile.tsx`
+   （+ `PresenceCalendar` / `DailyTurnsChart`）。设备舰队页的详情抽屉与用户详情页
+   共用它，后端加字段只改这一处；days 控件属于各自容器，不进 DeviceProfile。
