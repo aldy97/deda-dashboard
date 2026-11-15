@@ -11,15 +11,20 @@ import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { fmt, yesterday } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
+import { useUrlQuery, readParam } from '../../utils/url-state'
 import SummaryCards from './SummaryCards'
 import PresenceTrendChart from './PresenceTrendChart'
 import FirmwareDistributionChart from './FirmwareDistributionChart'
 import ChurnRiskTable from './ChurnRiskTable'
 import DeviceTable from './DeviceTable'
+import DeviceDetailDrawer from './DeviceDetailDrawer'
 
 const MAX_TREND_DAYS = 62
 
 export default function Fleet() {
+  const { searchParams, setQuery } = useUrlQuery()
+  const deviceId = readParam(searchParams, 'deviceId')
+
   // Summary: single date, default yesterday
   const [summaryDate, setSummaryDate] = useState<Dayjs>(yesterday())
   const summaryQuery = useFleetSummary(fmt(summaryDate))
@@ -41,6 +46,11 @@ export default function Fleet() {
   // Churn risk: days control, default 7
   const [churnDays, setChurnDays] = useState(7)
   const churnQuery = useFleetChurnRisk(churnDays)
+
+  // 抽屉按 URL 契约用 push（浏览器后退＝关抽屉），关闭用 replace 不再堆一条历史
+  const handleOpenDevice = (id: string) => setQuery({ deviceId: id })
+  const handleCloseDevice = () =>
+    setQuery({ deviceId: null }, { replace: true })
 
   const handleTrendRangeChange = (range: DayRange | null) => {
     if (!range) return
@@ -142,6 +152,7 @@ export default function Fleet() {
               data={churnQuery.data}
               days={churnDays}
               onDaysChange={setChurnDays}
+              onOpenDevice={handleOpenDevice}
             />
           )}
         </Spin>
@@ -149,8 +160,10 @@ export default function Fleet() {
 
       {/* 设备明细 — 全量分页 */}
       <Card title="设备明细">
-        <DeviceTable />
+        <DeviceTable onOpenDevice={handleOpenDevice} />
       </Card>
+
+      <DeviceDetailDrawer deviceId={deviceId} onClose={handleCloseDevice} />
     </div>
   )
 }
