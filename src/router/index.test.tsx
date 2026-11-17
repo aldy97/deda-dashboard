@@ -1,22 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { apiClient, TOKEN_KEY } from '../api/client'
+import { apiClient } from '../api/client'
+import { TOKEN_KEY } from '../utils/auth-token'
 import { router } from './index'
+import { LOGIN_NEXT_PARAM } from './redirect'
 
 /**
  * 路由表契约。
  *
- * 只看两件与新页面有关的事：
+ * 看三件事：
  * 1. /prompts 存在，且挂在受 RequireAuth 保护的 '/' 之下（不是裸路由）；
- * 2. 无 token 时访问 /prompts 会被重定向到 /login，有 token 才渲染页面。
+ * 2. 无 token 时访问 /prompts 会被重定向到 /login，有 token 才渲染页面；
+ * 3. 重定向到 /login 时必须把原始目标编码进 ?next=，否则登录成功后
+ *    只能落回默认页——这正是「拿到 /adventure 链接却没登录」那个 bug。
  */
 vi.mock('../api/client', () => ({
   apiClient: { get: vi.fn() },
-  TOKEN_KEY: 'deda_dashboard_token',
 }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
@@ -36,6 +39,22 @@ function createWrapper() {
   }
 }
 
+/** 登录页替身：把 search 回显出来，好断言 next 有没有被带上 */
+function LoginProbe() {
+  const location = useLocation()
+  return (
+    <div data-testid="page-login" data-search={location.search}>
+      login
+    </div>
+  )
+}
+
+/** 从重定向后的登录页里解出 next */
+function redirectedNext(): string | null {
+  const search = screen.getByTestId('page-login').dataset.search ?? ''
+  return new URLSearchParams(search).get(LOGIN_NEXT_PARAM)
+}
+
 /** 用路由表里真实的 '/' element（含 RequireAuth）跑一次渲染 */
 function renderAt(entry: string) {
   const root = routes.find((route) => route.path === '/')
@@ -43,7 +62,7 @@ function renderAt(entry: string) {
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
         {/* /login 与真实路由表一样是顶层路由，否则 RequireAuth 会在父路由里自我重定向 */}
-        <Route path="/login" element={<div data-testid="page-login" />} />
+        <Route path="/login" element={<LoginProbe />} />
         <Route path="/" element={root?.element}>
           <Route path="prompts" element={<div data-testid="page-prompts" />} />
         </Route>
@@ -56,7 +75,7 @@ function renderAt(entry: string) {
 beforeEach(() => {
   mockGet.mockReset()
   mockGet.mockRejectedValue(new Error('网络不通'))
-  sessionStorage.clear()
+  localStorage.clear()
 })
 
 describe('路由表', () => {
@@ -86,7 +105,7 @@ describe('/prompts 的登录闸口', () => {
   })
 
   it('有 token 时渲染 AdminLayout 与 prompts 页面', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'a-token')
+    localStorage.setItem(TOKEN_KEY, 'a-token')
     renderAt('/prompts')
 
     expect(await screen.findByTestId('page-prompts')).toBeInTheDocument()
@@ -95,5 +114,45 @@ describe('/prompts 的登录闸口', () => {
     await waitFor(() =>
       expect(screen.getByTestId('env-tag')).toHaveTextContent('未知环境'),
     )
+  })
+})
+
+
+describe('RequireAuth 保留原始意图', () => {
+  it('无 token 被重定向到 /login 时，把目标路径编码进 ?next=', () => {
+    renderAt('/prompts')
+
+    expect(screen.getByTestId('page-login')).toBeInTheDocument()
+    expect(redirectedNext()).toBe('/prompts')
+  })
+
+  it('深链接的 query 整串保留，不只留 pathname', () => {
+    renderAt('/prompts?key=k1&scene=s2')
+
+    expect(redirectedNext()).toBe('/prompts?key=k1&scene=s2')
+  })
+
+  it('next 里的 & 与 = 被编码，不会污染登录页自己的参数', () => {
+    renderAt('/prompts?key=k1&scene=s2')
+
+    const search = screen.getByTestId('page-login').dataset.search ?? ''
+    const params = new URLSearchParams(search)
+    expect(params.get('key')).toBeNull()
+    expect(params.get('scene')).toBeNull()
+    expect([...params.keys()]).toEqual([LOGIN_NEXT_PARAM])
+  })
+
+  it('根路径也要带 next，登录后能回到用户原本请求的位置', () => {
+    renderAt('/')
+
+    expect(redirectedNext()).toBe('/')
+  })
+
+  it('有 token 时不重定向，next 不介入正常渲染', async () => {
+    localStorage.setItem(TOKEN_KEY, 'a-token')
+    renderAt('/prompts?key=k1')
+
+    expect(await screen.findByTestId('page-prompts')).toBeInTheDocument()
+    expect(screen.queryByTestId('page-login')).not.toBeInTheDocument()
   })
 })

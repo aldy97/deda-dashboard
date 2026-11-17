@@ -135,6 +135,7 @@ query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm
    | `/prompts` | `key`（抽屉）`scene`（预筛，可关闭 Tag） |
    | `/feedback` | `tab`=report\|user\|parentReport；`deviceId`（预筛，report 与 user 两个 tab 都吃） |
    | `/adventure` | `tab`=episodes\|transfer\|audit\|recovery；`episodeId`（抽屉） |
+   | `/login` | `next`（登录意图，见下节） |
 
 4. 跨页下钻必须把上下文一起带过去：跳消息明细要带 `mode` + `startDate`/`endDate`，
    否则从「近 30 天模式分布」落到默认近 7 天，两边数字对不上，看着像数据错了。
@@ -149,3 +150,44 @@ query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm
 7. 设备 360 的正文只有一份：`src/components/device/DeviceProfile.tsx`
    （+ `PresenceCalendar` / `DailyTurnsChart`）。设备舰队页的详情抽屉与用户详情页
    共用它，后端加字段只改这一处；days 控件属于各自容器，不进 DeviceProfile。
+
+
+## 登录意图与 token 存储（2026-11-17）
+
+1. 未登录访问受保护页、或会话中途 401/403 被踢，都必须把原始目标编码进
+   `/login?next=`，登录成功后跳回原处——不要再写死 `/overview`。
+   读写一律走 `src/router/redirect.ts`：写侧 `buildLoginSearch`（router 内）与
+   `buildLoginHref`（整页跳转），读侧 `resolveNextIntent`（内含开放重定向守卫，
+   非法值返回 null，由调用方落 `DEFAULT_LANDING`）。
+2. 两个入口的 basename 口径**不同**，这是最容易踩的坑：`RequireAuth` 用
+   `useLocation().pathname`，不含 `/dashboard`；`src/api/client.ts` 的 401 处理用
+   `window.location.pathname`，**含** `/dashboard`，必须经 `stripBase` 换算，
+   否则登录成功后拼出 `/dashboard/dashboard/adventure`。
+   `stripBase` / `buildLoginHref` 的 base 一律由调用方传 `import.meta.env.BASE_URL`，
+   函数内部不读环境变量——vitest 没配 base，测试里 BASE_URL 是 `/`，
+   读环境变量就永远覆盖不到真实的剥前缀分支。
+3. `next` 只接受站内相对路径。新增任何写 `next` 的地方都必须过 `sanitizeNext`，
+   不要把 location 直接拼进 URL：`//evil.com`、`/\evil.com` 这类协议相对地址
+   用 `window.location.href` 跳会真的离开本站。
+4. token 存取一律走 `src/utils/auth-token.ts`（`getToken` / `setToken` /
+   `clearToken`），介质是 **localStorage**。服务端 TTL 是 7 天（deda-server 的
+   `ANALYTICS_JWT_EXPIRES_IN`，见该仓 PR #67），而 sessionStorage 的生命周期就是
+   标签页会话，兜不住这个口径。不要再直接摸 localStorage / sessionStorage，
+   `TOKEN_KEY` 也不再从 `api/client.ts` 导出。
+   代价必须记住：XSS 的窃取窗口等于 token 有效期；存储从 per-tab 变成
+   per-origin，一个标签页登出、其它标签页的 token 也一并消失（要到下次请求
+   吃 401 才感知）。登出必须走 `clearToken()`，只删 token 会把签发时间留下，
+   污染下一次登录的兜底计时。
+5. 客户端**不**用 token 里的 `exp` 判过期：`exp` 是服务端时钟签的，本地时钟
+   偏快几分钟就会把有效 token 判成过期、把人反复登出，且极难排查。过期判定
+   交给服务端 401（拦截器会带着当前页跳登录，重新登录后回到原位）；
+   `auth-token` 只留一个阈值偏宽（8 天 > 7 天 TTL）的本地兜底，专治服务端
+   TTL 被改短后本地残留的僵尸 token。宁可晚清，不可早清。
+6. 登录页的已登录守卫**只在 `next` 有效时**才自动跳走；裸访问 `/login`
+   一律显示表单，给换账号留入口。token 跨标签页共享之后，少了这个区分，
+   另一个标签页登录着就会把换账号的路堵死。
+7. 测试打桩：jsdom 31 的 `window.location` 是 `configurable` 的，要断言整页
+   跳转目标就用 `Object.defineProperty` 换成 `{ pathname, search, href }` 并在
+   `afterEach` 还原（见 `src/api/client.test.ts`）。不要断言
+   `window.location.search` 来验证 router 状态——`MemoryRouter` 不同步真实
+   地址栏，那样永远是空串。

@@ -1,6 +1,8 @@
 import axios from 'axios'
 import type { AxiosError, AxiosResponse } from 'axios'
 import { reportApiError } from '../monitor'
+import { buildLoginHref } from '../router/redirect'
+import { clearToken, getToken } from '../utils/auth-token'
 
 /** 与 deda-server 统一响应信封对齐：{ code, message, data }，code=0 为成功 */
 export interface ApiEnvelope<T> {
@@ -8,8 +10,6 @@ export interface ApiEnvelope<T> {
   message: string
   data: T
 }
-
-export const TOKEN_KEY = 'deda_dashboard_token'
 
 /**
  * 请求失败时抛出的错误。除 message / status 外还带上服务端的领域错误码与附带字段——
@@ -35,7 +35,7 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem(TOKEN_KEY)
+  const token = getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -68,9 +68,15 @@ apiClient.interceptors.response.use(
       status === 403 &&
       CAPABILITY_DENIED_PREFIXES.some((prefix) => url?.startsWith(prefix))
     if ((status === 401 || status === 403) && !capabilityDenied) {
-      sessionStorage.removeItem(TOKEN_KEY)
+      clearToken()
       if (!window.location.pathname.endsWith('/login')) {
-        window.location.href = `${import.meta.env.BASE_URL}login`
+        // 会话中途被踢也要带上当前页：否则重新登录后回不到正在看的那张表，
+        // 抽屉与筛选状态全丢。window.location 含 basename，换算见 buildLoginHref。
+        window.location.href = buildLoginHref(
+          window.location.pathname,
+          window.location.search,
+          import.meta.env.BASE_URL,
+        )
       }
     }
     // 仅上报系统级故障：5xx 服务端错误、网络层错误（超时/断网，无 response）。

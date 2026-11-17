@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { apiClient, TOKEN_KEY } from '../api/client'
+import { apiClient } from '../api/client'
+import { TOKEN_KEY } from '../utils/auth-token'
 import AdminLayout from './AdminLayout'
 import { selectedMenuKey } from './menu'
 
@@ -15,11 +16,10 @@ import { selectedMenuKey } from './menu'
  * 所以这里盯三件事：
  * 1. 标签只信 /analytics/meta，请求失败或还在路上都是「未知环境」（fail-closed）；
  * 2. 菜单里真的有 Prompt 管理，点了能跳到 /prompts；
- * 3. 退出登录清 sessionStorage 的 token。
+ * 3. 退出登录清 localStorage 的 token。
  */
 vi.mock('../api/client', () => ({
   apiClient: { get: vi.fn() },
-  TOKEN_KEY: 'deda_dashboard_token',
 }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
@@ -76,7 +76,7 @@ function renderLayout(entry = '/overview') {
 
 beforeEach(() => {
   mockGet.mockReset()
-  sessionStorage.clear()
+  localStorage.clear()
 })
 
 describe('AdminLayout 标题与环境标签', () => {
@@ -270,18 +270,18 @@ describe('AdminLayout 菜单分组', () => {
 })
 
 describe('AdminLayout 退出登录', () => {
-  it('清掉 sessionStorage 的 token 并跳到 /login', async () => {
+  it('清掉 localStorage 的 token 并跳到 /login', async () => {
     stubMeta({
       nodeEnv: 'staging',
       promptWriteEnabled: true,
       publishConfirmCode: 'DEDA2025',
     })
-    sessionStorage.setItem(TOKEN_KEY, 'a-token')
+    localStorage.setItem(TOKEN_KEY, 'a-token')
     renderLayout()
 
     await userEvent.click(screen.getByRole('button', { name: '退出登录' }))
 
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
     await waitFor(() =>
       expect(screen.getByTestId('location-pathname')).toHaveTextContent(
         '/login',
