@@ -15,8 +15,18 @@ import type { LintIssue, LintReport } from '../../types/adventureAdmin'
  */
 interface Props {
   report: LintReport | null
-  /** 标题：编辑器里叫「实时校验」，发布确认弹窗里叫「发布前检查」 */
+  /** 标题：编辑器里叫「校验结果」，发布确认弹窗里叫「发布前检查」 */
   title?: string
+  /** 出这份结果之后内容又被改过。结论不撤（撤了看着像「问题都好了」），改成明确标过期 */
+  stale?: boolean
+  /**
+   * 提醒项的补充说明，接在「N 条提醒」后面。
+   *
+   * 默认口径是「不阻断发布」——那只在**发布标准**的报告里成立。草稿标准下
+   * 禁用词是提醒、发布标准下它是阻断项，所以对草稿标准的报告必须换一句话，
+   * 否则等于告诉创作者「这条不用管」。
+   */
+  warningsNote?: string
 }
 
 function location(issue: LintIssue): string | null {
@@ -46,7 +56,12 @@ function IssueList({ issues }: { issues: LintIssue[] }) {
   )
 }
 
-export default function LintPanel({ report, title }: Props) {
+export default function LintPanel({
+  report,
+  title,
+  stale = false,
+  warningsNote,
+}: Props) {
   if (!report) return null
 
   const errors = report.errors ?? []
@@ -58,6 +73,15 @@ export default function LintPanel({ report, title }: Props) {
         <Typography.Text strong style={{ fontSize: 13 }}>
           {title}
         </Typography.Text>
+      )}
+
+      {stale && (
+        <Alert
+          type="warning"
+          showIcon
+          message="这份校验结果已经对不上屏幕上的内容了"
+          description="出结果之后你又改过。旧结论先留着供参考（免得看着像「问题都好了」），点「校验」按当前内容重新算一次。"
+        />
       )}
 
       {errors.length === 0 ? (
@@ -83,7 +107,7 @@ export default function LintPanel({ report, title }: Props) {
         <Alert
           type="warning"
           showIcon
-          message={`${warnings.length} 条提醒（不影响发布）`}
+          message={`${warnings.length} 条提醒${warningsNote ?? '（不影响发布）'}`}
           description={<IssueList issues={warnings} />}
         />
       )}

@@ -15,7 +15,11 @@ import {
   useAdventurePublishLint,
   useSaveAdventureDraft,
 } from './queries'
-import type { AdventureBundle, EpisodeContent } from '../types/adventureAdmin'
+import type {
+  AdventureBundle,
+  EpisodeContent,
+  EpisodeIdentity,
+} from '../types/adventureAdmin'
 
 /**
  * 冒险内容管理台接口层的契约守卫：锁死 URL、payload 透传与缓存作废范围。
@@ -60,6 +64,11 @@ function createWrapper() {
 }
 
 const content: EpisodeContent = { title: '第一集', recap: null, segments: [] }
+const identity: EpisodeIdentity = {
+  characterKey: 'elly',
+  season: 1,
+  episodeNumber: 1,
+}
 
 describe('adventure-admin 接口层', () => {
   it('saveDraft 把两个并发令牌原样透传，并把新令牌交回给调用方', async () => {
@@ -127,19 +136,28 @@ describe('adventure-admin 接口层', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: [...ADVENTURE_QUERY_ROOT] })
   })
 
-  it('发布标准校验走 forPublish=true，且令牌变了必须重算', async () => {
+  it('发布标准校验走 forPublish=true 并带上 identity，且令牌变了必须重算', async () => {
     respondWith({ ok: true, issues: [], errors: [], warnings: [] })
     const { Wrapper } = createWrapper()
     const tokens = { baseVersionId: 'v1', baseDraftUpdatedAt: 'T1' }
     const { result, rerender } = renderHook(
       ({ baseDraftUpdatedAt }: { baseDraftUpdatedAt: string }) =>
-        useAdventurePublishLint('e1', content, { ...tokens, baseDraftUpdatedAt }),
+        useAdventurePublishLint(
+          'e1',
+          content,
+          { ...tokens, baseDraftUpdatedAt },
+          identity,
+        ),
       { wrapper: Wrapper, initialProps: { baseDraftUpdatedAt: 'T1' } },
     )
 
     await waitFor(() => expect(result.current.data).toBeTruthy())
+    // identity 不是可选装饰：服务端只在请求带 identity 时才读顶层的 forPublish，
+    // 少了它这次校验会静默退回草稿标准（禁用词只是提醒），界面就会说「可以发布」。
+    // 但 identity 必须是纯净的三元组——往里嵌 forPublish 会被 LintDto 判 400。
     expect(mockPost).toHaveBeenCalledWith('/analytics/adventure-admin/lint', {
       episodeId: 'e1',
+      identity,
       content,
       forPublish: true,
     })
@@ -154,10 +172,15 @@ describe('adventure-admin 接口层', () => {
     const { Wrapper } = createWrapper()
     const { result } = renderHook(
       () =>
-        useAdventurePublishLint(null, null, {
-          baseVersionId: null,
-          baseDraftUpdatedAt: null,
-        }),
+        useAdventurePublishLint(
+          null,
+          null,
+          {
+            baseVersionId: null,
+            baseDraftUpdatedAt: null,
+          },
+          null,
+        ),
       { wrapper: Wrapper },
     )
 

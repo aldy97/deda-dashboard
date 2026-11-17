@@ -658,7 +658,9 @@ export function useAdventureRecovery() {
 /**
  * 校验与试播都是「拿当前编辑器内容问一次服务端」，不适合做缓存查询
  * （内容每敲一个字就变，queryKey 会无限膨胀）。这里做成 mutation：
- * 由编辑器显式触发（失焦 / 点按钮 / 防抖），结果留在组件自己的 state 里。
+ * 由人显式触发（「校验」按钮、点「发布」时的发布前检查），结果留在组件自己的
+ * state 里。**打字过程中一次都不发**——边写边弹错会打断写作，而草稿本来就允许
+ * 不合规（服务端只拦身份级错误与会被规范化丢掉的段落），真正的闸口在发布。
  * 它们不写库，所以成功后**不作废**任何缓存。
  */
 export function useAdventureLint() {
@@ -676,12 +678,15 @@ export function useAdventureLint() {
  * 否则会出现「界面说没问题、点发布才被拒」。
  *
  * 内容来自服务端而不是键盘，所以适合做缓存查询；键里带乐观锁双令牌，
- * 别人存过一次这份校验就必须重算。本地改动的校验仍走 useAdventureLint（防抖 mutation）。
+ * 别人存过一次这份校验就必须重算。它只在抽屉打开与令牌变化时各打一次，
+ * 不在打字链路上，所以不违背「写作过程中不校验」。
+ * 正在编辑那一份的校验由人点「校验」触发，走 useAdventureLint。
  */
 export function useAdventurePublishLint(
   episodeId: string | null,
   content: EpisodeContent | null,
   tokens: { baseVersionId: string | null; baseDraftUpdatedAt: string | null },
+  identity: EpisodeIdentity | null,
 ) {
   return useQuery({
     queryKey: [
@@ -694,6 +699,14 @@ export function useAdventurePublishLint(
     queryFn: () =>
       checkContent({
         episodeId: episodeId!,
+        // 身份必须跟 forPublish 一起带上：服务端只在请求带 identity 时才读顶层的
+        // forPublish（adventure-admin.controller.ts 的 lint 处理器）。只给 episodeId
+        // 时它改用库里的身份，而那份身份不带 forPublish —— 这次校验会**静默退回
+        // 草稿标准**：禁用词只是提醒，界面会说「没有阻断项，可以发布」，
+        // 然后被服务端 400 挡回来，正是这个 hook 的注释里要避免的那件事。
+        // identity 里不能再嵌 forPublish：LintDto 对 identity 开了
+        // forbidNonWhitelisted，嵌了直接 400。
+        identity: identity ?? undefined,
         content: content!,
         forPublish: true,
       }),
