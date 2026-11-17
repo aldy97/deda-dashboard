@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Button, Card, Col, Radio, Row, Spin, Typography } from 'antd'
-import dayjs from 'dayjs'
-import { fetchOverview, fetchOverviewTrend } from '../../api/analytics'
-import type { OverviewResponse, OverviewTrendResponse } from '../../types/analytics'
+import { Link } from 'react-router-dom'
+import type { Dayjs } from 'dayjs'
+import { useOverview, useOverviewTrend } from '../../api/queries'
+import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
+import TodayOngoingTag from '../../components/TodayOngoingTag'
+import { defaultRange, fmt, today } from '../../utils/date-range'
 import KpiCards from './KpiCards'
 import TrendChart from './TrendChart'
 import FunnelChart from './FunnelChart'
@@ -15,39 +18,30 @@ const RANGE_OPTIONS = [
 
 /**
  * 总览页（P1）：核心 KPI 卡 + 主趋势图 + 激活漏斗。
- * 数据日期默认 T-1（昨天，Asia/Shanghai 完整自然日）。
+ * KPI 日期与趋势区间均含今日（可切回历史日期）；今日数据为进行中口径，已标注。
  */
 export default function Overview() {
-  const [overview, setOverview] = useState<OverviewResponse | null>(null)
-  const [trend, setTrend] = useState<OverviewTrendResponse | null>(null)
+  const [kpiDate, setKpiDate] = useState<Dayjs>(today())
   const [rangeDays, setRangeDays] = useState(30)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [startDate, endDate] = defaultRange(rangeDays).map(fmt)
 
-  const load = useCallback(async (days: number) => {
-    setLoading(true)
-    setError(null)
-    const endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
-    const startDate = dayjs()
-      .subtract(days, 'day')
-      .format('YYYY-MM-DD')
-    try {
-      const [overviewData, trendData] = await Promise.all([
-        fetchOverview(endDate),
-        fetchOverviewTrend({ startDate, endDate }),
-      ])
-      setOverview(overviewData)
-      setTrend(trendData)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const overviewQuery = useOverview(fmt(kpiDate))
+  const trendQuery = useOverviewTrend({ startDate, endDate })
+  const overview = overviewQuery.data ?? null
+  const trend = trendQuery.data ?? null
+  const loading = overviewQuery.isLoading || trendQuery.isLoading
+  const refreshing = overviewQuery.isFetching || trendQuery.isFetching
+  const error = overviewQuery.error ?? trendQuery.error
 
-  useEffect(() => {
-    void load(rangeDays)
-  }, [load, rangeDays])
+  const refresh = () => {
+    void overviewQuery.refetch()
+    void trendQuery.refetch()
+  }
+  const errorMessage = error
+    ? error instanceof Error
+      ? error.message
+      : '加载失败'
+    : null
 
   return (
     <div>
@@ -64,20 +58,28 @@ export default function Overview() {
             总览
           </Typography.Title>
           <Typography.Text type="secondary">
-            数据日期 {overview?.date ?? '—'}（T-1）· 时长为估算口径（每条对话 × 0.5 分钟）
+            数据日期 {overview?.date ?? '—'} · 时长为估算口径（每条对话 × 0.5 分钟）
           </Typography.Text>
         </div>
-        <Button onClick={() => void load(rangeDays)} loading={loading}>
-          刷新
-        </Button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <AnalyticsDatePicker
+            value={kpiDate}
+            onChange={(d) => {
+              if (d) setKpiDate(d)
+            }}
+          />
+          <Button onClick={refresh} loading={refreshing}>
+            刷新
+          </Button>
+        </div>
       </div>
 
-      {error && (
+      {errorMessage && (
         <Alert
           type="error"
           showIcon
           message="数据加载失败"
-          description={error}
+          description={errorMessage}
           style={{ marginBottom: 16 }}
         />
       )}
@@ -89,13 +91,17 @@ export default function Overview() {
           title="核心指标趋势"
           style={{ marginTop: 16 }}
           extra={
-            <Radio.Group
-              optionType="button"
-              buttonStyle="solid"
-              options={RANGE_OPTIONS}
-              value={rangeDays}
-              onChange={(e) => setRangeDays(e.target.value as number)}
-            />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Link to="/engagement">使用行为 →</Link>
+              <TodayOngoingTag />
+              <Radio.Group
+                optionType="button"
+                buttonStyle="solid"
+                options={RANGE_OPTIONS}
+                value={rangeDays}
+                onChange={(e) => setRangeDays(e.target.value as number)}
+              />
+            </div>
           }
         >
           {trend && <TrendChart data={trend} />}

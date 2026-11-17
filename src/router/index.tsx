@@ -1,14 +1,50 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import AdminLayout from '../layouts/AdminLayout'
 import Login from '../pages/Login'
 import Overview from '../pages/Overview'
-import PlaceholderPage from '../pages/PlaceholderPage'
-import { TOKEN_KEY } from '../api/client'
+import Retention from '../pages/Retention'
+import Engagement from '../pages/Engagement'
+import Users from '../pages/Users'
+import UserDeviceDetail from '../pages/Users/DeviceDetail'
+import Content from '../pages/Content'
+import AdventureStudio from '../pages/AdventureStudio'
+import Messages from '../pages/Messages'
+import LlmMonitor from '../pages/Llm'
+import Memories from '../pages/Memories'
+import MemoryDetail from '../pages/Memories/DeviceDetail'
+import Feedback from '../pages/Feedback'
+import Fleet from '../pages/Fleet'
+import Prompts from '../pages/Prompts'
+import { getToken } from '../utils/auth-token'
+import { DEFAULT_LANDING, buildLoginSearch } from './redirect'
 
+/**
+ * 登录闸口。
+ *
+ * 重定向到登录页时把原始目标编码进 ?next=：否则用户拿着 /adventure 这样的链接
+ * 进来，登录成功后只能落回默认页，链接等于白给。useLocation() 给出的 pathname
+ * 不含 basename（/dashboard），正好是 navigate() 需要的口径。
+ *
+ * useLocation 必须无条件调用（React hooks 规则），所以先取再判 token。
+ */
 function RequireAuth({ children }: { children: ReactElement }) {
-  const token = sessionStorage.getItem(TOKEN_KEY)
-  return token ? children : <Navigate to="/login" replace />
+  const token = getToken()
+  const location = useLocation()
+  if (token) return children
+  return (
+    <Navigate
+      to={{
+        pathname: '/login',
+        search: buildLoginSearch(
+          location.pathname,
+          location.search,
+          location.hash,
+        ),
+      }}
+      replace
+    />
+  )
 }
 
 export const router = createBrowserRouter(
@@ -22,78 +58,22 @@ export const router = createBrowserRouter(
         </RequireAuth>
       ),
       children: [
-        { index: true, element: <Navigate to="/overview" replace /> },
+        { index: true, element: <Navigate to={DEFAULT_LANDING} replace /> },
         { path: 'overview', element: <Overview /> },
-        {
-          path: 'retention',
-          element: (
-            <PlaceholderPage
-              title="留存与激活"
-              description="cohort 留存热力表、D1/D7/D30/D90 留存曲线、激活→首聊→7/30 日留存漏斗。BP 核心页。"
-              apis={[
-                'GET /analytics/retention/cohorts',
-                'GET /analytics/retention/curve',
-                'GET /analytics/activation/funnel',
-              ]}
-            />
-          ),
-        },
-        {
-          path: 'engagement',
-          element: (
-            <PlaceholderPage
-              title="使用行为"
-              description="使用时长分桶分布（估算口径）、对话轮次、7×24 时段热力、模式分布、哄睡/冒险/习惯功能渗透率。"
-              apis={[
-                'GET /analytics/engagement/summary',
-                'GET /analytics/engagement/duration-distribution',
-                'GET /analytics/engagement/hourly-heatmap',
-                'GET /analytics/engagement/mode-usage',
-                'GET /analytics/engagement/feature-adoption',
-              ]}
-            />
-          ),
-        },
-        {
-          path: 'fleet',
-          element: (
-            <PlaceholderPage
-              title="设备舰队"
-              description="开机率趋势、实时在线数、固件版本分布、流失预警池、单设备明细下钻。"
-              apis={['二期：依赖 device_presence_daily 落库，契约待定义']}
-            />
-          ),
-        },
-        {
-          path: 'users',
-          element: (
-            <PlaceholderPage
-              title="用户画像"
-              description="家长注册趋势、孩子年龄段/性别分布、IP 型号（elly/polly）分布、家庭绑定结构。聚合数据，不出 PII。"
-              apis={[
-                'GET /analytics/users/summary',
-                'GET /analytics/users/demographics',
-              ]}
-            />
-          ),
-        },
-        {
-          path: 'content',
-          element: (
-            <PlaceholderPage
-              title="内容与质量"
-              description="冒险故事完集率、学习数据、家长报告有用率、对话失败率与安全拦截。LLM 单机日成本二期上线。"
-              apis={[
-                'GET /analytics/content/adventure',
-                'GET /analytics/content/learning',
-                'GET /analytics/content/parent-report',
-                'GET /analytics/quality/conversation',
-                'GET /analytics/quality/llm-usage（一期 501，二期上线）',
-              ]}
-            />
-          ),
-        },
-        { path: '*', element: <Navigate to="/overview" replace /> },
+        { path: 'retention', element: <Retention /> },
+        { path: 'engagement', element: <Engagement /> },
+        { path: 'fleet', element: <Fleet /> },
+        { path: 'users', element: <Users /> },
+        { path: 'users/:deviceId', element: <UserDeviceDetail /> },
+        { path: 'content', element: <Content /> },
+        { path: 'adventure', element: <AdventureStudio /> },
+        { path: 'feedback', element: <Feedback /> },
+        { path: 'messages', element: <Messages /> },
+        { path: 'llm', element: <LlmMonitor /> },
+        { path: 'prompts', element: <Prompts /> },
+        { path: 'memories', element: <Memories /> },
+        { path: 'memories/:deviceId', element: <MemoryDetail /> },
+        { path: '*', element: <Navigate to={DEFAULT_LANDING} replace /> },
       ],
     },
   ],

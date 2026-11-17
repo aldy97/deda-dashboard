@@ -7,6 +7,11 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   base: '/dashboard/',
   plugins: [react()],
+  build: {
+    // hidden：产物不带 map 引用，但 dist 里生成 .map 供 ARMS 反解混淆堆栈；
+    // 部署打包时必须排除 *.map（本仓库是 public 的，map 含完整源码）
+    sourcemap: 'hidden',
+  },
   server: {
     proxy: {
       '/analytics': {

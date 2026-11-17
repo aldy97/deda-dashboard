@@ -18,3 +18,8 @@ body,
 body {
   background: #f5f6f8;
 }
+
+/* 失败记录行红底（模型监控-最近失败明细 / 链路失败节点） */
+.llm-failure-row > td {
+  background: #fff1f0 !important;
+}
