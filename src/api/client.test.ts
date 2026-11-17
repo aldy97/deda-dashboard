@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import axios from 'axios'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
-import { apiClient, TOKEN_KEY } from './client'
+import { apiClient } from './client'
+import { TOKEN_KEY } from '../utils/auth-token'
 import type { ApiError } from './client'
 
 /**
@@ -66,14 +67,14 @@ async function catchError(promise: Promise<unknown>): Promise<ApiError> {
 
 describe('apiClient 拦截器', () => {
   beforeEach(() => {
-    sessionStorage.clear()
+    localStorage.clear()
     // 停在 /login 之外，好让「跳登录」这条分支真的会被走到
     window.history.pushState({}, '', '/')
   })
 
   afterEach(() => {
     apiClient.defaults.adapter = originalAdapter
-    sessionStorage.clear()
+    localStorage.clear()
     window.history.pushState({}, '', '/')
   })
 
@@ -90,7 +91,7 @@ describe('apiClient 拦截器', () => {
   })
 
   it('409 把领域码与 detail 挂到 Error 上，且不动 token', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tk')
+    localStorage.setItem(TOKEN_KEY, 'tk')
     rejectWith(
       {
         code: 409,
@@ -112,7 +113,7 @@ describe('apiClient 拦截器', () => {
       code: 'DRAFT_CONFLICT',
       currentDraft: { version: 11 },
     })
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBe('tk')
+    expect(localStorage.getItem(TOKEN_KEY)).toBe('tk')
   })
 
   it('普通路由出错时 data 为 null，domainCode 与 detail 保持 undefined', async () => {
@@ -127,7 +128,7 @@ describe('apiClient 拦截器', () => {
   })
 
   it('内容管理台的 403 是能力不足：不清 token、不跳登录', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tk')
+    localStorage.setItem(TOKEN_KEY, 'tk')
     rejectWith(
       { code: 403, message: '本环境是只读的', data: { code: 'CONTENT_READ_ONLY' } },
       403,
@@ -139,12 +140,12 @@ describe('apiClient 拦截器', () => {
 
     expect(error.status).toBe(403)
     expect(error.domainCode).toBe('CONTENT_READ_ONLY')
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBe('tk')
+    expect(localStorage.getItem(TOKEN_KEY)).toBe('tk')
     expect(window.location.pathname).toBe('/')
   })
 
   it('其它路由的 403 仍按全站行为清 token 跳登录', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tk')
+    localStorage.setItem(TOKEN_KEY, 'tk')
     // 已经在 /login 时不再跳一次，避免 jsdom 的未实现导航噪声
     window.history.pushState({}, '', '/login')
     rejectWith({ code: 403, message: '没有权限', data: null }, 403)
@@ -152,21 +153,21 @@ describe('apiClient 拦截器', () => {
     const error = await catchError(apiClient.get('/analytics/overview'))
 
     expect(error.status).toBe(403)
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
   })
 
   it('401 一律清 token，内容管理台也不例外', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tk')
+    localStorage.setItem(TOKEN_KEY, 'tk')
     window.history.pushState({}, '', '/login')
     rejectWith({ code: 401, message: '登录已过期', data: null }, 401)
 
     await catchError(apiClient.post('/analytics/adventure-admin/export', {}))
 
-    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
   })
 
   it('有 token 时自动带上 Authorization 头', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tk-1')
+    localStorage.setItem(TOKEN_KEY, 'tk-1')
     let seen = ''
     apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
       seen = String(config.headers?.Authorization ?? '')
@@ -176,5 +177,100 @@ describe('apiClient 拦截器', () => {
     await apiClient.get('/analytics/adventure-admin/capabilities')
 
     expect(seen).toBe('Bearer tk-1')
+  })
+})
+
+
+describe('会话失效跳登录时保留当前页', () => {
+  const realLocation = window.location
+
+  /**
+   * jsdom 对 window.location 赋值会打印「Not implemented: navigation」噪声，
+   * 上面既有的测试是用「先把 URL 设成 /login」来回避这条分支的。这里要断言的
+   * 恰恰是跳转目标，所以改成打桩：jsdom 31 的 location 是 configurable 的。
+   *
+   * 注意 vitest 没配 base，import.meta.env.BASE_URL 在这里是 '/'，
+   * 所以期望值里的路径不含 /dashboard 前缀；带 basename 的真实换算由
+   * src/router/redirect.test.ts 的 buildLoginHref 用例显式传 base 覆盖。
+   */
+  function stubLocation(pathname: string, search = '') {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { pathname, search, href: '' },
+    })
+  }
+
+  function jumpedTo(): string {
+    return (window.location as unknown as { href: string }).href
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    apiClient.defaults.adapter = originalAdapter
+    localStorage.clear()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: realLocation,
+    })
+  })
+
+  it('401 清 token，并把当前页连同 query 编码进 ?next=', async () => {
+    localStorage.setItem(TOKEN_KEY, 'tk')
+    stubLocation('/adventure', '?tab=episodes&episodeId=X')
+    rejectWith({ code: 401, message: '登录已过期', data: null }, 401)
+
+    await catchError(apiClient.get('/analytics/overview'))
+
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(jumpedTo()).toBe(
+      '/login?next=%2Fadventure%3Ftab%3Depisodes%26episodeId%3DX',
+    )
+  })
+
+  it('403（非内容管理台）同样带上当前页', async () => {
+    localStorage.setItem(TOKEN_KEY, 'tk')
+    stubLocation('/messages', '?deviceId=d1')
+    rejectWith({ code: 403, message: '没有权限', data: null }, 403)
+
+    await catchError(apiClient.get('/analytics/overview'))
+
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(jumpedTo()).toBe('/login?next=%2Fmessages%3FdeviceId%3Dd1')
+  })
+
+  it('已经在登录页时不再跳，避免自我重定向', async () => {
+    localStorage.setItem(TOKEN_KEY, 'tk')
+    stubLocation('/login', '')
+    rejectWith({ code: 401, message: '登录已过期', data: null }, 401)
+
+    await catchError(apiClient.get('/analytics/overview'))
+
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(jumpedTo()).toBe('')
+  })
+
+  it('内容管理台的能力不足 403 不跳转，正在编辑的整集内容不丢', async () => {
+    localStorage.setItem(TOKEN_KEY, 'tk')
+    stubLocation('/adventure', '?tab=episodes')
+    rejectWith(
+      {
+        code: 403,
+        message: '本环境是只读的',
+        data: { code: 'CONTENT_READ_ONLY' },
+      },
+      403,
+    )
+
+    await catchError(
+      apiClient.post('/analytics/adventure-admin/episodes/e1/publish', {}),
+    )
+
+    expect(localStorage.getItem(TOKEN_KEY)).toBe('tk')
+    expect(jumpedTo()).toBe('')
   })
 })
