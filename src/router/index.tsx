@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import AdminLayout from '../layouts/AdminLayout'
 import Login from '../pages/Login'
@@ -16,11 +16,35 @@ import MemoryDetail from '../pages/Memories/DeviceDetail'
 import Feedback from '../pages/Feedback'
 import Fleet from '../pages/Fleet'
 import Prompts from '../pages/Prompts'
-import { TOKEN_KEY } from '../api/client'
+import { getToken } from '../utils/auth-token'
+import { DEFAULT_LANDING, buildLoginSearch } from './redirect'
 
+/**
+ * 登录闸口。
+ *
+ * 重定向到登录页时把原始目标编码进 ?next=：否则用户拿着 /adventure 这样的链接
+ * 进来，登录成功后只能落回默认页，链接等于白给。useLocation() 给出的 pathname
+ * 不含 basename（/dashboard），正好是 navigate() 需要的口径。
+ *
+ * useLocation 必须无条件调用（React hooks 规则），所以先取再判 token。
+ */
 function RequireAuth({ children }: { children: ReactElement }) {
-  const token = sessionStorage.getItem(TOKEN_KEY)
-  return token ? children : <Navigate to="/login" replace />
+  const token = getToken()
+  const location = useLocation()
+  if (token) return children
+  return (
+    <Navigate
+      to={{
+        pathname: '/login',
+        search: buildLoginSearch(
+          location.pathname,
+          location.search,
+          location.hash,
+        ),
+      }}
+      replace
+    />
+  )
 }
 
 export const router = createBrowserRouter(
@@ -34,7 +58,7 @@ export const router = createBrowserRouter(
         </RequireAuth>
       ),
       children: [
-        { index: true, element: <Navigate to="/overview" replace /> },
+        { index: true, element: <Navigate to={DEFAULT_LANDING} replace /> },
         { path: 'overview', element: <Overview /> },
         { path: 'retention', element: <Retention /> },
         { path: 'engagement', element: <Engagement /> },
@@ -49,7 +73,7 @@ export const router = createBrowserRouter(
         { path: 'prompts', element: <Prompts /> },
         { path: 'memories', element: <Memories /> },
         { path: 'memories/:deviceId', element: <MemoryDetail /> },
-        { path: '*', element: <Navigate to="/overview" replace /> },
+        { path: '*', element: <Navigate to={DEFAULT_LANDING} replace /> },
       ],
     },
   ],
