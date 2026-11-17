@@ -15,7 +15,7 @@ import {
   UsergroupAddOutlined,
 } from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { TOKEN_KEY } from '../api/client'
+import { clearToken } from '../utils/auth-token'
 import { useAnalyticsMeta } from '../api/meta'
 import EnvTag from '../components/EnvTag'
 import { selectedMenuKey } from './menu'
@@ -77,7 +77,7 @@ export default function AdminLayout() {
   const meta = metaQuery.data ?? null
 
   const logout = () => {
-    sessionStorage.removeItem(TOKEN_KEY)
+    clearToken()
     navigate('/login', { replace: true })
   }
 
