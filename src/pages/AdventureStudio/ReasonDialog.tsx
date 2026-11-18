@@ -44,6 +44,15 @@ interface Props {
   error?: ApiError | null
   /** 附加正文，放在错误之上（例如草稿冲突时的「加载对方版本 / 覆盖我的改动」） */
   extra?: ReactNode
+  /**
+   * 外部阻断原因：非空时「确定」按钮禁用，并把这句话显示出来。
+   *
+   * 与理由字数、确认文本是**并列**的三道门，谁不满足都不放行。发布用它接
+   * 「发布前检查」的结论——校验中、校验请求失败、还有阻断项，三种情况都必须
+   * 拦在点击之前（fail closed），不能靠服务端 400 兜底：那一趟往返会把已经
+   * 填好的理由留在一个报错弹窗里，看着像白填。
+   */
+  blockedReason?: string | null
   onCancel: () => void
   onSubmit: (values: { reason: string; confirmText?: string }) => void
 }
@@ -61,6 +70,7 @@ export default function ReasonDialog({
   pending = false,
   error = null,
   extra,
+  blockedReason = null,
   onCancel,
   onSubmit,
 }: Props) {
@@ -71,7 +81,8 @@ export default function ReasonDialog({
   const reasonTooShort = trimmed.length < MIN_REASON_CHARS
   const reasonTooLong = trimmed.length > MAX_REASON_CHARS
   const confirmMismatch = confirmText !== undefined && typed.trim() !== confirmText
-  const ready = !reasonTooShort && !reasonTooLong && !confirmMismatch
+  const ready =
+    !reasonTooShort && !reasonTooLong && !confirmMismatch && blockedReason === null
 
   return (
     <Modal
@@ -81,7 +92,13 @@ export default function ReasonDialog({
       cancelText="取消"
       width={680}
       maskClosable={false}
-      okButtonProps={{ danger, disabled: !ready, loading: pending }}
+      okButtonProps={{
+        danger,
+        disabled: !ready,
+        loading: pending,
+        // 禁用态必须能问出原因：鼠标停在按钮上就说明差什么，不用去正文里找
+        title: blockedReason ?? undefined,
+      }}
       // 关弹窗时清空输入：下一次动作的理由必须是重新想的，不能沿用上一次
       onCancel={() => {
         setReason('')
@@ -104,6 +121,15 @@ export default function ReasonDialog({
         {impact && <ImpactPanel impact={impact} variant={impactVariant} />}
 
         {extra}
+
+        {blockedReason && (
+          <Alert
+            type="error"
+            showIcon
+            message="这一步现在不能提交"
+            description={blockedReason}
+          />
+        )}
 
         {error && (
           <Alert

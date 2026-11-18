@@ -86,11 +86,31 @@ Adventure Studio 的界面代码 0% 覆盖，改由下面第 2 条的实机冒�
 1. 契约不得靠猜：字段、枚举、阈值、错误码一律以 deda-server 的实现 +
    该仓 `docs/analytics-api.md`「冒险内容管理（Adventure Studio）」为准，
    前端不重复实现任何校验规则（两套阈值必然漂移）。
+   ⚠️ 已踩过的坑（2026-11-18，校验时机改造）：`POST /lint` 的 `forPublish`
+   **只在请求同时带 `identity` 时才生效**——服务端 `adventure-admin.controller.ts`
+   把 forPublish 合并进 identity，只给 `episodeId` 时它改用库里的身份，
+   那份身份不带 forPublish，于是这次校验**静默退回草稿标准**（HTTP 200、
+   报告长得正常，只是禁用词从 error 变成 warning）。而 `identity` 里
+   **不能再嵌** `forPublish`：LintDto 对 identity 开了 forbidNonWhitelisted，
+   嵌了直接 400 `identity.property forPublish should not exist`。
+   正确形状：`{ episodeId, identity: {characterKey, season, episodeNumber}, content, forPublish }`。
+   这类「静默降级」在界面上完全看不出来，只有实机冒烟能抓到。
 2. 写路径必须被真实点通。本期的替代验证是把页面挂进 jsdom、打真实的 deda-server
    （authoring profile）跑临时冒烟，覆盖存草稿（含连存两次不被自己的令牌锁死）/
    同事抢先保存后必须 409 并给出两条出路 / 发布 / 快速回滚 / 下架与恢复上架
    （输错业务键不放行）/ 导出 → dry-run 预览 → 手输确认码导入 / 自愈动作 /
-   新建与作废（业务键永久占用）/ 只读账号不清 token / 审计流水。
+   新建与作废（业务键永久占用）/ 只读账号不清 token / 审计流水 /
+   **校验时机**（打字过程中一次 `/lint` 都不发；点「校验」恰好发一次且请求带
+   identity + forPublish；出结果后再改字，旧结论留在屏幕上并标「已过期」而不是
+   凭空消失）/ **发布闸口 fail closed**（有阻断项、校验请求失败、或拿不到发布标准
+   结论时「确认发布」必须禁用，填够理由也不放行）。
+   起冒烟后端的办法：deda-server 全仓没有 `getOrThrow`，缺配置一律走默认值，
+   所以可以在 worktree 里用命令行 env 起一个**完全自带配置、不碰任何真实密钥**的
+   隔离实例——`APP_PORT` / `DATABASE_URL`（指向临时冒烟库）/
+   `ANALYTICS_JWT_SECRET`（自己编一个一次性的）/ `CONTENT_ADMIN_PROFILE=authoring` /
+   `ADVENTURE_LINT_FORBIDDEN_WORDS`。MQTT_URL 不配就不连，不会抢主实例的 client id。
+   注意 `npm run test:e2e` 读的是 **`TEST_DATABASE_URL`**，不是 `DATABASE_URL`
+   （传错变量会静默跑到共享脏库上，然后在 `analytics-fleet.e2e-spec.ts:215` 假失败）。
    临时冒烟文件交付前删除、不进仓库（避免与第 7 条「测试文件与被测文件同目录」
    的约定打架，也避免留下一份没人维护的测试）。
 3. 因此 `npm run test:coverage` 的报告里，Adventure Studio 的新增文件会以 0%
