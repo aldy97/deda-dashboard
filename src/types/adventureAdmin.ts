@@ -604,7 +604,13 @@ export interface AuditQuery {
 
 export interface LintRequest {
   episodeId?: string | null
-  identity?: (EpisodeIdentity & { forPublish?: boolean }) | null
+  /**
+   * 身份三元组，**必须是纯净的 EpisodeIdentity**：服务端的 LintDto 对 identity 开了
+   * forbidNonWhitelisted，往里塞 forPublish 会直接 400（"identity.property forPublish
+   * should not exist"）。forPublish 只放顶层——但要注意服务端只在 identity 存在时
+   * 才读它，所以想按发布标准校验就必须两者都给。
+   */
+  identity?: EpisodeIdentity | null
   content: EpisodeContent
   forPublish?: boolean
 }

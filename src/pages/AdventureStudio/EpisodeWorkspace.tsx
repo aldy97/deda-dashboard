@@ -14,19 +14,25 @@ import type {
   CapabilitiesResponse,
   DraftConflictDetail,
   EpisodeDetail,
+  LintReport,
 } from '../../types/adventureAdmin'
 import EpisodeEditor from './EpisodeEditor'
 import LintPanel from './LintPanel'
 import PreviewSimulator from './PreviewSimulator'
 import ReasonDialog from './ReasonDialog'
-import type { EpisodeContentState, LintBasis } from './useEpisodeContent'
-import { fmtDateTime, shortHash } from './labels'
+import type { EpisodeContentState } from './useEpisodeContent'
+import {
+  LINT_BASIS_TITLES,
+  LINT_WARNINGS_NOTES,
+  fmtDateTime,
+  shortHash,
+} from './labels'
 
 /**
  * 单集工作台：编辑 + 校验 + 试播 + 全部写动作。
  *
  * 内容状态由抽屉层的 useEpisodeContent 持有（切 tab 不会丢稿子），这里只负责
- * 「把动作做对」，四条规矩：
+ * 「把动作做对」，五条规矩：
  *
  * 1. **每个写动作都要理由**，破坏性动作还要原样手输业务键。闸门在服务端，
  *    前端只做提前提示，不假装自己能挡住。
@@ -37,6 +43,10 @@ import { fmtDateTime, shortHash } from './labels'
  *    这些数字必须停在屏幕上可被核对，飘两秒就消失等于没说。
  * 4. **409 DRAFT_CONFLICT 时不关弹窗**，就地给出「加载对方版本 / 覆盖我的改动」
  *    两条路。理由是最难写的那部分，让人白填一遍等于惩罚他说清楚。
+ * 5. **校验只由人触发，且发布这道门 fail closed。** 打字过程中不发校验请求
+ *    （见 useEpisodeContent 第 2 条取舍）；点「校验」按钮、或点「发布」时各算一次。
+ *    「确认发布」在校验中 / 校验请求失败 / 拿不到发布标准结论时一律禁用——
+ *    宁可让人多点一次「校验」，也不能在校验没算出来的时候把内容推向孩子。
  */
 interface Props {
   episodeId: string
@@ -61,14 +71,10 @@ interface ResultNote {
   text: ReactNode
 }
 
-const LINT_BASIS_TITLES: Record<LintBasis, string> = {
-  local: '校验结果（发布标准 · 正在编辑的这份）',
-  publish: '校验结果（发布标准 · 服务端当前内容）',
-  draft: '校验结果（草稿标准 · 发布标准的结果正在计算）',
-  none: '校验结果（正在计算…）',
-}
-
-/** 只有这些身份级 / 儿童安全级错误连草稿都不许落库，其余允许「写到一半」先存下来 */
+/**
+ * 发布后自检的漂移结论。只告警不回滚：发布已经提交，此时回滚会造成
+ * 「孩子刚拿到的内容又被换掉」，比漂移本身更糟。
+ */
 function describeSelfCheck(drift: string[] | null): ResultNote | null {
   if (drift === null) {
     return {
@@ -129,12 +135,39 @@ export default function EpisodeWorkspace({
 
   const content = state.content
   const lintErrors = state.lint?.errors ?? []
+  // 发布按钮不再把校验结论做进禁用条件：结论会变、也可能还没算出来，
+  // 「为什么点不动」会变成一个猜谜。门改在弹窗里，且 fail closed（publishGateReason）。
   const canPublish =
-    authoring &&
-    !state.dirty &&
-    summary.hasDraft &&
-    !summary.retiredAt &&
-    lintErrors.length === 0
+    authoring && !state.dirty && summary.hasDraft && !summary.retiredAt
+
+  // 存草稿被服务端拒绝时，拒绝理由里带着完整的 lint 报告，原样摊开给人看：
+  // 只有一句「内容不合规」没法改，必须知道是哪一段的哪一条。
+  const rejectedLint =
+    (error?.detail as { lint?: LintReport } | undefined)?.lint ?? null
+
+  /**
+   * 发布这道门的 fail-closed 判定：null = 放行，一句话 = 拦住并说明为什么。
+   *
+   * 「校验没算出来」和「校验算出错误」同样不放行——放行等于把不确定的内容推向孩子。
+   */
+  function publishGateReason(): string | null {
+    if (state.lintPending) return '发布前检查正在计算，等它出结果（通常几秒）。'
+    if (state.lintError) {
+      return `发布前检查这次请求失败了，无法确认这一集能不能发布，所以不放行：${state.lintError.message}${
+        state.lintError.domainCode ? `（${state.lintError.domainCode}）` : ''
+      }。关掉弹窗点「校验」重试一次。`
+    }
+    if (state.lintStale) {
+      return '屏幕上的校验结果已经对不上当前内容了。点「校验」按现在这一份重新算一次再发布。'
+    }
+    if (state.lintBasis !== 'publish' && state.lintBasis !== 'local') {
+      return '还没有按发布标准算出来的校验结果（草稿标准会放过禁用词一类问题，不能拿它当发布依据）。点「校验」重新算一次。'
+    }
+    if (lintErrors.length > 0) {
+      return `还有 ${lintErrors.length} 个阻断项，全部修掉才能发布。就算这里放行，服务端也会再拦一次（PUBLISH_BLOCKED）。`
+    }
+    return null
+  }
 
   function closeDialog() {
     setAction(null)
@@ -271,7 +304,7 @@ export default function EpisodeWorkspace({
         return {
           title: '存草稿',
           description:
-            '只写草稿，不发布：孩子拿到的永远是已发布的版本快照，正在玩的人不会被打断。草稿是可变行——同一集的草稿会被原地更新，不会每存一次就多一行历史。校验没过也能存（身份级与儿童安全级错误除外），这正是草稿的用途：写到一半先落地。',
+            '只写草稿，不发布：孩子拿到的永远是已发布的版本快照，正在玩的人不会被打断。草稿是可变行——同一集的草稿会被原地更新，不会每存一次就多一行历史。校验没过也能存：服务端只拦它自己点名的少数阻断项（身份级错误、会被规范化丢掉的段落），其余内容级问题一律放行——这正是草稿的用途：写到一半先落地。真正的闸口在发布：那时会按发布标准重新算一次，禁用词一类问题才拦人。',
           okText: '存草稿',
           danger: false,
         }
@@ -279,7 +312,7 @@ export default function EpisodeWorkspace({
         return {
           title: `发布 ${businessKey}`,
           description:
-            '发布会生成一个新的版本快照并切成当前版本，旧版本转 superseded（历史不删）。已经分配到这一集的设备仍锁在自己开始时的快照上，不会被中途换掉；只有之后新分配的设备才拿到新版本。发布不可撤销——要退回去请用「回滚到某一版」，那同样是新增一个版本。',
+            '发布会生成一个新的版本快照并切成当前版本，旧版本转 superseded（历史不删）。已经分配到这一集的设备仍锁在自己开始时的快照上，不会被中途换掉；只有之后新分配的设备才拿到新版本。发布不可撤销——要退回去请用「回滚到某一版」，那同样是新增一个版本。下面这份「发布前检查」是打开弹窗时按发布标准现算的，它有阻断项、算不出来、或请求失败时都不能提交。',
           okText: '确认发布',
           danger: false,
         }
@@ -363,6 +396,28 @@ export default function EpisodeWorkspace({
       />
     ) : null
 
+  // 弹窗正文按动作补料：发布摊开「发布前检查」，存草稿被拒摊开服务端返回的 lint
+  // 报告。两者都放在理由输入框之上——它们是「这一步还要不要继续」的依据，
+  // 而不是提交失败之后才给人看的马后炮。
+  const dialogExtra = [
+    action === 'publish' && state.lint !== null ? (
+      <LintPanel
+        key="publish-check"
+        report={state.lint}
+        title="发布前检查（发布标准 · 打开这个弹窗时现算）"
+        stale={state.lintStale}
+      />
+    ) : null,
+    action === 'save' && rejectedLint !== null ? (
+      <LintPanel
+        key="rejected-lint"
+        report={rejectedLint}
+        title="服务端拒绝这次存草稿的原因"
+      />
+    ) : null,
+    conflictExtra,
+  ].filter((part) => part !== null)
+
   return (
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
       {result && (
@@ -384,45 +439,61 @@ export default function EpisodeWorkspace({
         />
       )}
 
-      {authoring && (
-        <Space size={8} wrap>
-          <Button
-            type="primary"
-            loading={save.isPending}
-            disabled={content === null}
-            onClick={() => setAction('save')}
-          >
-            存草稿
-          </Button>
-          <Button
-            loading={publish.isPending}
-            disabled={!canPublish}
-            onClick={() => setAction('publish')}
-            title={
-              !summary.hasDraft
-                ? '还没有草稿，先存一次草稿'
-                : state.dirty
-                  ? '有未保存的改动：先存草稿再发布，否则发出去的还是上一份'
-                  : lintErrors.length > 0
-                    ? '校验还有错误，发布会被服务端拒绝（PUBLISH_BLOCKED）'
+      {/* 校验是只读动作，只读环境同样可用（上面那段说明已经这么承诺了），所以这一行
+          不受 authoring 门控；写动作仍然只在 authoring 下出现。 */}
+      <Space size={8} wrap>
+        <Button
+          onClick={state.runLintNow}
+          // 首次打开抽屉时「发布标准」查询也在飞，转圈是真的在校验，不是骗人
+          loading={state.lintPending}
+          disabled={content === null}
+          title="按发布标准校验当前这一份内容。打字过程中不会自动校验：草稿允许写到一半，实时弹错只会打断写作。"
+        >
+          校验
+        </Button>
+        {authoring && (
+          <>
+            <Button
+              type="primary"
+              loading={save.isPending}
+              disabled={content === null}
+              onClick={() => setAction('save')}
+            >
+              存草稿
+            </Button>
+            <Button
+              loading={publish.isPending}
+              disabled={!canPublish}
+              onClick={() => {
+                // 打开弹窗的同时现算一次发布前检查。门在弹窗里 fail closed，
+                // 不在按钮的禁用条件上让人猜「为什么点不动」
+                state.runLintNow()
+                setAction('publish')
+              }}
+              title={
+                !summary.hasDraft
+                  ? '还没有草稿，先存一次草稿'
+                  : state.dirty
+                    ? '有未保存的改动：先存草稿再发布，否则发出去的还是上一份'
                     : undefined
-            }
-          >
-            发布
-          </Button>
-          <Button onClick={() => setSimulateOpen(true)}>试播</Button>
-          <Button
-            onClick={() => {
-              state.clearLocal()
-              onReload()
-            }}
-          >
-            {state.dirty ? '放弃改动并重新加载' : '重新加载'}
-          </Button>
-          {state.dirty && <Tag color="gold">有未保存的改动</Tag>}
-          {state.lintPending && <Tag>校验中…</Tag>}
-        </Space>
-      )}
+              }
+            >
+              发布
+            </Button>
+            <Button onClick={() => setSimulateOpen(true)}>试播</Button>
+            <Button
+              onClick={() => {
+                state.clearLocal()
+                onReload()
+              }}
+            >
+              {state.dirty ? '放弃改动并重新加载' : '重新加载'}
+            </Button>
+          </>
+        )}
+        {state.dirty && <Tag color="gold">有未保存的改动</Tag>}
+        {state.lintStale && <Tag color="gold">校验结果已过期</Tag>}
+      </Space>
 
       {authoring && (
         <Space size={8} wrap>
@@ -475,11 +546,18 @@ export default function EpisodeWorkspace({
           type="error"
           showIcon
           message="校验请求失败"
-          description={`${state.lintError.message}${state.lintError.domainCode ? `（${state.lintError.domainCode}）` : ''}`}
+          description={`${state.lintError.message}${
+            state.lintError.domainCode ? `（${state.lintError.domainCode}）` : ''
+          }。这**不等于**「内容没问题」：发布前检查在这种情况下同样不放行，点「校验」重试一次。`}
         />
       )}
 
-      <LintPanel report={state.lint} title={LINT_BASIS_TITLES[state.lintBasis]} />
+      <LintPanel
+        report={state.lint}
+        title={LINT_BASIS_TITLES[state.lintBasis]}
+        stale={state.lintStale}
+        warningsNote={LINT_WARNINGS_NOTES[state.lintBasis]}
+      />
 
       <EpisodeEditor
         value={content ?? { title: '', recap: null, segments: [] }}
@@ -520,7 +598,10 @@ export default function EpisodeWorkspace({
           danger={dialog.danger}
           pending={pending}
           error={error}
-          extra={conflictExtra}
+          extra={dialogExtra.length > 0 ? dialogExtra : undefined}
+          // 只有发布这道门 fail closed。存草稿刻意不拦：草稿本来就允许写到一半，
+          // 服务端只拦身份级错误与会被规范化丢掉的段落，拒绝时会把 lint 报告摊在上面
+          blockedReason={action === 'publish' ? publishGateReason() : null}
           onCancel={closeDialog}
           onSubmit={submit}
         />

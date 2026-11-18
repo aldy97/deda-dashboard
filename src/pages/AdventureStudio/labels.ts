@@ -7,6 +7,7 @@ import type {
   VersionStatus,
 } from '../../types/adventureAdmin'
 import { AUDIT_ACTIONS } from '../../types/adventureAdmin'
+import type { LintBasis } from './useEpisodeContent'
 
 /**
  * 纯展示映射：服务端下发英文枚举，这里只负责翻译成内容创作者看得懂的中文。
@@ -203,4 +204,29 @@ export function fmtSeconds(seconds: number | null | undefined): string {
   const total = Math.round(seconds)
   if (total < 60) return `${total} 秒`
   return `${Math.floor(total / 60)} 分 ${total % 60} 秒`
+}
+
+
+/**
+ * 校验结论的标题与提醒项说明，都取决于「这份报告是按哪个标准算出来的」。
+ *
+ * 放在 labels 而不是组件文件里：抽屉的只读视图与工作台要用同一套口径，
+ * 而 oxlint 的 only-export-components 不允许从组件文件往外导常量。
+ */
+export const LINT_BASIS_TITLES: Record<LintBasis, string> = {
+  local: '校验结果（发布标准 · 你点「校验」时的那一份内容）',
+  publish: '校验结果（发布标准 · 服务端当前内容）',
+  draft: '校验结果（草稿标准 · 发布标准的结果正在计算）',
+  none: '还没有校验结果：点「校验」按发布标准算一次',
+}
+
+/**
+ * 提醒项的补充说明，接在「N 条提醒」后面；缺省是「（不影响发布）」。
+ *
+ * 缺省口径只在**发布标准**的报告里成立。草稿标准下禁用词是提醒、发布标准下
+ * 它是阻断项，所以对草稿标准的报告必须换一句话，否则等于告诉创作者「这条不用管」，
+ * 等到点发布才被 400 挡回来。
+ */
+export const LINT_WARNINGS_NOTES: Partial<Record<LintBasis, string>> = {
+  draft: '（存草稿不阻断；其中一部分在发布标准下会变成阻断项，发布前会重新算一次）',
 }

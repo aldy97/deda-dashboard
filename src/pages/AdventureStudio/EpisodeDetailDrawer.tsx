@@ -12,7 +12,7 @@ import LintPanel from './LintPanel'
 import VersionHistory from './VersionHistory'
 import AuditLog from './AuditLog'
 import { useEpisodeContent } from './useEpisodeContent'
-import { characterLabel, fmtDateTime } from './labels'
+import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
 
 /**
  * 单集详情抽屉：内容 / 版本 / 影响面 / 本集审计四张视图收在一处。
@@ -170,7 +170,12 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                         />
                       ) : (
                         <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-                          <LintPanel report={state.lint} title="当前内容的校验结果" />
+                          <LintPanel
+                            report={state.lint}
+                            title="当前内容的校验结果"
+                            stale={state.lintStale}
+                            warningsNote={LINT_WARNINGS_NOTES[state.lintBasis]}
+                          />
                           <ContentPreview content={detail.content} />
                         </Space>
                       )
@@ -222,7 +227,8 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
           </Typography.Text>
           <Typography.Text type="secondary">
             想留着就点「留在这一页」，然后先存一次草稿——草稿允许写到一半，
-            校验没过也能存（身份级与儿童安全级错误除外）。
+            校验没过也能存：服务端只拦它自己点名的少数阻断项（身份级错误、
+            会被规范化丢掉的段落）。真正的儿童内容闸口在发布那一步。
           </Typography.Text>
         </Space>
       </Modal>
