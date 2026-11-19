@@ -3,6 +3,7 @@ import type { ContentAdventureChoicesResponse } from '../../types/analytics'
 import type { DayRange } from '../../utils/date-range'
 import { fmt } from '../../utils/date-range'
 import { useContentAdventureChoices } from '../../api/queries'
+import InfoTip from '../../components/InfoTip'
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
@@ -42,7 +43,15 @@ export default function AdventureChoicesSection({
       <Row gutter={[16, 16]}>
         <Col xs={12} md={6}>
           <Card size="small" style={{ height: '100%' }}>
-            <Statistic title="总互动数" value={data.totalInteractions} />
+            <Statistic
+              title={
+                <>
+                  总互动数
+                  <InfoTip title="已应答 + 兜底 + 超时。不含跑题（off_topic）：跑题只是中间态，同一轮最终仍会落成已应答或兜底，计进来会重复计数。" />
+                </>
+              }
+              value={data.totalInteractions}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
@@ -52,12 +61,28 @@ export default function AdventureChoicesSection({
         </Col>
         <Col xs={12} md={6}>
           <Card size="small" style={{ height: '100%' }}>
-            <Statistic title="兜底率" value={formatPct(data.fallbackRate)} />
+            <Statistic
+              title={
+                <>
+                  兜底率
+                  <InfoTip title="兜底 / 总互动数：孩子开口了、但两个选项都没匹配上而走了兜底话术的比例。注意冒险内容工作台的单集视图用另一个分母（matchedTotal + fallbackTotal，分母不含超时），两处数字不可直接比较。" />
+                </>
+              }
+              value={formatPct(data.fallbackRate)}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small" style={{ height: '100%' }}>
-            <Statistic title="LLM 占比" value={formatPct(data.llmShare)} />
+            <Statistic
+              title={
+                <>
+                  LLM 占比
+                  <InfoTip title="LLM 判定命中数 / 命中总数。这项偏高说明选项文案不够贴近孩子口语：确定性路径是子串匹配，接不住就只能靠模型兜。" />
+                </>
+              }
+              value={formatPct(data.llmShare)}
+            />
           </Card>
         </Col>
       </Row>
