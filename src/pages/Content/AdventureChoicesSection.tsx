@@ -1,5 +1,4 @@
 import { Card, Col, Empty, Row, Spin, Statistic, Table, Typography } from 'antd'
-import type { ContentAdventureChoicesResponse } from '../../types/analytics'
 import type { DayRange } from '../../utils/date-range'
 import { fmt } from '../../utils/date-range'
 import { useContentAdventureChoices } from '../../api/queries'
@@ -13,18 +12,12 @@ const formatPct = (rate: number | null) =>
  * 展示 choice_matched 事件的汇总数据与按剧集/选项拆分。
  */
 export default function AdventureChoicesSection({
-  data,
   range,
 }: {
-  data: ContentAdventureChoicesResponse
   range: DayRange
 }) {
   const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
-  const { isLoading, error } = useContentAdventureChoices(params)
-
-  if (isLoading) {
-    return <Spin />
-  }
+  const { data, isLoading, error } = useContentAdventureChoices(params)
 
   if (error) {
     return (
@@ -32,6 +25,10 @@ export default function AdventureChoicesSection({
         {error instanceof Error ? error.message : '加载失败'}
       </Typography.Text>
     )
+  }
+
+  if (isLoading || !data) {
+    return <Spin />
   }
 
   if (data.totalInteractions === 0 || data.byEpisode.length === 0) {

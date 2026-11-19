@@ -3,7 +3,6 @@ import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import {
   useContentAdventure,
-  useContentAdventureChoices,
   useContentLearning,
   useQualityConversation,
 } from '../../api/queries'
@@ -19,32 +18,29 @@ const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
 
 /**
- * 内容与质量页（P6）：冒险故事、学习数据、对话质量。
- * 一个区间控件驱动全部三个接口；对话质量固定按日粒度。
+ * 内容与质量页（P6）：冒险故事、二选一选项命中、学习数据、对话质量。
+ * 一个区间控件驱动全部区块；对话质量固定按日粒度。
  * 家长报告卡片已搬迁至用户反馈页作为第三个 tab。
  * /analytics/quality/llm-usage 一期 501（未落库），本页不接入。
+ * 例外：「二选一选项命中」区块自己持有查询，不并进本页的整页 loading 与
+ * 整页错误 Alert——它的后端端点上线晚于本页，若并进来，端点 404 会让整页
+ * 挂红色横幅，而其余三个区块的数据其实是好的。区块内自己显示错误即可。
  */
 export default function Content() {
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
   const adventureQuery = useContentAdventure(params)
-  const choicesQuery = useContentAdventureChoices(params)
   const learningQuery = useContentLearning(params)
   const qualityQuery = useQualityConversation({ ...params, granularity: 'day' })
   const adventure = adventureQuery.data ?? null
-  const choices = choicesQuery.data ?? null
   const learning = learningQuery.data ?? null
   const quality = qualityQuery.data ?? null
   const loading =
     adventureQuery.isLoading ||
-    choicesQuery.isLoading ||
     learningQuery.isLoading ||
     qualityQuery.isLoading
   const queryError =
-    adventureQuery.error ??
-    choicesQuery.error ??
-    learningQuery.error ??
-    qualityQuery.error
+    adventureQuery.error ?? learningQuery.error ?? qualityQuery.error
   const error = queryError
     ? queryError instanceof Error
       ? queryError.message
@@ -96,7 +92,7 @@ export default function Content() {
         </Card>
 
         <Card title="二选一选项命中" style={{ marginTop: 16 }}>
-          {choices && <AdventureChoicesSection data={choices} range={range} />}
+          <AdventureChoicesSection range={range} />
         </Card>
 
         <Card
