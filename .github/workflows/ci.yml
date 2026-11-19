@@ -27,3 +27,19 @@ jobs:
 
       # tsc -b 含完整类型检查，随后 vite build 产物即部署产物
       - run: npm run build
+
+  pr-hygiene:
+    name: PR 正文规范
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    env:
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_BASE: ${{ github.base_ref }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: node .github/scripts/pr-hygiene.mjs
