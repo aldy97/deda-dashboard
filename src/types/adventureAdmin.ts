@@ -205,6 +205,33 @@ export interface EpisodeImpact {
   publishedVersionCount: number
 }
 
+export interface EpisodeChoiceStatsResponse {
+  episodeId: string
+  title: string
+  /** 固定文案，服务端下发，前端原样展示，不要在前端硬编码 */
+  contentNote: string
+  totalInteractions: number
+  matchedTotal: number
+  segments: Array<{
+    segmentOrder: number | null
+    promptText: string | null
+    matchedTotal: number
+    fallbackTotal: number
+    fallbackRate: number | null
+    /** 该段的选项从未被任何孩子选中过；服务端算好，前端不要自己推 */
+    neverChosen: boolean
+    choices: Array<{
+      index: number
+      key: string | null
+      text: string | null
+      hits: number
+      deterministicHits: number
+      llmHits: number
+      share: number | null
+    }>
+  }>
+}
+
 export interface EpisodeDetail {
   summary: EpisodeSummary
   content: EpisodeContent

@@ -8,6 +8,7 @@ import type {
   CreateEpisodeResult,
   DiscardDraftResult,
   DiscardEpisodeResult,
+  EpisodeChoiceStatsResponse,
   EpisodeDetail,
   EpisodeIdentity,
   EpisodeListQuery,
@@ -108,6 +109,17 @@ export async function fetchEpisodeImpact(
 ): Promise<EpisodeImpact> {
   const resp = await apiClient.get(`${BASE}/episodes/${episodeId}/impact`)
   return resp.data as EpisodeImpact
+}
+
+export async function fetchEpisodeChoiceStats(
+  episodeId: string,
+  params?: { startDate?: string; endDate?: string },
+): Promise<EpisodeChoiceStatsResponse> {
+  const resp = await apiClient.get(
+    `${BASE}/episodes/${episodeId}/choice-stats`,
+    { params },
+  )
+  return resp.data as EpisodeChoiceStatsResponse
 }
 
 export async function fetchAudit(

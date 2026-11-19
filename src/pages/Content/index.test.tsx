@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import Content from './index'
 import type {
+  ContentAdventureChoicesResponse,
   ContentAdventureResponse,
   ContentLearningResponse,
   QualityConversationResponse,
@@ -54,6 +55,35 @@ const QUALITY_RESPONSE: QualityConversationResponse = {
   ],
 }
 
+const CHOICES_RESPONSE: ContentAdventureChoicesResponse = {
+  totalInteractions: 50,
+  outcomeCounts: {
+    answered: 30,
+    off_topic: 5,
+    fallback: 10,
+    timeout: 5,
+  },
+  fallbackRate: 0.2,
+  matchedTotal: 35,
+  sourceCounts: {
+    deterministic: 20,
+    llm: 15,
+  },
+  llmShare: 0.429,
+  byEpisode: [
+    {
+      episodeId: 'ep-001',
+      title: '测试剧集',
+      matchedTotal: 35,
+      fallbackRate: 0.1,
+      choices: [
+        { segmentOrder: 0, index: 0, key: 'opt_a', text: '选项A', hits: 20 },
+        { segmentOrder: 0, index: 1, key: 'opt_b', text: '选项B', hits: 15 },
+      ],
+    },
+  ],
+}
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -75,7 +105,11 @@ describe('内容与质量页 · 归位', () => {
   })
 
   it('不渲染家长报告卡片', async () => {
-    mockGet.mockResolvedValue({ data: ADVENTURE_RESPONSE })
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
+      if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
+      return Promise.resolve({ data: null })
+    })
 
     renderPage()
 
@@ -88,6 +122,7 @@ describe('内容与质量页 · 归位', () => {
   it('对话质量趋势卡片有口径说明（InfoTip）', async () => {
     mockGet.mockImplementation((url: string) => {
       if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
+      if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
       if (url === '/analytics/content/learning') return Promise.resolve({ data: LEARNING_RESPONSE })
       if (url === '/analytics/quality/conversation') return Promise.resolve({ data: QUALITY_RESPONSE })
       return Promise.resolve({ data: null })
@@ -109,6 +144,7 @@ describe('内容与质量页 · 归位', () => {
   it('对话质量趋势卡片有 /llm?tab=perf 和 /llm?tab=safety 出口', async () => {
     mockGet.mockImplementation((url: string) => {
       if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
+      if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
       if (url === '/analytics/content/learning') return Promise.resolve({ data: LEARNING_RESPONSE })
       if (url === '/analytics/quality/conversation') return Promise.resolve({ data: QUALITY_RESPONSE })
       return Promise.resolve({ data: null })
@@ -130,6 +166,7 @@ describe('内容与质量页 · 归位', () => {
   it('学习数据卡片有英语对话和故事消息出口', async () => {
     mockGet.mockImplementation((url: string) => {
       if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
+      if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
       if (url === '/analytics/content/learning') return Promise.resolve({ data: LEARNING_RESPONSE })
       if (url === '/analytics/quality/conversation') return Promise.resolve({ data: QUALITY_RESPONSE })
       return Promise.resolve({ data: null })

@@ -290,6 +290,36 @@ export interface ContentAdventureResponse {
   }>
 }
 
+export interface ContentAdventureChoicesResponse {
+  totalInteractions: number
+  outcomeCounts: {
+    answered: number
+    off_topic: number
+    fallback: number
+    timeout: number
+  }
+  fallbackRate: number | null
+  matchedTotal: number
+  sourceCounts: {
+    deterministic: number
+    llm: number
+  }
+  llmShare: number | null
+  byEpisode: Array<{
+    episodeId: string
+    title: string
+    matchedTotal: number
+    fallbackRate: number | null
+    choices: Array<{
+      segmentOrder: number | null
+      index: number
+      key: string | null
+      text: string | null
+      hits: number
+    }>
+  }>
+}
+
 export interface ContentLearningResponse {
   totalNewWords: number
   avgNewWordsPerActiveDevice: number

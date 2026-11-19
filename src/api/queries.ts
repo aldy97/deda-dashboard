@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchActivationFunnel,
   fetchContentAdventure,
+  fetchContentAdventureChoices,
   fetchContentLearning,
   fetchContentParentReport,
   fetchCurrentMemories,
@@ -65,6 +66,7 @@ import {
   fetchCapabilities,
   fetchEpisode,
   fetchEpisodeImpact,
+  fetchEpisodeChoiceStats,
   fetchEpisodes,
   fetchRecoveryHealth,
   fetchVersion,
@@ -255,6 +257,16 @@ export function useContentAdventure(params: {
   return useQuery({
     queryKey: ['analytics', 'contentAdventure', params],
     queryFn: () => fetchContentAdventure(params),
+  })
+}
+
+export function useContentAdventureChoices(params: {
+  startDate?: string
+  endDate?: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'contentAdventureChoices', params],
+    queryFn: () => fetchContentAdventureChoices(params),
   })
 }
 
@@ -635,6 +647,22 @@ export function useAdventureImpact(episodeId: string | null) {
   return useQuery({
     queryKey: [...ADVENTURE_QUERY_ROOT, 'impact', episodeId],
     queryFn: () => fetchEpisodeImpact(episodeId!),
+    enabled: episodeId !== null,
+  })
+}
+
+export function useEpisodeChoiceStats(
+  episodeId: string | null,
+  params?: { startDate?: string; endDate?: string },
+) {
+  return useQuery({
+    queryKey: [
+      ...ADVENTURE_QUERY_ROOT,
+      'choiceStats',
+      episodeId,
+      params ?? null,
+    ],
+    queryFn: () => fetchEpisodeChoiceStats(episodeId!, params ?? {}),
     enabled: episodeId !== null,
   })
 }
