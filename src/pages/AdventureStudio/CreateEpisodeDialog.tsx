@@ -19,8 +19,8 @@ import { characterLabel } from './labels'
  * 所以这里要求把业务键原样手输一遍。
  *
  * 本期只做 season=1：季号直接取服务端能力清单，不给输入框——能被填错的字段
- * 就不要放出来。新建只落一个空壳草稿（标题 + 可选回顾），段落在工作台里写；
- * 「写到一半」正是草稿的用途，服务端只拦身份级与儿童安全级错误。
+ * 就不要放出来。新建只落一个空壳草稿（标题），段落在工作台里写；开场回顾
+ * 可以到工作台里再写。「写到一半」正是草稿的用途，服务端只拦身份级与儿童安全级错误。
  */
 interface Props {
   capabilities: CapabilitiesResponse
@@ -38,7 +38,6 @@ export default function CreateEpisodeDialog({
   )
   const [episodeNumber, setEpisodeNumber] = useState<number | null>(null)
   const [title, setTitle] = useState('')
-  const [recap, setRecap] = useState('')
   const create = useCreateAdventureEpisode()
   const error = (create.error as ApiError | null) ?? null
 
@@ -58,7 +57,6 @@ export default function CreateEpisodeDialog({
     if (!numberValid) return
     const content: EpisodeContent = {
       title: title.trim(),
-      recap: recap.trim() === '' ? null : recap.trim(),
       segments: [],
     }
     create.mutate(
@@ -94,8 +92,8 @@ export default function CreateEpisodeDialog({
       description={
         <Space orientation="vertical" size={8} style={{ width: '100%' }}>
           <Typography.Text>
-            会创建一集「空壳草稿」（标题 + 可选回顾，段落稍后在工作台里写）。创建不会发布，
-            孩子看不到它，直到你显式发布。
+            会创建一集「空壳草稿」（标题，段落稍后在工作台里写）。开场回顾可以到工作台里再写。
+            创建不会发布，孩子看不到它，直到你显式发布。
           </Typography.Text>
           <Typography.Text type="danger">
             业务键 {characterKey}/{capabilities.season}/集号 一旦占用即「永久占用」：
@@ -149,20 +147,6 @@ export default function CreateEpisodeDialog({
               maxLength={capabilities.lintThresholds.maxTitleChars}
               showCount
               placeholder="孩子听到的这一集名字"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="开场回顾（可选）"
-            style={{ marginBottom: 0 }}
-            help="上一集讲了什么，播正文之前先念给孩子听"
-          >
-            <Input.TextArea
-              rows={2}
-              value={recap}
-              onChange={(event) => setRecap(event.target.value)}
-              maxLength={capabilities.lintThresholds.maxNarrationTextChars}
-              showCount
             />
           </Form.Item>
 

@@ -75,7 +75,6 @@ export interface EpisodeSegment {
   interactionType?: AdventureInteractionType | null
   options?: SegmentOptions | null
   fallbackText?: string | null
-  exitText?: string | null
   rewardStar?: boolean
 }
 
@@ -115,6 +114,7 @@ export interface CapabilitiesResponse {
   segmentKinds: SegmentKind[]
   lintThresholds: LintThresholds
   simulationThresholds: SimulationThresholds
+  fixedExitText: string
   profile: ContentAdminProfile
   authoring: boolean
 }
@@ -255,7 +255,6 @@ export interface BundleSegment {
   interactionType: AdventureInteractionType | null
   options: SegmentOptions | null
   fallbackText: string | null
-  exitText: string | null
   rewardStar: boolean
 }
 
