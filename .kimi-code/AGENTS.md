@@ -86,6 +86,10 @@ Adventure Studio 的界面代码 0% 覆盖，改由下面第 2 条的实机冒�
 1. 契约不得靠猜：字段、枚举、阈值、错误码一律以 deda-server 的实现 +
    该仓 `docs/analytics-api.md`「冒险内容管理（Adventure Studio）」为准，
    前端不重复实现任何校验规则（两套阈值必然漂移）。
+   统一退出话术是这条的一个具体例子：孩子任何时刻退出都由服务端念固定的一句，
+   这句话的唯一来源是 `capabilities.fixedExitText`（deda-server 的
+   `ADVENTURE_EXIT_TEXT`），前端**不得内联字面量**，界面上要展示就展示
+   capabilities 读回来的值——内联等于把同一句文案复制成两份，早晚漂移。
    ⚠️ 已踩过的坑（2026-11-18，校验时机改造）：`POST /lint` 的 `forPublish`
    **只在请求同时带 `identity` 时才生效**——服务端 `adventure-admin.controller.ts`
    把 forPublish 合并进 identity，只给 `episodeId` 时它改用库里的身份，
