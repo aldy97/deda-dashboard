@@ -10,12 +10,13 @@ import EpisodeWorkspace from './EpisodeWorkspace'
 import ImpactPanel from './ImpactPanel'
 import LintPanel from './LintPanel'
 import VersionHistory from './VersionHistory'
+import ChoiceStatsPanel from './ChoiceStatsPanel'
 import AuditLog from './AuditLog'
 import { useEpisodeContent } from './useEpisodeContent'
 import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
 
 /**
- * 单集详情抽屉：内容 / 版本 / 影响面 / 本集审计四张视图收在一处。
+ * 单集详情抽屉：内容 / 版本 / 影响面 / 选项命中 / 本集审计五张视图收在一处。
  *
  * 放在抽屉而不是新路由，是因为创作者的动线是「在列表里扫到一集 → 立刻看它现在
  * 什么样、谁在改、动了会影响谁」，中途跳走会丢掉列表的筛选与分页状态。
@@ -24,8 +25,8 @@ import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
  * 最后是空壳。三者的处置方式完全不同（草稿可以丢、发布版只能被新版本覆盖、
  * 空壳说明这一集从没写过内容），不标出来就会有人以为自己在改线上内容。
  *
- * 只挂载当前 tab：版本历史与审计各自带请求，四个 tab 一次性全挂载会在打开抽屉的
- * 瞬间打出四个请求。
+ * 只挂载当前 tab：版本历史与审计各自带请求，五个 tab 一次性全挂载会在打开抽屉的
+ * 瞬间打出多个请求。
  *
  * 编辑状态由这一层的 useEpisodeContent 持有，而不是放在工作台组件里——正因为只挂载
  * 当前 tab，切去「版本历史」再切回来会卸载工作台，稿子会凭空消失。同理，有未保存
@@ -36,7 +37,7 @@ interface Props {
   onClose: () => void
 }
 
-const TAB_KEYS = ['content', 'versions', 'impact', 'audit'] as const
+const TAB_KEYS = ['content', 'versions', 'impact', 'choices', 'audit'] as const
 
 type TabKey = (typeof TAB_KEYS)[number]
 
@@ -195,6 +196,14 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                   children:
                     tab === 'impact' ? (
                       <ImpactPanel impact={detail.impact} variant="retire" />
+                    ) : null,
+                },
+                {
+                  key: 'choices',
+                  label: '选项命中',
+                  children:
+                    tab === 'choices' && episodeId ? (
+                      <ChoiceStatsPanel key={episodeId} episodeId={episodeId} />
                     ) : null,
                 },
                 {
