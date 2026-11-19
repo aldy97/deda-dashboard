@@ -2,6 +2,7 @@ import { Empty, Space, Tag, Timeline, Typography } from 'antd'
 import { StarFilled } from '@ant-design/icons'
 import type { EpisodeContent, EpisodeSegment } from '../../types/adventureAdmin'
 import { interactionLabel, segmentKindLabel } from './labels'
+import InfoTip from '../../components/InfoTip'
 
 /**
  * 故事集内容的只读渲染。
@@ -52,7 +53,8 @@ function SegmentBody({ segment }: { segment: EpisodeSegment }) {
         <Space orientation="vertical" size={2}>
           {choices.map((choice, index) => (
             <Typography.Text key={`${choice.key}-${index}`} type="secondary">
-              <Typography.Text code>{choice.key}</Typography.Text>{' '}
+              <Typography.Text code>{choice.key}</Typography.Text>
+              <InfoTip title="内部标识，不参与识别" />{' '}
               {choice.text}
               {choice.reply ? (
                 <>
