@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -151,6 +151,49 @@ describe('AdventureChoicesSection · 选项命中报表', () => {
     expect(screen.getByText('15.0%')).toBeTruthy()
     // llmShare = 0.294 → "29.4%"
     expect(screen.getByText('29.4%')).toBeTruthy()
+  })
+
+  /**
+   * 四张汇总卡片里，「兜底率」「LLM 占比」「总互动数」三个数的分母各不相同，
+   * 且与 Adventure Studio 单集视图的兜底率分母也不一样（那边不含超时）。
+   * 光看数字必然误读，所以口径必须常驻在 InfoTip 里。
+   * 这里断言的是**悬浮后的正文**而不只是图标存在——图标断言抓不到文案写错。
+   */
+  const hoverCardTip = async (cardTitle: string) => {
+    // 「兜底率」在汇总卡片与下方表格列头各出现一次，这里要的是汇总卡片那一个
+    const statistic = screen
+      .getAllByText(cardTitle)
+      .map((el) => el.closest('.ant-statistic'))
+      .find((el): el is HTMLElement => el !== null)
+    expect(statistic).toBeTruthy()
+    const icon = statistic!.querySelector('[aria-label="question-circle"]')
+    expect(icon).toBeTruthy()
+    fireEvent.mouseEnter(icon!)
+  }
+
+  it('总互动数的 InfoTip 说清了不含 off_topic（跑题是中间态，计入会重复）', async () => {
+    renderSection()
+    await hoverCardTip('总互动数')
+
+    expect(
+      await screen.findByText(/已应答\s*\+\s*兜底\s*\+\s*超时/),
+    ).toBeTruthy()
+    expect(screen.getByText(/不含跑题/)).toBeTruthy()
+  })
+
+  it('兜底率的 InfoTip 说清了分母是总互动数，并提示与单集视图口径不同', async () => {
+    renderSection()
+    await hoverCardTip('兜底率')
+
+    expect(await screen.findByText(/兜底\s*\/\s*总互动数/)).toBeTruthy()
+    expect(screen.getByText(/冒险内容工作台.*分母不含超时/)).toBeTruthy()
+  })
+
+  it('LLM 占比的 InfoTip 说清了分母是命中总数', async () => {
+    renderSection()
+    await hoverCardTip('LLM 占比')
+
+    expect(await screen.findByText(/LLM 判定命中数\s*\/\s*命中总数/)).toBeTruthy()
   })
 
   it('渲染互动结果分布（outcomeCounts 四个数）', () => {
