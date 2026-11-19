@@ -28,7 +28,7 @@ import InfoTip from '../../components/InfoTip'
  * 单个段落的编辑表单。
  *
  * 字段按 interactionType 分支显示，分支的依据是 capabilities 下发的
- * replyWaitingInteractionTypes——「哪些原语需要孩子开口、因而必须有兜底与退出话术」
+ * replyWaitingInteractionTypes——「哪些原语需要孩子开口、因而必须有兜底话术」
  * 是服务端的口径，前端不自己判定。
  *
  * `order` 刻意不做成可输入的数字框：引擎要求 order 严格 0..n-1 连续，
@@ -324,19 +324,10 @@ export default function SegmentEditor({
               />
             </div>
             <div>
-              <Typography.Text strong style={{ fontSize: 13 }}>
-                退出话术（必填）
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                退出话术由系统统一设定，不可编辑：{capabilities.fixedExitText}
+                （不分 IP、集数、互动类型，孩子打断旁白说「不想玩了」也是这一句）
               </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
-                孩子说「不要听」「不想听」「不想玩」「不玩了」「不要玩了」时的温柔收尾，不逼、不重复问
-              </Typography.Text>
-              <Input.TextArea
-                rows={2}
-                value={segment.exitText ?? ''}
-                disabled={disabled}
-                onChange={(event) => patch({ exitText: event.target.value })}
-                style={{ marginTop: 4 }}
-              />
             </div>
           </Space>
         )}

@@ -75,19 +75,10 @@ function SegmentBody({ segment }: { segment: EpisodeSegment }) {
         </Typography.Text>
       )}
 
-      {(segment.fallbackText || segment.exitText) && (
-        <Space orientation="vertical" size={2}>
-          {segment.fallbackText && (
-            <Typography.Text type="secondary">
-              兜底话术（跑题/沉默）：{segment.fallbackText}
-            </Typography.Text>
-          )}
-          {segment.exitText && (
-            <Typography.Text type="secondary">
-              退出话术（孩子明确拒绝）：{segment.exitText}
-            </Typography.Text>
-          )}
-        </Space>
+      {segment.fallbackText && (
+        <Typography.Text type="secondary">
+          兜底话术（跑题/沉默）：{segment.fallbackText}
+        </Typography.Text>
       )}
     </Space>
   )
