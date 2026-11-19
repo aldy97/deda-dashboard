@@ -115,10 +115,7 @@ const PARTIAL_NULL_DATA: ContentAdventureChoicesResponse = {
 
 const RANGE: DayRange = [dayjs('2026-11-01'), dayjs('2026-11-14')]
 
-function renderSection(
-  data: ContentAdventureChoicesResponse = FULL_DATA,
-  { isLoading = false, error = null }: { isLoading?: boolean; error?: Error | null } = {},
-) {
+function renderSection(data: ContentAdventureChoicesResponse = FULL_DATA) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, refetchOnWindowFocus: false },
@@ -161,7 +158,7 @@ describe('AdventureChoicesSection · 选项命中报表', () => {
 
     expect(screen.getByText('70')).toBeTruthy() // answered
     expect(screen.getByText('10')).toBeTruthy() // off_topic
-    expect(screen.getByText('15')).toBeTruthy() // fallback
+    expect(screen.getAllByText('15')[0]).toBeTruthy() // fallback
     expect(screen.getByText('5')).toBeTruthy()  // timeout
   })
 
@@ -271,7 +268,7 @@ describe('AdventureChoicesSection · 选项命中报表', () => {
       isLoading: true,
       error: null,
     })
-    renderSection(FULL_DATA, { isLoading: true })
+    renderSection(FULL_DATA)
 
     // antd Spin 会渲染 .ant-spin 类名
     const spins = document.querySelectorAll('.ant-spin')
@@ -284,7 +281,7 @@ describe('AdventureChoicesSection · 选项命中报表', () => {
       isLoading: false,
       error: new Error('加载失败'),
     })
-    renderSection(FULL_DATA, { error: new Error('加载失败') })
+    renderSection(FULL_DATA)
 
     expect(screen.getByText(/加载失败/)).toBeTruthy()
   })

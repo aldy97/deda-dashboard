@@ -4,6 +4,7 @@ import type {
   AdminLoginResponse,
   AdminProfile,
   CohortBasis,
+  ContentAdventureChoicesResponse,
   ContentAdventureResponse,
   ContentLearningResponse,
   ContentParentReportResponse,
@@ -261,6 +262,16 @@ export async function fetchContentAdventure(params: {
 }): Promise<ContentAdventureResponse> {
   const resp = await apiClient.get('/analytics/content/adventure', { params })
   return resp.data as ContentAdventureResponse
+}
+
+export async function fetchContentAdventureChoices(params: {
+  startDate?: string
+  endDate?: string
+}): Promise<ContentAdventureChoicesResponse> {
+  const resp = await apiClient.get('/analytics/content/adventure-choices', {
+    params,
+  })
+  return resp.data as ContentAdventureChoicesResponse
 }
 
 export async function fetchContentLearning(params: {

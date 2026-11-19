@@ -3,6 +3,7 @@ import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import {
   useContentAdventure,
+  useContentAdventureChoices,
   useContentLearning,
   useQualityConversation,
 } from '../../api/queries'
@@ -11,6 +12,7 @@ import InfoTip from '../../components/InfoTip'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
+import AdventureChoicesSection from './AdventureChoicesSection'
 import QualityTrend from './QualityTrend'
 
 const formatPct = (rate: number | null) =>
@@ -26,17 +28,21 @@ export default function Content() {
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const params = { startDate: fmt(range[0]), endDate: fmt(range[1]) }
   const adventureQuery = useContentAdventure(params)
+  const choicesQuery = useContentAdventureChoices(params)
   const learningQuery = useContentLearning(params)
   const qualityQuery = useQualityConversation({ ...params, granularity: 'day' })
   const adventure = adventureQuery.data ?? null
+  const choices = choicesQuery.data ?? null
   const learning = learningQuery.data ?? null
   const quality = qualityQuery.data ?? null
   const loading =
     adventureQuery.isLoading ||
+    choicesQuery.isLoading ||
     learningQuery.isLoading ||
     qualityQuery.isLoading
   const queryError =
     adventureQuery.error ??
+    choicesQuery.error ??
     learningQuery.error ??
     qualityQuery.error
   const error = queryError
@@ -87,6 +93,10 @@ export default function Content() {
       <Spin spinning={loading}>
         <Card title="冒险故事">
           {adventure && <AdventureSection data={adventure} range={range} />}
+        </Card>
+
+        <Card title="二选一选项命中" style={{ marginTop: 16 }}>
+          {choices && <AdventureChoicesSection data={choices} range={range} />}
         </Card>
 
         <Card
