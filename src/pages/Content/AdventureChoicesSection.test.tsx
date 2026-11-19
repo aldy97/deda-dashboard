@@ -115,7 +115,12 @@ const PARTIAL_NULL_DATA: ContentAdventureChoicesResponse = {
 
 const RANGE: DayRange = [dayjs('2026-11-01'), dayjs('2026-11-14')]
 
-function renderSection(data: ContentAdventureChoicesResponse = FULL_DATA) {
+/**
+ * 组件自己持有查询（不接受 data prop）：区块的 loading / error / 空态都在区块内
+ * 收敛，不并进 Content 页的整页 Spin 与整页红色 Alert。这样后端端点还没上线时
+ * （dashboard 先于 server 部署的窗口）只有这一张卡显示「加载失败」，其余区块照常。
+ */
+function renderSectionShell() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, refetchOnWindowFocus: false },
@@ -124,10 +129,19 @@ function renderSection(data: ContentAdventureChoicesResponse = FULL_DATA) {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <AdventureChoicesSection data={data} range={RANGE} />
+        <AdventureChoicesSection range={RANGE} />
       </MemoryRouter>
     </QueryClientProvider>,
   )
+}
+
+function renderSection(data: ContentAdventureChoicesResponse = FULL_DATA) {
+  mockUseContentAdventureChoices.mockReturnValue({
+    data,
+    isLoading: false,
+    error: null,
+  })
+  return renderSectionShell()
 }
 
 describe('AdventureChoicesSection · 选项命中报表', () => {
@@ -311,21 +325,32 @@ describe('AdventureChoicesSection · 选项命中报表', () => {
       isLoading: true,
       error: null,
     })
-    renderSection(FULL_DATA)
+    renderSectionShell()
 
     // antd Spin 会渲染 .ant-spin 类名
     const spins = document.querySelectorAll('.ant-spin')
     expect(spins.length).toBeGreaterThan(0)
   })
 
-  it('error 时显示错误信息', () => {
+  it('error 时只在区块内显示错误，不抛异常', () => {
     mockUseContentAdventureChoices.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: new Error('加载失败'),
     })
-    renderSection(FULL_DATA)
+    renderSectionShell()
 
     expect(screen.getByText(/加载失败/)).toBeTruthy()
+  })
+
+  it('data 尚未到达且既非 loading 也非 error 时不崩（渲染 Spin 占位）', () => {
+    mockUseContentAdventureChoices.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    })
+    renderSectionShell()
+
+    expect(document.querySelectorAll('.ant-spin').length).toBeGreaterThan(0)
   })
 })
