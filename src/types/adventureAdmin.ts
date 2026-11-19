@@ -98,7 +98,6 @@ export interface LintThresholds {
   maxNarrationTextChars: number
   maxTitleChars: number
   maxStarsPerEpisode: number
-  minChoiceKeyChars: number
   minChoiceTextChars: number
   forbiddenWords: string[]
 }

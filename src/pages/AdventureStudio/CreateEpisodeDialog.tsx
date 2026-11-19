@@ -94,11 +94,11 @@ export default function CreateEpisodeDialog({
       description={
         <Space orientation="vertical" size={8} style={{ width: '100%' }}>
           <Typography.Text>
-            会创建一集**空壳草稿**（标题 + 可选回顾，段落稍后在工作台里写）。创建不会发布，
+            会创建一集「空壳草稿」（标题 + 可选回顾，段落稍后在工作台里写）。创建不会发布，
             孩子看不到它，直到你显式发布。
           </Typography.Text>
           <Typography.Text type="danger">
-            业务键 {characterKey}/{capabilities.season}/集号 一旦占用即**永久占用**：
+            业务键 {characterKey}/{capabilities.season}/集号 一旦占用即「永久占用」：
             即使之后作废这一集，这个集号也不能再用于新建。请确认集号没有填错。
           </Typography.Text>
         </Space>
