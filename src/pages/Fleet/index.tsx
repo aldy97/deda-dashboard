@@ -7,8 +7,11 @@ import {
   useFleetFirmwareDistribution,
   useFleetChurnRisk,
 } from '../../api/queries'
+import { usePageRefresh } from '../../api/refresh'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import { fmt, yesterday } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import { useUrlQuery, readParam } from '../../utils/url-state'
@@ -74,11 +77,15 @@ export default function Fleet() {
   const errorMessage =
     error instanceof Error ? error.message : error ? '加载失败' : null
 
+  const { refresh, isRefreshing } = usePageRefresh('fleet')
+
   return (
     <div>
-      <Typography.Title level={4} style={{ marginBottom: 16 }}>
-        设备舰队
-      </Typography.Title>
+      <PageHeader
+        title="设备舰队"
+        description="单日概览 + 30 天开机趋势 + 固件分布 + 流失风险；点设备查看详情"
+        actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
+      />
 
       {errorMessage && (
         <Alert

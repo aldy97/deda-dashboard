@@ -11,7 +11,6 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import {
   useInterruptionRate,
@@ -22,6 +21,8 @@ import type { MessagesQuery } from '../../api/analytics'
 import type { MessageSort } from '../../types/analytics'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
+import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import { fmt } from '../../utils/date-range'
 import { readParam, useUrlQuery } from '../../utils/url-state'
 import MessageDetailDrawer from './MessageDetailDrawer'
@@ -117,15 +118,16 @@ export default function Messages() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          消息明细
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          一行一条消息，一轮问答由 turnId 关联两条（孩子 + AI）；时间为
-          Asia/Shanghai
-        </Typography.Text>
-      </div>
+      <PageHeader
+        title="消息明细"
+        description="一行一条消息，一轮问答由 turnId 关联两条（孩子 + AI）；时间为 Asia/Shanghai"
+        actions={
+          <RefreshButton
+            loading={refreshing}
+            onClick={() => void messagesQuery.refetch()}
+          />
+        }
+      />
 
       <Card>
         {interruption && interruption.assistantTotal > 0 && (
@@ -203,15 +205,6 @@ export default function Messages() {
             查询
           </Button>
           <Button onClick={resetFilters}>重置</Button>
-          <Tooltip title="按当前已生效的筛选条件重新加载">
-            <Button
-              icon={<ReloadOutlined />}
-              loading={refreshing}
-              onClick={() => void messagesQuery.refetch()}
-            >
-              刷新
-            </Button>
-          </Tooltip>
           {turnId && (
             <Tag
               closable

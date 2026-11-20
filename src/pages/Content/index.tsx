@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
+import { Alert, Card, Col, Row, Spin, Statistic } from 'antd'
 import { Link } from 'react-router-dom'
 import {
   useContentAdventure,
@@ -8,6 +8,7 @@ import {
 } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
+import PageHeader from '../../components/PageHeader'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
@@ -50,31 +51,18 @@ export default function Content() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            内容与质量
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            区间为闭区间，含今日时今日数据进行中
-          </Typography.Text>
-        </div>
-        <AnalyticsRangePicker
-          value={range}
-          onChange={(r) => {
-            if (r) setRange(r)
-          }}
-        />
-      </div>
+      <PageHeader
+        title="内容与质量"
+        description="区间为闭区间，含今日时今日数据进行中"
+        actions={
+          <AnalyticsRangePicker
+            value={range}
+            onChange={(r) => {
+              if (r) setRange(r)
+            }}
+          />
+        }
+      />
 
       {error && (
         <Alert

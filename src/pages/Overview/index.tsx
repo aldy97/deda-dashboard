@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Alert, Button, Card, Col, Radio, Row, Spin, Typography } from 'antd'
+import { Alert, Card, Col, Radio, Row, Spin } from 'antd'
 import { Link } from 'react-router-dom'
 import type { Dayjs } from 'dayjs'
 import { useOverview, useOverviewTrend } from '../../api/queries'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
+import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import TodayOngoingTag from '../../components/TodayOngoingTag'
 import { defaultRange, fmt, today } from '../../utils/date-range'
 import KpiCards from './KpiCards'
@@ -45,34 +47,21 @@ export default function Overview() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            总览
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            数据日期 {overview?.date ?? '—'} · 时长为估算口径（每条对话 × 0.5 分钟）
-          </Typography.Text>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <AnalyticsDatePicker
-            value={kpiDate}
-            onChange={(d) => {
-              if (d) setKpiDate(d)
-            }}
-          />
-          <Button onClick={refresh} loading={refreshing}>
-            刷新
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="总览"
+        description={`数据日期 ${overview?.date ?? '—'} · 时长为估算口径（每条对话 × 0.5 分钟）`}
+        actions={
+          <>
+            <AnalyticsDatePicker
+              value={kpiDate}
+              onChange={(d) => {
+                if (d) setKpiDate(d)
+              }}
+            />
+            <RefreshButton loading={refreshing} onClick={refresh} />
+          </>
+        }
+      />
 
       {errorMessage && (
         <Alert
