@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Card, Tabs, Typography } from 'antd'
+import { Card, Tabs } from 'antd'
 import { useUrlQuery } from '../../utils/url-state'
 import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queries'
+import PageHeader from '../../components/PageHeader'
 import CapabilityBanner from './CapabilityBanner'
 import CreateEpisodeDialog from './CreateEpisodeDialog'
 import EpisodeTable from './EpisodeTable'
@@ -45,16 +46,10 @@ export default function AdventureStudio() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          冒险内容工作台
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          冒险故事每一集的草稿、校验、发布、回滚与下架。已发布的故事不会被原地修改：
-          发布是生成一个新快照，正在玩的孩子锁在自己开始时的版本上，不会被中途换掉。
-          内容也没有「删除」——只有下架成墓碑，历史版本、审计与进度都还能追溯。
-        </Typography.Text>
-      </div>
+      <PageHeader
+        title="冒险内容工作台"
+        description="冒险故事每一集的草稿、校验、发布、回滚与下架。已发布的故事不会被原地修改：发布是生成一个新快照，正在玩的孩子锁在自己开始时的版本上，不会被中途换掉。内容也没有「删除」——只有下架成墓碑，历史版本、审计与进度都还能追溯。"
+      />
 
       <CapabilityBanner />
 

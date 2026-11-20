@@ -1,5 +1,8 @@
-import { Card, Tabs, Typography } from 'antd'
+import { Card, Tabs } from 'antd'
 import { useUrlQuery, readEnumParam } from '../../utils/url-state'
+import { usePageRefresh } from '../../api/refresh'
+import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import CostTab from './tabs/CostTab'
 import IntentTab from './tabs/IntentTab'
 import PerfTab from './tabs/PerfTab'
@@ -23,22 +26,26 @@ const TAB_KEYS = ['perf', 'cost', 'safety', 'intent'] as const
 export default function LlmMonitor() {
   const { searchParams, setQuery } = useUrlQuery()
   const activeKey = readEnumParam(searchParams, 'tab', TAB_KEYS, 'perf')
+  const { refresh, isRefreshing } = usePageRefresh('llm')
+
+  const handleTabChange = (key: string) => {
+    setQuery({ tab: key })
+    // 切 tab 后强制刷新整页（type:all 会连刚切走的 tab 留下的 inactive 缓存一起刷掉），
+    // 保证切回来看到的也是最新数据，而不是 5 分钟 staleTime 内的旧缓存。
+    refresh()
+  }
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          模型监控
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值。
-          性能与价格看「调用健康度」，安全与意图看「判定可信度」，两者可按 turnId 互查。
-        </Typography.Text>
-      </div>
+      <PageHeader
+        title="模型监控"
+        description="主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值。性能与价格看「调用健康度」，安全与意图看「判定可信度」，两者可按 turnId 互查。"
+        actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
+      />
       <Card>
         <Tabs
           activeKey={activeKey}
-          onChange={(key) => setQuery({ tab: key })}
+          onChange={handleTabChange}
           items={[
             {
               key: 'perf',

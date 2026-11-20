@@ -13,6 +13,9 @@ import {
 import { Link, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMemoriesOverview, useMemoryDevices } from '../../api/queries'
+import { usePageRefresh } from '../../api/refresh'
+import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import { MEMORY_KEYS, memoryKeyLabel } from './memoryMeta'
 
 /**
@@ -42,16 +45,15 @@ export default function Memories() {
       : '加载失败'
     : null
 
+  const { refresh, isRefreshing } = usePageRefresh('memories')
+
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          记忆档案
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          孩子的长期偏好记忆：值不可覆盖，纠正通过新版本保留历史；点设备查看版本时间线
-        </Typography.Text>
-      </div>
+      <PageHeader
+        title="记忆档案"
+        description="孩子的长期偏好记忆：值不可覆盖，纠正通过新版本保留历史；点设备查看版本时间线"
+        actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
+      />
 
       {error && (
         <Alert
