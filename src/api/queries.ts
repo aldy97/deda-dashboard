@@ -64,6 +64,7 @@ import {
   exportBundle,
   fetchAudit,
   fetchCapabilities,
+  fetchDeviceTestAssignment,
   fetchEpisode,
   fetchEpisodeImpact,
   fetchEpisodeChoiceStats,
@@ -72,6 +73,8 @@ import {
   fetchVersion,
   fetchVersionDiff,
   fetchVersions,
+  assignTestStory,
+  clearTestStory,
   previewImport,
   publishEpisode,
   resetRecoveryBreaker,
@@ -859,4 +862,41 @@ export function useAdventureRecoverySweep() {
 
 export function useAdventureRecoveryReset() {
   return useAdventureWrite((reason: string) => resetRecoveryBreaker(reason))
+}
+
+/** 读设备当前下发（按需触发：deviceId 为空时不发请求） */
+export function useDeviceTestAssignment(deviceId: string | null) {
+  return useQuery({
+    queryKey: [...ADVENTURE_QUERY_ROOT, 'device-test-assignment', deviceId],
+    queryFn: () => fetchDeviceTestAssignment(deviceId!),
+    enabled: deviceId !== null && deviceId.trim().length > 0,
+  })
+}
+
+export function useAssignTestStory() {
+  return useAdventureWrite(
+    ({
+      episodeId,
+      deviceId,
+      reason,
+    }: {
+      episodeId: string
+      deviceId: string
+      reason: string
+    }) => assignTestStory(episodeId, { deviceId, reason }),
+  )
+}
+
+export function useClearTestStory() {
+  return useAdventureWrite(
+    ({
+      episodeId,
+      deviceId,
+      reason,
+    }: {
+      episodeId: string
+      deviceId: string
+      reason: string
+    }) => clearTestStory(episodeId, { deviceId, reason }),
+  )
 }

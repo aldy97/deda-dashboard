@@ -49,6 +49,8 @@ export const AUDIT_ACTIONS = [
   'self_check_failed',
   'recovery_sweep',
   'recovery_breaker_reset',
+  'device_test_assign',
+  'device_test_clear',
 ] as const
 
 export type AuditAction = string
@@ -117,6 +119,8 @@ export interface CapabilitiesResponse {
   fixedExitText: string
   profile: ContentAdminProfile
   authoring: boolean
+  /** 测试冒险故事下发是否可用（ADVENTURE_TEST_MODE_ENABLED=true，仅 staging） */
+  testStoryEnabled: boolean
 }
 
 // ---- 校验与试播 ----
@@ -602,6 +606,43 @@ export interface RecoverySweepResult {
 export interface RecoveryResetResult {
   ok: boolean
   audited: boolean
+}
+
+// ---- 测试冒险故事下发（仅 staging）----
+
+export interface TestAssignResult {
+  ok: boolean
+  audited: boolean
+  assignment: {
+    episodeId: string
+    title: string
+    episodeVersionId: string | null
+    versionStatus: 'draft' | 'published'
+  }
+}
+
+export interface TestClearResult {
+  ok: boolean
+  audited: boolean
+}
+
+export interface DeviceTestAssignment {
+  enabled: boolean
+  assignment: {
+    device: { id: string; deviceId: string; deviceCode: string | null }
+    episode: {
+      id: string
+      title: string
+      episodeNumber: number
+      characterKey: string
+      season: number
+    } | null
+    episodeVersion: {
+      id: string
+      version: number
+      status: VersionStatus
+    } | null
+  } | null
 }
 
 // ---- 请求参数 ----

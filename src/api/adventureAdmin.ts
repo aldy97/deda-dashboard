@@ -6,6 +6,7 @@ import type {
   CapabilitiesResponse,
   CreateEpisodeRequest,
   CreateEpisodeResult,
+  DeviceTestAssignment,
   DiscardDraftResult,
   DiscardEpisodeResult,
   EpisodeChoiceStatsResponse,
@@ -33,6 +34,8 @@ import type {
   SaveDraftRequest,
   SaveDraftResult,
   SimulationResult,
+  TestAssignResult,
+  TestClearResult,
   VersionDetail,
   VersionDiffResult,
   VersionSummary,
@@ -267,4 +270,38 @@ export async function resetRecoveryBreaker(
 ): Promise<RecoveryResetResult> {
   const resp = await apiClient.post(`${BASE}/recovery/reset`, { reason })
   return resp.data as RecoveryResetResult
+}
+
+// ---- 测试冒险故事下发（仅 staging）----
+
+/** 把当前集下发到设备：优先锁草稿快照，否则锁当前发布版本 */
+export async function assignTestStory(
+  episodeId: string,
+  req: { deviceId: string; reason: string },
+): Promise<TestAssignResult> {
+  const resp = await apiClient.post(
+    `${BASE}/episodes/${episodeId}/test-assign`,
+    req,
+  )
+  return resp.data as TestAssignResult
+}
+
+/** 清除设备当前下发：仅当它正是这一集 */
+export async function clearTestStory(
+  episodeId: string,
+  req: { deviceId: string; reason: string },
+): Promise<TestClearResult> {
+  const resp = await apiClient.post(
+    `${BASE}/episodes/${episodeId}/test-clear`,
+    req,
+  )
+  return resp.data as TestClearResult
+}
+
+/** 读设备当前下发；prod（未启用）返回 enabled=false */
+export async function fetchDeviceTestAssignment(
+  deviceId: string,
+): Promise<DeviceTestAssignment> {
+  const resp = await apiClient.get(`${BASE}/device-test/assignment/${deviceId}`)
+  return resp.data as DeviceTestAssignment
 }

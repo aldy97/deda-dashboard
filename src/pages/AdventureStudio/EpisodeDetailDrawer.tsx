@@ -12,6 +12,7 @@ import LintPanel from './LintPanel'
 import VersionHistory from './VersionHistory'
 import ChoiceStatsPanel from './ChoiceStatsPanel'
 import AuditLog from './AuditLog'
+import DeviceTestAssign from './DeviceTestAssign'
 import { useEpisodeContent } from './useEpisodeContent'
 import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
 
@@ -37,7 +38,7 @@ interface Props {
   onClose: () => void
 }
 
-const TAB_KEYS = ['content', 'versions', 'impact', 'choices', 'audit'] as const
+const TAB_KEYS = ['content', 'versions', 'impact', 'choices', 'audit', 'test'] as const
 
 type TabKey = (typeof TAB_KEYS)[number]
 
@@ -212,6 +213,19 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                   children:
                     tab === 'audit' && episodeId ? (
                       <AuditLog key={episodeId} episodeId={episodeId} />
+                    ) : null,
+                },
+                {
+                  key: 'test',
+                  label: '样机下发',
+                  children:
+                    tab === 'test' && episodeId ? (
+                      <DeviceTestAssign
+                        key={episodeId}
+                        episodeId={episodeId}
+                        authoring={authoring}
+                        testStoryEnabled={capabilities?.testStoryEnabled ?? false}
+                      />
                     ) : null,
                 },
               ]}
