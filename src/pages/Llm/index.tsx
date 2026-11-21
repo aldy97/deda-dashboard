@@ -42,22 +42,33 @@ export default function LlmMonitor() {
         description="主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值。性能与价格看「调用健康度」，安全与意图看「判定可信度」，两者可按 turnId 互查。"
         actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
       />
-      <Tabs
-        className="page-tabs-sticky"
-        activeKey={activeKey}
-        onChange={handleTabChange}
-        items={[
-          { key: 'perf', label: '性能监控' },
-          { key: 'cost', label: '价格监控' },
-          { key: 'safety', label: '安全监控' },
-          { key: 'intent', label: '意图监控' },
-        ]}
-      />
       <Card>
-        {activeKey === 'perf' ? <PerfTab /> : null}
-        {activeKey === 'cost' ? <CostTab /> : null}
-        {activeKey === 'safety' ? <SafetyTab /> : null}
-        {activeKey === 'intent' ? <IntentTab /> : null}
+        <Tabs
+          activeKey={activeKey}
+          onChange={handleTabChange}
+          items={[
+            {
+              key: 'perf',
+              label: '性能监控',
+              children: activeKey === 'perf' ? <PerfTab /> : null,
+            },
+            {
+              key: 'cost',
+              label: '价格监控',
+              children: activeKey === 'cost' ? <CostTab /> : null,
+            },
+            {
+              key: 'safety',
+              label: '安全监控',
+              children: activeKey === 'safety' ? <SafetyTab /> : null,
+            },
+            {
+              key: 'intent',
+              label: '意图监控',
+              children: activeKey === 'intent' ? <IntentTab /> : null,
+            },
+          ]}
+        />
       </Card>
     </div>
   )
