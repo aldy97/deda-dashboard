@@ -214,7 +214,7 @@ describe('AdminLayout 菜单与路由', () => {
  * 分组标题只是视觉分隔（antd Menu 的 group），不改路由、不加折叠层级。
  */
 describe('AdminLayout 菜单分组', () => {
-  const GROUPS = ['概览与增长', '用户与内容', '资产与明细', '运维与配置']
+  const GROUPS = ['概览与增长', '用户与体验', '资产与明细', '运维与配置']
 
   it.each([
     ['/overview', ['/overview']],
@@ -254,19 +254,57 @@ describe('AdminLayout 菜单分组', () => {
       '用户画像',
       '记忆档案',
       '内容与质量',
-      '冒险内容',
       '用户反馈',
       '设备舰队',
       '消息明细',
       '模型监控',
+      '冒险内容',
       'Prompt 管理',
       '语速与音色',
     ]
     const items = screen.getAllByRole('menuitem')
     expect(items).toHaveLength(expected.length)
+    // 顺序也要钉住：冒险内容必须落在运维组内部，而不是回到用户组
+    expect(items.map((item) => item.textContent)).toEqual(
+      expected.map((label) => expect.stringContaining(label)),
+    )
     for (const label of expected) {
       expect(screen.getByRole('menuitem', { name: new RegExp(label) })).toBeInTheDocument()
     }
+  })
+
+  it('普通 admin 在运维组标题旁看到锁标（菜单仍可点，进去才会出雾）', async () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+      admin: { username: 'ops', displayName: '运营', role: 'admin' },
+    })
+    renderLayout()
+
+    expect(
+      await screen.findByLabelText('仅超级管理员可访问'),
+    ).toBeInTheDocument()
+    // 菜单项不能禁用：点不进去就看不到「雾 + 原因」
+    expect(
+      screen.getByRole('menuitem', { name: /Prompt 管理/ }),
+    ).not.toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('superadmin 没有锁标', async () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+      admin: { username: 'superadmin', displayName: '超管', role: 'superadmin' },
+    })
+    renderLayout()
+
+    // 等 meta 落地，避免把「还没确认权限」误判成 superadmin
+    await waitFor(() =>
+      expect(screen.getByTestId('env-tag')).toHaveTextContent('本地'),
+    )
+    expect(screen.queryByLabelText('仅超级管理员可访问')).toBeNull()
   })
 })
 

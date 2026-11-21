@@ -584,13 +584,14 @@ export const ADVENTURE_QUERY_ROOT = ['analytics', 'adventure'] as const
 /** 自愈面板需要接近实时，其余读接口沿用全局 staleTime 5min */
 const RECOVERY_REFETCH_INTERVAL_MS = 30_000
 
-export function useAdventureCapabilities() {
+export function useAdventureCapabilities(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...ADVENTURE_QUERY_ROOT, 'capabilities'],
     queryFn: fetchCapabilities,
     // 枚举与阈值来自服务端配置，一个会话内不会变；也不该因为一次写操作就去重拉
     staleTime: Infinity,
     gcTime: Infinity,
+    enabled: options?.enabled ?? true,
   })
 }
 

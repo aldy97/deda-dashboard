@@ -29,7 +29,7 @@ export default function CapabilityBanner() {
           showIcon
           style={{ marginBottom: 16 }}
           message="你没有冒险内容管理权限"
-          description="内容管理台需要账号带 adventure-content scope，看板管理员默认没有。需要开通请联系后端管理员在 ANALYTICS_ADMIN_USERS 里加上这个 scope，然后重新登录。"
+          description="冒险内容管理台只对超级管理员（superadmin）开放。请联系超级管理员把 ANALYTICS_ADMIN_USERS 里该账号的 role 改为 superadmin，然后重新登录。"
         />
       )
     }

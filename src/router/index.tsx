@@ -17,6 +17,8 @@ import Feedback from '../pages/Feedback'
 import Fleet from '../pages/Fleet'
 import Prompts from '../pages/Prompts'
 import Voice from '../pages/Voice'
+import OpsGate from '../components/access/OpsGate'
+import { OPS_ROUTE_META } from '../layouts/menu'
 import { getToken } from '../utils/auth-token'
 import { DEFAULT_LANDING, buildLoginSearch } from './redirect'
 
@@ -67,13 +69,42 @@ export const router = createBrowserRouter(
         { path: 'users', element: <Users /> },
         { path: 'users/:deviceId', element: <UserDeviceDetail /> },
         { path: 'content', element: <Content /> },
-        { path: 'adventure', element: <AdventureStudio /> },
+        {
+          path: 'adventure',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/adventure']}>
+              <AdventureStudio />
+            </OpsGate>
+          ),
+        },
         { path: 'feedback', element: <Feedback /> },
         { path: 'messages', element: <Messages /> },
-        { path: 'llm', element: <LlmMonitor /> },
-        { path: 'prompts', element: <Prompts /> },
-        { path: 'voice', element: <Voice /> },
-        // 旧路径兜底：改名前的书签与 PR 链接仍能落到同一页
+        {
+          path: 'llm',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/llm']}>
+              <LlmMonitor />
+            </OpsGate>
+          ),
+        },
+        {
+          path: 'prompts',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/prompts']}>
+              <Prompts />
+            </OpsGate>
+          ),
+        },
+        {
+          path: 'voice',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/voice']}>
+              <Voice />
+            </OpsGate>
+          ),
+        },
+        // 旧路径兜底：改名前的书签与 PR 链接仍能落到同一页。
+        // 纯重定向不挂载任何页面，不需要雾层。
         { path: 'speech-rate', element: <Navigate to="/voice" replace /> },
         { path: 'memories', element: <Memories /> },
         { path: 'memories/:deviceId', element: <MemoryDetail /> },

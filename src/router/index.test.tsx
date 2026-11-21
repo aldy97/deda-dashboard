@@ -118,6 +118,63 @@ describe('/prompts 的登录闸口', () => {
 })
 
 
+describe('运维组路由闸口', () => {
+  /** 用路由表里 prompts 的真实 element（OpsGate + Prompts），而不是测试替身 */
+  function renderRealPrompts(entry = '/prompts') {
+    const root = routes.find((route) => route.path === '/')
+    const promptsRoute = (root?.children ?? []).find(
+      (child) => child.path === 'prompts',
+    )
+    return render(
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path="/login" element={<LoginProbe />} />
+          <Route path="/" element={root?.element}>
+            <Route path="prompts" element={promptsRoute?.element} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+      { wrapper: createWrapper() },
+    )
+  }
+
+  function stubMetaRole(role: 'admin' | 'superadmin') {
+    mockGet.mockImplementation((url: string) =>
+      url === '/analytics/meta'
+        ? Promise.resolve({
+            data: {
+              nodeEnv: 'staging',
+              promptWriteEnabled: true,
+              publishConfirmCode: 'DEDA2025',
+              admin: { username: 'u', displayName: 'U', role },
+            },
+          })
+        : Promise.reject(new Error('网络不通')),
+    )
+  }
+
+  it('普通 admin 带 token 直达 /prompts：显示雾，不挂载页面也不发 prompts 请求', async () => {
+    localStorage.setItem(TOKEN_KEY, 'a-token')
+    stubMetaRole('admin')
+    renderRealPrompts()
+
+    expect(await screen.findByTestId('ops-fog')).toBeInTheDocument()
+    expect(screen.getByText(/仅超级管理员可访问/)).toBeInTheDocument()
+    // 只打了一次 meta；prompts 目录接口一次都不能发
+    expect(
+      mockGet.mock.calls.some(([url]) => url === '/analytics/prompts'),
+    ).toBe(false)
+  })
+
+  it('superadmin 正常进入，不出雾', async () => {
+    localStorage.setItem(TOKEN_KEY, 'a-token')
+    stubMetaRole('superadmin')
+    renderRealPrompts()
+
+    await waitFor(() => expect(screen.queryByTestId('ops-fog')).toBeNull())
+  })
+})
+
 describe('RequireAuth 保留原始意图', () => {
   it('无 token 被重定向到 /login 时，把目标路径编码进 ?next=', () => {
     renderAt('/prompts')

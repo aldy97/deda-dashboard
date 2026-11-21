@@ -1070,7 +1070,7 @@ export interface FleetDeviceDetailResponse {
  * 以及 AnalyticsMetaController.meta() 逐项对齐，不得自行增删。
  */
 
-/** GET /analytics/meta：环境标识 + prompt 写策略 */
+/** GET /analytics/meta：环境标识 + prompt 写策略 + 当前管理员 */
 export interface AnalyticsMeta {
   /** development / staging / production；左上角环境标签据此渲染 */
   nodeEnv: string
@@ -1078,7 +1078,20 @@ export interface AnalyticsMeta {
   promptWriteEnabled: boolean
   /** 仅用于提示文案；禁止预填确认码输入框，否则「手动输入」这道闸形同虚设 */
   publishConfirmCode: string
+  /**
+   * 当前登录管理员。老后端可能没有这个字段——按普通 admin 处理（fail-closed），
+   * 运维组页面在缺字段时一律显示雾。
+   */
+  admin?: {
+    username: string
+    displayName: string
+    /** superadmin = 可进运维组；admin = 只读报表 */
+    role: AdminRole
+  }
 }
+
+/** 管理员角色。与 deda-server `admin-role.ts` 的取值逐字对齐。 */
+export type AdminRole = 'superadmin' | 'admin'
 
 export type PromptCategory = 'small_model' | 'main_rules' | 'story' | 'persona'
 

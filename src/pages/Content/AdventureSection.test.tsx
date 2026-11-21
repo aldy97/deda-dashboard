@@ -10,7 +10,13 @@ import type { DayRange } from '../../utils/date-range'
 // Mock useAdventureCapabilities
 const mockUseAdventureCapabilities = vi.fn()
 vi.mock('../../api/queries', () => ({
-  useAdventureCapabilities: () => mockUseAdventureCapabilities(),
+  useAdventureCapabilities: (options?: unknown) =>
+    mockUseAdventureCapabilities(options),
+}))
+
+const mockUseAnalyticsMeta = vi.fn()
+vi.mock('../../api/meta', () => ({
+  useAnalyticsMeta: () => mockUseAnalyticsMeta(),
 }))
 
 const DATA: ContentAdventureResponse = {
@@ -54,6 +60,21 @@ function renderSection() {
 describe('AdventureSection · 下钻出口', () => {
   beforeEach(() => {
     mockUseAdventureCapabilities.mockReset()
+    mockUseAnalyticsMeta.mockReset()
+    mockUseAnalyticsMeta.mockReturnValue({
+      data: {
+        nodeEnv: 'staging',
+        promptWriteEnabled: true,
+        publishConfirmCode: 'DEDA2025',
+        admin: {
+          username: 'superadmin',
+          displayName: '超管',
+          role: 'superadmin',
+        },
+      },
+      isPending: false,
+      isError: false,
+    })
   })
 
   describe('权限已确认（capabilities 成功）', () => {
@@ -104,7 +125,7 @@ describe('AdventureSection · 下钻出口', () => {
       })
     })
 
-    it('剧集列链接渲染为禁用态且出现 scope 说明', async () => {
+    it('剧集列链接渲染为禁用态且出现超级管理员说明', async () => {
       renderSection()
 
       // 链接应该是禁用态（Button type="link" disabled）
@@ -112,8 +133,8 @@ describe('AdventureSection · 下钻出口', () => {
       expect(epBtn.closest('button')).toBeTruthy()
       expect((epBtn.closest('button') as HTMLButtonElement).disabled).toBe(true)
 
-      // scope 说明文案
-      expect(screen.getByText(/adventure-content scope/)).toBeTruthy()
+      // 服务端 403 的说明文案改走超级管理员口径
+      expect(screen.getByText(/超级管理员/)).toBeTruthy()
     })
 
     it('「冒险内容工作台 →」为禁用态', async () => {
@@ -152,6 +173,80 @@ describe('AdventureSection · 下钻出口', () => {
       )
       expect(screen.getByText(/冒险内容工作台/).tagName).toBe('A')
       expect(screen.queryByText(/adventure-content scope/)).toBeNull()
+    })
+  })
+
+  describe('普通 admin（非 superadmin）', () => {
+    beforeEach(() => {
+      mockUseAnalyticsMeta.mockReturnValue({
+        data: {
+          nodeEnv: 'staging',
+          promptWriteEnabled: true,
+          publishConfirmCode: 'DEDA2025',
+          admin: { username: 'ops', displayName: '运营', role: 'admin' },
+        },
+        isPending: false,
+        isError: false,
+      })
+      // 即便 capabilities 缓存里已有数据，普通 admin 也不该用它放行
+      mockUseAdventureCapabilities.mockReturnValue({
+        data: { authoring: true, profile: 'authoring' },
+        isPending: false,
+        error: null,
+      })
+    })
+
+    it('不启用 capabilities 查询（避免无谓的 403 请求）', () => {
+      renderSection()
+
+      expect(mockUseAdventureCapabilities).toHaveBeenCalledWith({
+        enabled: false,
+      })
+    })
+
+    it('入口禁用，并明确要求超级管理员权限', () => {
+      renderSection()
+
+      const epBtn = screen.getByText('森林冒险')
+      expect((epBtn.closest('button') as HTMLButtonElement).disabled).toBe(true)
+      expect(screen.getByText(/超级管理员/)).toBeTruthy()
+      // 卡片级出口同样是禁用态（按角色查，避免命中原因文案里的同一串字）
+      expect(
+        screen.getByRole('button', { name: /冒险内容工作台/ }),
+      ).toBeDisabled()
+    })
+
+    it('「看冒险对话消息 →」仍然可点（与运维权限无关）', () => {
+      renderSection()
+
+      const msgLink = screen.getByText(/看冒险对话消息/)
+      expect(msgLink.tagName).toBe('A')
+    })
+  })
+
+  describe('meta 不可用（无法确认角色）', () => {
+    beforeEach(() => {
+      mockUseAnalyticsMeta.mockReturnValue({
+        data: undefined,
+        isPending: false,
+        isError: true,
+      })
+      mockUseAdventureCapabilities.mockReturnValue({
+        data: undefined,
+        isPending: true,
+        error: null,
+      })
+    })
+
+    it('入口禁用，提示无法确认权限（fail-closed），且不发 capabilities', () => {
+      renderSection()
+
+      expect(screen.getByText(/无法确认账号权限/)).toBeTruthy()
+      const epBtn = screen.getByText('森林冒险')
+      expect((epBtn.closest('button') as HTMLButtonElement).disabled).toBe(true)
+      expect(mockUseAdventureCapabilities).toHaveBeenCalledWith({
+        enabled: false,
+      })
     })
   })
 
