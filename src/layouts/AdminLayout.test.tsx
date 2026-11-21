@@ -260,7 +260,7 @@ describe('AdminLayout 菜单分组', () => {
       '消息明细',
       '模型监控',
       'Prompt 管理',
-      '语速设置',
+      '语速与音色',
     ]
     const items = screen.getAllByRole('menuitem')
     expect(items).toHaveLength(expected.length)
