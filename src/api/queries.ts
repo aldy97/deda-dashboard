@@ -75,6 +75,8 @@ import {
   fetchVersions,
   assignTestStory,
   clearTestStory,
+  convertScript,
+  fetchNextEpisodeNumber,
   previewImport,
   publishEpisode,
   resetRecoveryBreaker,
@@ -87,6 +89,7 @@ import {
 } from './adventureAdmin'
 import type {
   AdventureBundle,
+  AdventureCharacterKey,
   AuditQuery,
   CreateEpisodeRequest,
   EpisodeContent,
@@ -97,6 +100,7 @@ import type {
   LintRequest,
   RevertRequest,
   SaveDraftRequest,
+  ScriptConvertRequest,
 } from '../types/adventureAdmin'
 
 /**
@@ -854,6 +858,24 @@ export function useAdventureImportPreview() {
 
 export function useAdventureImport() {
   return useAdventureWrite((req: ImportApplyRequest) => applyImport(req))
+}
+
+/** docx 转换是「拿当前上传内容问一次服务端」的只读计算，不写库，走普通 mutation、不作废缓存 */
+export function useAdventureScriptConvert() {
+  return useMutation({
+    mutationFn: (req: ScriptConvertRequest) => convertScript(req),
+  })
+}
+
+/** 手动新建时取某 IP 下一集的自增集号（含已下架/已作废的集） */
+export function useAdventureNextEpisodeNumber(
+  characterKey: AdventureCharacterKey | null,
+) {
+  return useQuery({
+    queryKey: [...ADVENTURE_QUERY_ROOT, 'next-number', characterKey],
+    queryFn: () => fetchNextEpisodeNumber(characterKey!),
+    enabled: characterKey !== null,
+  })
 }
 
 export function useAdventureRecoverySweep() {

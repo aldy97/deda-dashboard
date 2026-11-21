@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 import type {
   AdventureBundle,
+  AdventureCharacterKey,
   AuditListResponse,
   AuditQuery,
   CapabilitiesResponse,
@@ -23,6 +24,7 @@ import type {
   ImportPreview,
   LintReport,
   LintRequest,
+  NextEpisodeNumberResult,
   PublishResult,
   RecoveryHealthSnapshot,
   RecoveryResetResult,
@@ -33,6 +35,8 @@ import type {
   RevertResult,
   SaveDraftRequest,
   SaveDraftResult,
+  ScriptConvertRequest,
+  ScriptConvertResult,
   SimulationResult,
   TestAssignResult,
   TestClearResult,
@@ -304,4 +308,24 @@ export async function fetchDeviceTestAssignment(
 ): Promise<DeviceTestAssignment> {
   const resp = await apiClient.get(`${BASE}/device-test/assignment/${deviceId}`)
   return resp.data as DeviceTestAssignment
+}
+
+// ---- docx 稿子转换（仅 staging）----
+
+/** 把 docx 稿子转成结构化草稿预览，不落库。仅 staging（写方法，readonly 环境 403） */
+export async function convertScript(
+  req: ScriptConvertRequest,
+): Promise<ScriptConvertResult> {
+  const resp = await apiClient.post(`${BASE}/script/convert`, req)
+  return resp.data as ScriptConvertResult
+}
+
+/** 某 IP 下一集的自增集号（含已下架/已作废的集——业务键永久占用） */
+export async function fetchNextEpisodeNumber(
+  characterKey: AdventureCharacterKey,
+): Promise<NextEpisodeNumberResult> {
+  const resp = await apiClient.get(`${BASE}/script/next-number`, {
+    params: { characterKey },
+  })
+  return resp.data as NextEpisodeNumberResult
 }

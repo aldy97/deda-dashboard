@@ -757,3 +757,31 @@ export interface DraftConflictDetail {
   updatedBy: string | null
   updatedAt: string | null
 }
+
+// ---- docx 稿子转换（仅 staging）----
+
+export interface ScriptConvertRequest {
+  /** 原始文件名，仅用于提示，不落库 */
+  fileName?: string
+  /** docx 文件的 base64 编码内容 */
+  contentBase64: string
+}
+
+export interface ScriptConvertResult {
+  characterKey: AdventureCharacterKey
+  /** false = LLM 没识别出白名单内主角，已回落 elly，界面要提示「请手动确认」 */
+  characterDetected: boolean
+  season: number
+  /** 该 IP 下一集的自增集号（含已下架/已作废的集——业务键永久占用） */
+  episodeNumber: number
+  content: EpisodeContent
+  /** 去掉标题行后的正文，供抽屉回看原文 */
+  sourceText: string
+  lint: LintReport
+}
+
+export interface NextEpisodeNumberResult {
+  characterKey: AdventureCharacterKey
+  season: number
+  episodeNumber: number
+}
