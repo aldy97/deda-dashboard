@@ -9,6 +9,13 @@ vi.mock('../../api/client', () => ({
   apiClient: { get: vi.fn(), patch: vi.fn() },
 }))
 
+// antd 静态 message 会另起一个 React root 渲染通知；测试结束它仍在 scheduler 里排队，
+// CI 环境下 teardown 后触发 window is not defined。这里把 message 打成 no-op。
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>()
+  return { ...actual, message: { success: vi.fn() } }
+})
+
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
 const mockPatch = apiClient.patch as unknown as ReturnType<typeof vi.fn>
 

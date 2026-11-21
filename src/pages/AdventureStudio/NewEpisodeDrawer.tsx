@@ -24,6 +24,7 @@ import type {
   LintReport,
   ScriptConvertResult,
 } from '../../types/adventureAdmin'
+import DocxUploadButton from './DocxUploadButton'
 import EpisodeEditor from './EpisodeEditor'
 import LintPanel from './LintPanel'
 import PreviewSimulator from './PreviewSimulator'
@@ -36,6 +37,10 @@ import { characterLabel } from './labels'
  * 两个入口都落到这里：
  * - 手动「新建故事集」：seed=null，空内容 + 默认主角 elly + 自动集号；
  * - 上传 docx「生成草稿」：seed = 服务端 LLM 转换结果（标题=正文首行、主角识别、集号自增）。
+ *
+ * 除此之外，抽屉里还能随时「从 docx 填充」：用同一接口（POST /script/convert）把转换结果
+ * 写回主角/集号/标题/互动。seed 只在 useState 初始化时读一次，抽屉内填充则走 applyFill
+ * 后写这些 state；因此主角识别告警与原文回看也改成由 state 驱动，而不是只认 seed。
  *
  * 与 EpisodeDetailDrawer 的区别：这里**还没有 episodeId**，编辑的内容只存在于本地，
  * 「存草稿」走 POST /episodes 真正落库，成功后才切到 EpisodeDetailDrawer。
@@ -74,6 +79,15 @@ export default function NewEpisodeDrawer({
   const [simulateOpen, setSimulateOpen] = useState(false)
   const [closePromptOpen, setClosePromptOpen] = useState(false)
   const [lint, setLint] = useState<LintReport | null>(seed?.lint ?? null)
+  // 抽屉内「从 docx 填充」的来源：seed 初始化，之后可被 applyFill 后写
+  const [sourceText, setSourceText] = useState<string | null>(
+    seed?.sourceText ?? null,
+  )
+  const [characterDetected, setCharacterDetected] = useState<boolean>(
+    seed?.characterDetected ?? true,
+  )
+  const [fillPending, setFillPending] = useState<ScriptConvertResult | null>(null)
+  const [fillConfirmOpen, setFillConfirmOpen] = useState(false)
 
   // 手动模式下按当前主角取下一集集号；换主角会自动重取（集号还没被手填时）
   const nextNumber = useAdventureNextEpisodeNumber(manual ? characterKey : null)
@@ -101,6 +115,25 @@ export default function NewEpisodeDrawer({
     content.title.trim() !== '' ||
     (content.recap?.trim() ?? '') !== '' ||
     content.segments.length > 0
+
+  function applyFill(result: ScriptConvertResult) {
+    setCharacterKey(result.characterKey)
+    setEpisodeNumber(result.episodeNumber)
+    setContent(result.content)
+    setLint(result.lint)
+    setSourceText(result.sourceText)
+    setCharacterDetected(result.characterDetected)
+  }
+
+  function onConverted(result: ScriptConvertResult) {
+    if (hasContent) {
+      // 已有内容：整份覆盖前先确认，避免手填/上一份填充被静默冲掉
+      setFillPending(result)
+      setFillConfirmOpen(true)
+      return
+    }
+    applyFill(result)
+  }
 
   function requestClose() {
     if (hasContent) {
@@ -154,7 +187,7 @@ export default function NewEpisodeDrawer({
       }
     >
       <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-        {seed && !seed.characterDetected && (
+        {!characterDetected && (
           <Alert
             type="warning"
             showIcon
@@ -186,6 +219,8 @@ export default function NewEpisodeDrawer({
           <Typography.Text type="secondary">集号（留空 = 自动下一集）</Typography.Text>
         </Space>
 
+        <DocxUploadButton onConverted={onConverted} />
+
         <Alert
           type="info"
           showIcon
@@ -203,7 +238,7 @@ export default function NewEpisodeDrawer({
           }
         />
 
-        {seed && seed.sourceText && (
+        {sourceText && (
           <Alert
             type="info"
             showIcon
@@ -212,7 +247,7 @@ export default function NewEpisodeDrawer({
               <Typography.Paragraph
                 style={{ marginBottom: 0, whiteSpace: 'pre-wrap', fontSize: 12 }}
               >
-                {seed.sourceText}
+                {sourceText}
               </Typography.Paragraph>
             }
           />
@@ -269,6 +304,28 @@ export default function NewEpisodeDrawer({
         <Typography.Text>
           这一集的编辑内容还没有存成草稿。关掉抽屉就会丢掉它们（LLM
           转换结果也一样），审计里不会有任何痕迹。
+        </Typography.Text>
+      </Modal>
+
+      <Modal
+        open={fillConfirmOpen}
+        title="上传会覆盖当前表单"
+        okText="覆盖并填充"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+        onCancel={() => {
+          setFillConfirmOpen(false)
+          setFillPending(null)
+        }}
+        onOk={() => {
+          if (fillPending) applyFill(fillPending)
+          setFillConfirmOpen(false)
+          setFillPending(null)
+        }}
+      >
+        <Typography.Text>
+          当前表单里已经有内容，上传 docx 会整份覆盖主角、集号、标题与互动，且无法撤销。
+          是否继续？
         </Typography.Text>
       </Modal>
 
