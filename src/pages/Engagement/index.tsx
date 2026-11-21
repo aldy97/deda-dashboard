@@ -12,6 +12,7 @@ import {
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
 import InfoTip from '../../components/InfoTip'
+import PageHeader from '../../components/PageHeader'
 import { modeLabel } from '../../components/message/labels'
 import { defaultRange, fmt, today } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -64,41 +65,28 @@ export default function Engagement() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            使用行为
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            时长类指标为估算口径（每条对话 × 0.5 分钟）；含今日时今日数据进行中
-          </Typography.Text>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Typography.Text type="secondary">区间</Typography.Text>
-          <AnalyticsRangePicker
-            value={range}
-            onChange={(r) => {
-              if (r) setRange(r)
-            }}
-          />
-          <Typography.Text type="secondary">单日</Typography.Text>
-          <AnalyticsDatePicker
-            value={date}
-            onChange={(d) => {
-              if (d) setDate(d)
-            }}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="使用行为"
+        description="时长类指标为估算口径（每条对话 × 0.5 分钟）；含今日时今日数据进行中"
+        actions={
+          <>
+            <Typography.Text type="secondary">区间</Typography.Text>
+            <AnalyticsRangePicker
+              value={range}
+              onChange={(r) => {
+                if (r) setRange(r)
+              }}
+            />
+            <Typography.Text type="secondary">单日</Typography.Text>
+            <AnalyticsDatePicker
+              value={date}
+              onChange={(d) => {
+                if (d) setDate(d)
+              }}
+            />
+          </>
+        }
+      />
 
       {rangeError && (
         <Alert

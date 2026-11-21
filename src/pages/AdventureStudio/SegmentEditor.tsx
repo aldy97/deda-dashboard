@@ -6,6 +6,7 @@ import {
   Select,
   Space,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import {
@@ -21,12 +22,13 @@ import type {
   TwoChoiceOption,
 } from '../../types/adventureAdmin'
 import { interactionLabel, segmentKindLabel } from './labels'
+import InfoTip from '../../components/InfoTip'
 
 /**
  * 单个段落的编辑表单。
  *
  * 字段按 interactionType 分支显示，分支的依据是 capabilities 下发的
- * replyWaitingInteractionTypes——「哪些原语需要孩子开口、因而必须有兜底与退出话术」
+ * replyWaitingInteractionTypes——「哪些原语需要孩子开口、因而必须有兜底话术」
  * 是服务端的口径，前端不自己判定。
  *
  * `order` 刻意不做成可输入的数字框：引擎要求 order 严格 0..n-1 连续，
@@ -217,23 +219,27 @@ export default function SegmentEditor({
           <div>
             <Space size={6} style={{ marginBottom: 6 }}>
               <Typography.Text strong style={{ fontSize: 13 }}>
-                两个选项
+                两个选项（固定 2 个，不可增减）
               </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                key 至少 {capabilities.lintThresholds.minChoiceKeyChars} 字（引擎用
-                includes 匹配，单字符几乎必误命中）；reply 是孩子选了之后立刻听到的接话
+              <Typography.Text type="danger" style={{ fontSize: 12 }}>
+                必须恰好 2 个选项才能发布；超过 2 个连草稿都存不下
               </Typography.Text>
             </Space>
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+              识别只看「选项」文案（孩子说的话里包含选项文案才算命中）；key 不参与识别，只作内部标识；
+              reply 是孩子选中后立刻听到的接话句
+            </Typography.Text>
             <Space orientation="vertical" size={6} style={{ width: '100%' }}>
               {choices.map((choice, at) => (
                 <Space key={at} size={6} wrap>
                   <Input
-                    style={{ width: 110 }}
+                    style={{ width: 220 }}
                     addonBefore="key"
                     value={choice.key}
                     disabled={disabled}
                     onChange={(event) => patchChoice(at, { key: event.target.value })}
                   />
+                  <InfoTip title="内部标识，不参与识别；孩子说什么不会用它来判定" />
                   <Input
                     style={{ width: 220 }}
                     addonBefore="选项"
@@ -253,7 +259,7 @@ export default function SegmentEditor({
                     type="text"
                     danger
                     icon={<DeleteOutlined />}
-                    disabled={disabled}
+                    disabled={disabled || choices.length <= 2}
                     onClick={() =>
                       patch({
                         options: {
@@ -265,18 +271,20 @@ export default function SegmentEditor({
                   />
                 </Space>
               ))}
-              <Button
-                size="small"
-                icon={<PlusOutlined />}
-                disabled={disabled}
-                onClick={() =>
-                  patch({
-                    options: { ...segment.options, choices: [...choices, { ...EMPTY_CHOICE }] },
-                  })
-                }
-              >
-                加一个选项
-              </Button>
+              <Tooltip title="二选一固定两个选项，引擎只在这两个里判定">
+                <Button
+                  size="small"
+                  icon={<PlusOutlined />}
+                  disabled={disabled || choices.length >= 2}
+                  onClick={() =>
+                    patch({
+                      options: { ...segment.options, choices: [...choices, { ...EMPTY_CHOICE }] },
+                    })
+                  }
+                >
+                  加一个选项
+                </Button>
+              </Tooltip>
             </Space>
           </div>
         )}
@@ -316,19 +324,10 @@ export default function SegmentEditor({
               />
             </div>
             <div>
-              <Typography.Text strong style={{ fontSize: 13 }}>
-                退出话术（必填）
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                退出话术由系统统一设定，不可编辑：{capabilities.fixedExitText}
+                （不分 IP、集数、互动类型，孩子打断旁白说「不想玩了」也是这一句）
               </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
-                孩子明确说「不要」时的温柔收尾，不逼、不重复问
-              </Typography.Text>
-              <Input.TextArea
-                rows={2}
-                value={segment.exitText ?? ''}
-                disabled={disabled}
-                onChange={(event) => patch({ exitText: event.target.value })}
-                style={{ marginTop: 4 }}
-              />
             </div>
           </Space>
         )}

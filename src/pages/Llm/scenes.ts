@@ -57,7 +57,8 @@ export const SCENE_META: Record<string, SceneMeta> = {
   },
   adventure_interaction: {
     label: '冒险剧情互动',
-    description: '冒险故事模式中，对孩子每轮回答的即时剧情反馈（角色人设驱动）。',
+    description:
+      '冒险故事模式中，对孩子每轮回答的即时剧情反馈（角色人设驱动）；二选一互动点在确定性匹配失败时，同一 scene 还负责判定孩子选了哪个选项（受 ADVENTURE_CHOICE_LLM_ENABLED 控制，默认关）。',
     streaming: false,
     failOpen: false,
   },

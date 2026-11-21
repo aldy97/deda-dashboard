@@ -1,13 +1,16 @@
 import { apiClient } from './client'
 import type {
   AdventureBundle,
+  AdventureCharacterKey,
   AuditListResponse,
   AuditQuery,
   CapabilitiesResponse,
   CreateEpisodeRequest,
   CreateEpisodeResult,
+  DeviceTestAssignment,
   DiscardDraftResult,
   DiscardEpisodeResult,
+  EpisodeChoiceStatsResponse,
   EpisodeDetail,
   EpisodeIdentity,
   EpisodeListQuery,
@@ -21,6 +24,7 @@ import type {
   ImportPreview,
   LintReport,
   LintRequest,
+  NextEpisodeNumberResult,
   PublishResult,
   RecoveryHealthSnapshot,
   RecoveryResetResult,
@@ -31,7 +35,11 @@ import type {
   RevertResult,
   SaveDraftRequest,
   SaveDraftResult,
+  ScriptConvertRequest,
+  ScriptConvertResult,
   SimulationResult,
+  TestAssignResult,
+  TestClearResult,
   VersionDetail,
   VersionDiffResult,
   VersionSummary,
@@ -108,6 +116,17 @@ export async function fetchEpisodeImpact(
 ): Promise<EpisodeImpact> {
   const resp = await apiClient.get(`${BASE}/episodes/${episodeId}/impact`)
   return resp.data as EpisodeImpact
+}
+
+export async function fetchEpisodeChoiceStats(
+  episodeId: string,
+  params?: { startDate?: string; endDate?: string },
+): Promise<EpisodeChoiceStatsResponse> {
+  const resp = await apiClient.get(
+    `${BASE}/episodes/${episodeId}/choice-stats`,
+    { params },
+  )
+  return resp.data as EpisodeChoiceStatsResponse
 }
 
 export async function fetchAudit(
@@ -255,4 +274,58 @@ export async function resetRecoveryBreaker(
 ): Promise<RecoveryResetResult> {
   const resp = await apiClient.post(`${BASE}/recovery/reset`, { reason })
   return resp.data as RecoveryResetResult
+}
+
+// ---- 测试冒险故事下发（仅 staging）----
+
+/** 把当前集下发到设备：优先锁草稿快照，否则锁当前发布版本 */
+export async function assignTestStory(
+  episodeId: string,
+  req: { deviceId: string; reason: string },
+): Promise<TestAssignResult> {
+  const resp = await apiClient.post(
+    `${BASE}/episodes/${episodeId}/test-assign`,
+    req,
+  )
+  return resp.data as TestAssignResult
+}
+
+/** 清除设备当前下发：仅当它正是这一集 */
+export async function clearTestStory(
+  episodeId: string,
+  req: { deviceId: string; reason: string },
+): Promise<TestClearResult> {
+  const resp = await apiClient.post(
+    `${BASE}/episodes/${episodeId}/test-clear`,
+    req,
+  )
+  return resp.data as TestClearResult
+}
+
+/** 读设备当前下发；prod（未启用）返回 enabled=false */
+export async function fetchDeviceTestAssignment(
+  deviceId: string,
+): Promise<DeviceTestAssignment> {
+  const resp = await apiClient.get(`${BASE}/device-test/assignment/${deviceId}`)
+  return resp.data as DeviceTestAssignment
+}
+
+// ---- docx 稿子转换（仅 staging）----
+
+/** 把 docx 稿子转成结构化草稿预览，不落库。仅 staging（写方法，readonly 环境 403） */
+export async function convertScript(
+  req: ScriptConvertRequest,
+): Promise<ScriptConvertResult> {
+  const resp = await apiClient.post(`${BASE}/script/convert`, req)
+  return resp.data as ScriptConvertResult
+}
+
+/** 某 IP 下一集的自增集号（含已下架/已作废的集——业务键永久占用） */
+export async function fetchNextEpisodeNumber(
+  characterKey: AdventureCharacterKey,
+): Promise<NextEpisodeNumberResult> {
+  const resp = await apiClient.get(`${BASE}/script/next-number`, {
+    params: { characterKey },
+  })
+  return resp.data as NextEpisodeNumberResult
 }

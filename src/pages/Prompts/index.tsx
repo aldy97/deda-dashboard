@@ -3,6 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { Link } from 'react-router-dom'
 import EnvTag from '../../components/EnvTag'
+import PageHeader from '../../components/PageHeader'
 import {
   UNKNOWN_ENV_VIEW,
   isPromptWritable,
@@ -159,28 +160,21 @@ export default function Prompts() {
 
   return (
     <div>
-      <Space
-        style={{ width: '100%', justifyContent: 'space-between' }}
-        align="center"
-      >
-        <Typography.Title level={4} style={{ marginBottom: 0 }}>
-          Prompt 管理
-        </Typography.Title>
-        <EnvTag
-          nodeEnv={meta?.nodeEnv}
-          loading={metaQuery.isPending}
-          failed={metaQuery.isError}
-        />
-      </Space>
-
-      <Typography.Paragraph type="secondary" style={{ margin: '8px 0 16px' }}>
-        {items.length > 0
-          ? `共 ${items.length} 个可编辑 prompt。`
-          : '可编辑 prompt 列表加载中…'}
-        运行时按「DB 已发布 → 代码默认值」回落；
-        发布后立即改变线上所有设备的模型行为，因此发布 / 回滚 / 恢复默认都需要手动输入确认码。
-        儿童安全兜底、身份包装、L1 词表等属永久硬编码红线，不在此列。
-      </Typography.Paragraph>
+      <PageHeader
+        title="Prompt 管理"
+        description={`${
+          items.length > 0
+            ? `共 ${items.length} 个可编辑 prompt。`
+            : '可编辑 prompt 列表加载中…'
+        } 运行时按「DB 已发布 → 代码默认值」回落；发布后立即改变线上所有设备的模型行为，因此发布 / 回滚 / 恢复默认都需要手动输入确认码。儿童安全兜底、身份包装、L1 词表等属永久硬编码红线，不在此列。`}
+        actions={
+          <EnvTag
+            nodeEnv={meta?.nodeEnv}
+            loading={metaQuery.isPending}
+            failed={metaQuery.isError}
+          />
+        }
+      />
 
       {metaQuery.isError && (
         <Alert

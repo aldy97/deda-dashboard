@@ -166,7 +166,7 @@ export default function PreviewSimulator({
                   )}
                   {beat.praise && (
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      念对了会听到：{beat.praise}
+                      孩子开口后会听到，不判对错：{beat.praise}
                     </Typography.Text>
                   )}
                 </Space>

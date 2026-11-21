@@ -42,10 +42,9 @@ function newSegment(
     text: '',
     interactionType: kind === 'interaction' ? 'open_question' : null,
     options: null,
-    // 需要孩子开口的原语必须有兜底与退出话术；先给空串占位，
-    // 让创作者看到这两个框（lint 会拦发布，但不该靠报错来教人有哪些字段）。
+    // 需要孩子开口的原语必须有兜底话术；先给空串占位，
+    // 让创作者看到这个框（lint 会拦发布，但不该靠报错来教人有哪些字段）。
     fallbackText: kind === 'interaction' ? '' : null,
-    exitText: kind === 'interaction' ? '' : null,
     rewardStar: false,
   }
 }

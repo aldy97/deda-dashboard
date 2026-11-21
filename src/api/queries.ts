@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchActivationFunnel,
   fetchContentAdventure,
+  fetchContentAdventureChoices,
   fetchContentLearning,
   fetchContentParentReport,
   fetchCurrentMemories,
@@ -63,13 +64,19 @@ import {
   exportBundle,
   fetchAudit,
   fetchCapabilities,
+  fetchDeviceTestAssignment,
   fetchEpisode,
   fetchEpisodeImpact,
+  fetchEpisodeChoiceStats,
   fetchEpisodes,
   fetchRecoveryHealth,
   fetchVersion,
   fetchVersionDiff,
   fetchVersions,
+  assignTestStory,
+  clearTestStory,
+  convertScript,
+  fetchNextEpisodeNumber,
   previewImport,
   publishEpisode,
   resetRecoveryBreaker,
@@ -82,6 +89,7 @@ import {
 } from './adventureAdmin'
 import type {
   AdventureBundle,
+  AdventureCharacterKey,
   AuditQuery,
   CreateEpisodeRequest,
   EpisodeContent,
@@ -92,6 +100,7 @@ import type {
   LintRequest,
   RevertRequest,
   SaveDraftRequest,
+  ScriptConvertRequest,
 } from '../types/adventureAdmin'
 
 /**
@@ -255,6 +264,16 @@ export function useContentAdventure(params: {
   return useQuery({
     queryKey: ['analytics', 'contentAdventure', params],
     queryFn: () => fetchContentAdventure(params),
+  })
+}
+
+export function useContentAdventureChoices(params: {
+  startDate?: string
+  endDate?: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'contentAdventureChoices', params],
+    queryFn: () => fetchContentAdventureChoices(params),
   })
 }
 
@@ -639,6 +658,22 @@ export function useAdventureImpact(episodeId: string | null) {
   })
 }
 
+export function useEpisodeChoiceStats(
+  episodeId: string | null,
+  params?: { startDate?: string; endDate?: string },
+) {
+  return useQuery({
+    queryKey: [
+      ...ADVENTURE_QUERY_ROOT,
+      'choiceStats',
+      episodeId,
+      params ?? null,
+    ],
+    queryFn: () => fetchEpisodeChoiceStats(episodeId!, params ?? {}),
+    enabled: episodeId !== null,
+  })
+}
+
 export function useAdventureAudit(query: AuditQuery) {
   return useQuery({
     queryKey: [...ADVENTURE_QUERY_ROOT, 'audit', query],
@@ -825,10 +860,65 @@ export function useAdventureImport() {
   return useAdventureWrite((req: ImportApplyRequest) => applyImport(req))
 }
 
+/** docx 转换是「拿当前上传内容问一次服务端」的只读计算，不写库，走普通 mutation、不作废缓存 */
+export function useAdventureScriptConvert() {
+  return useMutation({
+    mutationFn: (req: ScriptConvertRequest) => convertScript(req),
+  })
+}
+
+/** 手动新建时取某 IP 下一集的自增集号（含已下架/已作废的集） */
+export function useAdventureNextEpisodeNumber(
+  characterKey: AdventureCharacterKey | null,
+) {
+  return useQuery({
+    queryKey: [...ADVENTURE_QUERY_ROOT, 'next-number', characterKey],
+    queryFn: () => fetchNextEpisodeNumber(characterKey!),
+    enabled: characterKey !== null,
+  })
+}
+
 export function useAdventureRecoverySweep() {
   return useAdventureWrite((reason: string) => runRecoverySweep(reason))
 }
 
 export function useAdventureRecoveryReset() {
   return useAdventureWrite((reason: string) => resetRecoveryBreaker(reason))
+}
+
+/** 读设备当前下发（按需触发：deviceId 为空时不发请求） */
+export function useDeviceTestAssignment(deviceId: string | null) {
+  return useQuery({
+    queryKey: [...ADVENTURE_QUERY_ROOT, 'device-test-assignment', deviceId],
+    queryFn: () => fetchDeviceTestAssignment(deviceId!),
+    enabled: deviceId !== null && deviceId.trim().length > 0,
+  })
+}
+
+export function useAssignTestStory() {
+  return useAdventureWrite(
+    ({
+      episodeId,
+      deviceId,
+      reason,
+    }: {
+      episodeId: string
+      deviceId: string
+      reason: string
+    }) => assignTestStory(episodeId, { deviceId, reason }),
+  )
+}
+
+export function useClearTestStory() {
+  return useAdventureWrite(
+    ({
+      episodeId,
+      deviceId,
+      reason,
+    }: {
+      episodeId: string
+      deviceId: string
+      reason: string
+    }) => clearTestStory(episodeId, { deviceId, reason }),
+  )
 }

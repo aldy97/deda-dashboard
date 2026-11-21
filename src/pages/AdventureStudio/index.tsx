@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Card, Tabs, Typography } from 'antd'
+import { Card, Tabs } from 'antd'
 import { useUrlQuery } from '../../utils/url-state'
 import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queries'
+import type { ScriptConvertResult } from '../../types/adventureAdmin'
+import PageHeader from '../../components/PageHeader'
 import CapabilityBanner from './CapabilityBanner'
-import CreateEpisodeDialog from './CreateEpisodeDialog'
 import EpisodeTable from './EpisodeTable'
 import EpisodeDetailDrawer from './EpisodeDetailDrawer'
+import NewEpisodeDrawer from './NewEpisodeDrawer'
 import AuditLog from './AuditLog'
 import HealthPanel from './HealthPanel'
 import ImportExport from './ImportExport'
@@ -39,22 +41,19 @@ export default function AdventureStudio() {
   const requested = searchParams.get('tab')
   const activeKey: TabKey = isTabKey(requested) ? requested : 'episodes'
   const selectedEpisodeId = searchParams.get('episodeId') || null
-  const [createOpen, setCreateOpen] = useState(false)
+  const [newDraft, setNewDraft] = useState<{
+    seed: ScriptConvertResult | null
+    nonce: number
+  } | null>(null)
   const authoring = useAdventureAuthoring()
   const capabilities = useAdventureCapabilities().data ?? null
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          冒险内容工作台
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          冒险故事每一集的草稿、校验、发布、回滚与下架。已发布的故事不会被原地修改：
-          发布是生成一个新快照，正在玩的孩子锁在自己开始时的版本上，不会被中途换掉。
-          内容也没有「删除」——只有下架成墓碑，历史版本、审计与进度都还能追溯。
-        </Typography.Text>
-      </div>
+      <PageHeader
+        title="冒险内容工作台"
+        description="冒险故事每一集的草稿、校验、发布、回滚与下架。已发布的故事不会被原地修改：发布是生成一个新快照，正在玩的孩子锁在自己开始时的版本上，不会被中途换掉。内容也没有「删除」——只有下架成墓碑，历史版本、审计与进度都还能追溯。"
+      />
 
       <CapabilityBanner />
 
@@ -68,10 +67,18 @@ export default function AdventureStudio() {
               label: '故事集',
               children:
                 activeKey === 'episodes' ? (
-                  <EpisodeTable
-                    onOpen={(episodeId) => setQuery({ episodeId }, { replace: false })}
-                    onCreate={authoring ? () => setCreateOpen(true) : undefined}
-                  />
+                  <>
+                    <EpisodeTable
+                      onOpen={(episodeId) =>
+                        setQuery({ episodeId }, { replace: false })
+                      }
+                      onCreate={
+                        authoring
+                          ? () => setNewDraft({ seed: null, nonce: Date.now() })
+                          : undefined
+                      }
+                    />
+                  </>
                 ) : null,
             },
             {
@@ -98,13 +105,16 @@ export default function AdventureStudio() {
         onClose={() => setQuery({ episodeId: null }, { replace: true })}
       />
 
-      {/* 用 && 挂载而不是 open 开关：每次打开都是全新表单，集号与理由都不沿用上一次 */}
-      {createOpen && capabilities && (
-        <CreateEpisodeDialog
+      {/* 用 key 强制每次打开都是全新表单：集号、主角、内容都不沿用上一次 */}
+      {newDraft && capabilities && (
+        <NewEpisodeDrawer
+          key={newDraft.nonce}
+          open
+          seed={newDraft.seed}
           capabilities={capabilities}
-          onClose={() => setCreateOpen(false)}
+          onClose={() => setNewDraft(null)}
           onCreated={(episodeId) => {
-            setCreateOpen(false)
+            setNewDraft(null)
             setQuery({ episodeId }, { replace: false })
           }}
         />

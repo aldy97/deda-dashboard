@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Alert, Card, Col, Input, Row, Spin, Statistic, Typography } from 'antd'
+import { Alert, Card, Col, Input, Row, Spin, Statistic } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useUsersDemographics, useUsersSummary } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import PageHeader from '../../components/PageHeader'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import Demographics from './Demographics'
@@ -31,31 +32,18 @@ export default function Users() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            用户画像
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            聚合数据，不出 PII；画像分布为当前全量快照
-          </Typography.Text>
-        </div>
-        <AnalyticsRangePicker
-          value={range}
-          onChange={(r) => {
-            if (r) setRange(r)
-          }}
-        />
-      </div>
+      <PageHeader
+        title="用户画像"
+        description="聚合数据，不出 PII；画像分布为当前全量快照"
+        actions={
+          <AnalyticsRangePicker
+            value={range}
+            onChange={(r) => {
+              if (r) setRange(r)
+            }}
+          />
+        }
+      />
 
       {/* 单设备详情入口：精确匹配业务设备 ID，跳 /users/:deviceId */}
       <Input.Search

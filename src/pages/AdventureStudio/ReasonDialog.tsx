@@ -91,6 +91,8 @@ export default function ReasonDialog({
       okText={okText}
       cancelText="取消"
       width={680}
+      centered
+      styles={{ body: { maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' } }}
       maskClosable={false}
       okButtonProps={{
         danger,

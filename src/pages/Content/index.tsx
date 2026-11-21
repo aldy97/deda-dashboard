@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
+import { Alert, Card, Col, Row, Spin, Statistic } from 'antd'
 import { Link } from 'react-router-dom'
 import {
   useContentAdventure,
@@ -8,19 +8,24 @@ import {
 } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
+import PageHeader from '../../components/PageHeader'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
+import AdventureChoicesSection from './AdventureChoicesSection'
 import QualityTrend from './QualityTrend'
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
 
 /**
- * 内容与质量页（P6）：冒险故事、学习数据、对话质量。
- * 一个区间控件驱动全部三个接口；对话质量固定按日粒度。
+ * 内容与质量页（P6）：冒险故事、二选一选项命中、学习数据、对话质量。
+ * 一个区间控件驱动全部区块；对话质量固定按日粒度。
  * 家长报告卡片已搬迁至用户反馈页作为第三个 tab。
  * /analytics/quality/llm-usage 一期 501（未落库），本页不接入。
+ * 例外：「二选一选项命中」区块自己持有查询，不并进本页的整页 loading 与
+ * 整页错误 Alert——它的后端端点上线晚于本页，若并进来，端点 404 会让整页
+ * 挂红色横幅，而其余三个区块的数据其实是好的。区块内自己显示错误即可。
  */
 export default function Content() {
   const [range, setRange] = useState<DayRange>(defaultRange(30))
@@ -36,9 +41,7 @@ export default function Content() {
     learningQuery.isLoading ||
     qualityQuery.isLoading
   const queryError =
-    adventureQuery.error ??
-    learningQuery.error ??
-    qualityQuery.error
+    adventureQuery.error ?? learningQuery.error ?? qualityQuery.error
   const error = queryError
     ? queryError instanceof Error
       ? queryError.message
@@ -48,31 +51,18 @@ export default function Content() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            内容与质量
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            区间为闭区间，含今日时今日数据进行中
-          </Typography.Text>
-        </div>
-        <AnalyticsRangePicker
-          value={range}
-          onChange={(r) => {
-            if (r) setRange(r)
-          }}
-        />
-      </div>
+      <PageHeader
+        title="内容与质量"
+        description="区间为闭区间，含今日时今日数据进行中"
+        actions={
+          <AnalyticsRangePicker
+            value={range}
+            onChange={(r) => {
+              if (r) setRange(r)
+            }}
+          />
+        }
+      />
 
       {error && (
         <Alert
@@ -87,6 +77,10 @@ export default function Content() {
       <Spin spinning={loading}>
         <Card title="冒险故事">
           {adventure && <AdventureSection data={adventure} range={range} />}
+        </Card>
+
+        <Card title="二选一选项命中" style={{ marginTop: 16 }}>
+          <AdventureChoicesSection range={range} />
         </Card>
 
         <Card

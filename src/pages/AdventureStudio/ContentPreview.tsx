@@ -2,6 +2,7 @@ import { Empty, Space, Tag, Timeline, Typography } from 'antd'
 import { StarFilled } from '@ant-design/icons'
 import type { EpisodeContent, EpisodeSegment } from '../../types/adventureAdmin'
 import { interactionLabel, segmentKindLabel } from './labels'
+import InfoTip from '../../components/InfoTip'
 
 /**
  * 故事集内容的只读渲染。
@@ -52,7 +53,8 @@ function SegmentBody({ segment }: { segment: EpisodeSegment }) {
         <Space orientation="vertical" size={2}>
           {choices.map((choice, index) => (
             <Typography.Text key={`${choice.key}-${index}`} type="secondary">
-              <Typography.Text code>{choice.key}</Typography.Text>{' '}
+              <Typography.Text code>{choice.key}</Typography.Text>
+              <InfoTip title="内部标识，不参与识别" />{' '}
               {choice.text}
               {choice.reply ? (
                 <>
@@ -73,19 +75,10 @@ function SegmentBody({ segment }: { segment: EpisodeSegment }) {
         </Typography.Text>
       )}
 
-      {(segment.fallbackText || segment.exitText) && (
-        <Space orientation="vertical" size={2}>
-          {segment.fallbackText && (
-            <Typography.Text type="secondary">
-              兜底话术（跑题/沉默）：{segment.fallbackText}
-            </Typography.Text>
-          )}
-          {segment.exitText && (
-            <Typography.Text type="secondary">
-              退出话术（孩子明确拒绝）：{segment.exitText}
-            </Typography.Text>
-          )}
-        </Space>
+      {segment.fallbackText && (
+        <Typography.Text type="secondary">
+          兜底话术（跑题/沉默）：{segment.fallbackText}
+        </Typography.Text>
       )}
     </Space>
   )

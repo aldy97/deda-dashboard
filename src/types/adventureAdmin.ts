@@ -49,6 +49,8 @@ export const AUDIT_ACTIONS = [
   'self_check_failed',
   'recovery_sweep',
   'recovery_breaker_reset',
+  'device_test_assign',
+  'device_test_clear',
 ] as const
 
 export type AuditAction = string
@@ -75,7 +77,6 @@ export interface EpisodeSegment {
   interactionType?: AdventureInteractionType | null
   options?: SegmentOptions | null
   fallbackText?: string | null
-  exitText?: string | null
   rewardStar?: boolean
 }
 
@@ -98,7 +99,6 @@ export interface LintThresholds {
   maxNarrationTextChars: number
   maxTitleChars: number
   maxStarsPerEpisode: number
-  minChoiceKeyChars: number
   minChoiceTextChars: number
   forbiddenWords: string[]
 }
@@ -116,8 +116,11 @@ export interface CapabilitiesResponse {
   segmentKinds: SegmentKind[]
   lintThresholds: LintThresholds
   simulationThresholds: SimulationThresholds
+  fixedExitText: string
   profile: ContentAdminProfile
   authoring: boolean
+  /** 测试冒险故事下发是否可用（ADVENTURE_TEST_MODE_ENABLED=true，仅 staging） */
+  testStoryEnabled: boolean
 }
 
 // ---- 校验与试播 ----
@@ -206,6 +209,33 @@ export interface EpisodeImpact {
   publishedVersionCount: number
 }
 
+export interface EpisodeChoiceStatsResponse {
+  episodeId: string
+  title: string
+  /** 固定文案，服务端下发，前端原样展示，不要在前端硬编码 */
+  contentNote: string
+  totalInteractions: number
+  matchedTotal: number
+  segments: Array<{
+    segmentOrder: number | null
+    promptText: string | null
+    matchedTotal: number
+    fallbackTotal: number
+    fallbackRate: number | null
+    /** 该段的选项从未被任何孩子选中过；服务端算好，前端不要自己推 */
+    neverChosen: boolean
+    choices: Array<{
+      index: number
+      key: string | null
+      text: string | null
+      hits: number
+      deterministicHits: number
+      llmHits: number
+      share: number | null
+    }>
+  }>
+}
+
 export interface EpisodeDetail {
   summary: EpisodeSummary
   content: EpisodeContent
@@ -256,7 +286,6 @@ export interface BundleSegment {
   interactionType: AdventureInteractionType | null
   options: SegmentOptions | null
   fallbackText: string | null
-  exitText: string | null
   rewardStar: boolean
 }
 
@@ -579,6 +608,43 @@ export interface RecoveryResetResult {
   audited: boolean
 }
 
+// ---- 测试冒险故事下发（仅 staging）----
+
+export interface TestAssignResult {
+  ok: boolean
+  audited: boolean
+  assignment: {
+    episodeId: string
+    title: string
+    episodeVersionId: string | null
+    versionStatus: 'draft' | 'published'
+  }
+}
+
+export interface TestClearResult {
+  ok: boolean
+  audited: boolean
+}
+
+export interface DeviceTestAssignment {
+  enabled: boolean
+  assignment: {
+    device: { id: string; deviceId: string; deviceCode: string | null }
+    episode: {
+      id: string
+      title: string
+      episodeNumber: number
+      characterKey: string
+      season: number
+    } | null
+    episodeVersion: {
+      id: string
+      version: number
+      status: VersionStatus
+    } | null
+  } | null
+}
+
 // ---- 请求参数 ----
 
 export interface EpisodeListQuery {
@@ -690,4 +756,32 @@ export interface DraftConflictDetail {
   version: number
   updatedBy: string | null
   updatedAt: string | null
+}
+
+// ---- docx 稿子转换（仅 staging）----
+
+export interface ScriptConvertRequest {
+  /** 原始文件名，仅用于提示，不落库 */
+  fileName?: string
+  /** docx 文件的 base64 编码内容 */
+  contentBase64: string
+}
+
+export interface ScriptConvertResult {
+  characterKey: AdventureCharacterKey
+  /** false = LLM 没识别出白名单内主角，已回落 elly，界面要提示「请手动确认」 */
+  characterDetected: boolean
+  season: number
+  /** 该 IP 下一集的自增集号（含已下架/已作废的集——业务键永久占用） */
+  episodeNumber: number
+  content: EpisodeContent
+  /** 去掉标题行后的正文，供抽屉回看原文 */
+  sourceText: string
+  lint: LintReport
+}
+
+export interface NextEpisodeNumberResult {
+  characterKey: AdventureCharacterKey
+  season: number
+  episodeNumber: number
 }

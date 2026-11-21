@@ -6,6 +6,7 @@ import { apiClient } from './client'
 import {
   applyImport,
   exportBundle,
+  fetchEpisodeChoiceStats,
   retireEpisode,
   runRecoverySweep,
   saveDraft,
@@ -13,10 +14,12 @@ import {
 import {
   ADVENTURE_QUERY_ROOT,
   useAdventurePublishLint,
+  useEpisodeChoiceStats,
   useSaveAdventureDraft,
 } from './queries'
 import type {
   AdventureBundle,
+  EpisodeChoiceStatsResponse,
   EpisodeContent,
   EpisodeIdentity,
 } from '../types/adventureAdmin'
@@ -37,6 +40,7 @@ vi.mock('./client', () => ({
 }))
 
 const mockPost = apiClient.post as unknown as ReturnType<typeof vi.fn>
+const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
 
 function respondWith(data: unknown) {
   mockPost.mockResolvedValue({ data })
@@ -229,5 +233,73 @@ describe('adventure-admin 接口层', () => {
       '/analytics/adventure-admin/recovery/sweep',
       { reason: '手动巡检一次' },
     )
+  })
+})
+
+/**
+ * 选项命中统计的接口层守卫。
+ * 这两个函数是 `apiClient.get` / `useQuery` 的一行包装，按 .kimi-code/AGENTS.md
+ * 的 Adventure Studio 豁免口径本来可以不测；但 URL 里的 `choice-stats` 一旦写错
+ * 是**静默 404**（面板只会显示空态，看不出是路径错了），而 `enabled` 门一旦被去掉
+ * 就会在抽屉还没选中剧集时打出 `/episodes/null/choice-stats`。这两条都在界面上
+ * 看不出来，所以补上守卫，不再依赖豁免。
+ */
+describe('选项命中统计接口层', () => {
+  const choiceStats: EpisodeChoiceStatsResponse = {
+    episodeId: 'ep-1',
+    title: '第一集',
+    contentNote: '选项文案取自当前发布版本，历史数据可能与当时文案不完全一致',
+    totalInteractions: 0,
+    matchedTotal: 0,
+    segments: [],
+  }
+
+  it('fetchEpisodeChoiceStats 把 episodeId 拆进 URL，日期区间走 query params，响应原样返回', async () => {
+    mockGet.mockClear()
+    mockGet.mockResolvedValue({ data: choiceStats })
+
+    const got = await fetchEpisodeChoiceStats('ep-1', {
+      startDate: '2026-11-01',
+      endDate: '2026-11-19',
+    })
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/adventure-admin/episodes/ep-1/choice-stats',
+      { params: { startDate: '2026-11-01', endDate: '2026-11-19' } },
+    )
+    expect(got).toEqual(choiceStats)
+  })
+
+  it('useEpisodeChoiceStats 没有 episodeId 时一次请求都不发（enabled 门）', () => {
+    mockGet.mockClear()
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useEpisodeChoiceStats(null), {
+      wrapper: Wrapper,
+    })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('useEpisodeChoiceStats 的 queryKey 带上日期参数，缓存按 choiceStats 分组', async () => {
+    mockGet.mockClear()
+    mockGet.mockResolvedValue({ data: choiceStats })
+    const { client, Wrapper } = createWrapper()
+    const params = { startDate: '2026-11-01', endDate: '2026-11-19' }
+
+    renderHook(() => useEpisodeChoiceStats('ep-1', params), {
+      wrapper: Wrapper,
+    })
+
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(1))
+    expect(
+      client.getQueryData([
+        ...ADVENTURE_QUERY_ROOT,
+        'choiceStats',
+        'ep-1',
+        params,
+      ]),
+    ).toEqual(choiceStats)
   })
 })

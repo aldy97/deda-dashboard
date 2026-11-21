@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import LlmMonitor from './index'
 
@@ -24,11 +25,16 @@ function LocationProbe() {
 }
 
 function renderAt(entry = '/llm') {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   return render(
-    <MemoryRouter initialEntries={[entry]}>
-      <LocationProbe />
-      <LlmMonitor />
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[entry]}>
+        <LocationProbe />
+        <LlmMonitor />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
@@ -86,6 +92,18 @@ describe('LlmMonitor 四个 tab', () => {
     await user.click(screen.getByRole('tab', { name: '性能监控' }))
     expect(mountedTabs()).toEqual(['perf-tab'])
     expect(screen.getByTestId('location-search').textContent).toBe('?tab=perf')
+  })
+
+  it('切 tab 触发一次页面级刷新（type=all），保证切过去是最新数据', async () => {
+    const spy = vi.spyOn(QueryClient.prototype, 'refetchQueries')
+    const user = userEvent.setup()
+    renderAt()
+
+    await user.click(screen.getByRole('tab', { name: '价格监控' }))
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0][0]).toMatchObject({ type: 'all' })
+    spy.mockRestore()
   })
 
   it('保留页面标题与副标题', () => {

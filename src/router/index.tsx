@@ -16,6 +16,7 @@ import MemoryDetail from '../pages/Memories/DeviceDetail'
 import Feedback from '../pages/Feedback'
 import Fleet from '../pages/Fleet'
 import Prompts from '../pages/Prompts'
+import VoiceSpeed from '../pages/VoiceSpeed'
 import { getToken } from '../utils/auth-token'
 import { DEFAULT_LANDING, buildLoginSearch } from './redirect'
 
@@ -71,6 +72,7 @@ export const router = createBrowserRouter(
         { path: 'messages', element: <Messages /> },
         { path: 'llm', element: <LlmMonitor /> },
         { path: 'prompts', element: <Prompts /> },
+        { path: 'speech-rate', element: <VoiceSpeed /> },
         { path: 'memories', element: <Memories /> },
         { path: 'memories/:deviceId', element: <MemoryDetail /> },
         { path: '*', element: <Navigate to={DEFAULT_LANDING} replace /> },

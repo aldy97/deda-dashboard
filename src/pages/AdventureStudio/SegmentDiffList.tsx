@@ -22,7 +22,6 @@ const FIELD_LABELS: Record<string, string> = {
   interactionType: '交互原语',
   options: '选项 / 接话',
   fallbackText: '兜底话术',
-  exitText: '退出话术',
   rewardStar: '奖励星光',
 }
 
