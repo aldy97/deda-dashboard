@@ -239,7 +239,7 @@ describe('AdminLayout 菜单分组', () => {
     }
   })
 
-  it('12 个入口一个不少（分组不能顺手丢菜单项）', () => {
+  it('13 个入口一个不少（分组不能顺手丢菜单项）', () => {
     stubMeta({
       nodeEnv: 'development',
       promptWriteEnabled: true,
@@ -260,6 +260,7 @@ describe('AdminLayout 菜单分组', () => {
       '消息明细',
       '模型监控',
       'Prompt 管理',
+      '语速设置',
     ]
     const items = screen.getAllByRole('menuitem')
     expect(items).toHaveLength(expected.length)
