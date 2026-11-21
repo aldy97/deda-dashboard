@@ -24,11 +24,16 @@ export interface ApiError extends Error {
 }
 
 /**
- * 这些前缀下的 403 表示「能力不足」（缺 adventure-content scope / 本环境只读），
- * 而不是「登录失效」。若沿用全站行为清 token 跳登录，prod 的作者点一次「存草稿」
- * 就会被踢下线，还会丢掉正在编辑的整集内容。401 仍然照常跳登录。
+ * 这些前缀下的 403 表示「能力不足」（角色不是 superadmin / 本环境只读），
+ * 而不是「登录失效」。若沿用全站行为清 token 跳登录，一个普通管理员点开运维页
+ * （或角色在会话中被改掉）就会被踢下线，还会丢掉正在编辑的内容。401 仍然照常跳登录。
  */
-const CAPABILITY_DENIED_PREFIXES = ['/analytics/adventure-admin']
+const CAPABILITY_DENIED_PREFIXES = [
+  '/analytics/adventure-admin',
+  '/analytics/prompts',
+  '/analytics/llm',
+  '/analytics/voice-speed',
+]
 
 export const apiClient = axios.create({
   timeout: 15000,
