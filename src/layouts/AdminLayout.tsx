@@ -85,8 +85,8 @@ export default function AdminLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider theme="dark" width={200}>
+    <Layout style={{ height: '100vh' }}>
+      <Sider theme="dark" width={200} style={{ overflowY: 'auto' }}>
         <div
           style={{
             color: '#fff',
@@ -135,7 +135,7 @@ export default function AdminLayout() {
             退出登录
           </Button>
         </Header>
-        <Content style={{ padding: 24 }}>
+        <Content style={{ padding: 24, overflow: 'auto' }}>
           <Outlet />
         </Content>
       </Layout>
