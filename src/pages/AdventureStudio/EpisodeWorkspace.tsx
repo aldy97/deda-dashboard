@@ -15,7 +15,9 @@ import type {
   DraftConflictDetail,
   EpisodeDetail,
   LintReport,
+  ScriptConvertResult,
 } from '../../types/adventureAdmin'
+import DocxUploadButton from './DocxUploadButton'
 import EpisodeEditor from './EpisodeEditor'
 import LintPanel from './LintPanel'
 import PreviewSimulator from './PreviewSimulator'
@@ -106,6 +108,8 @@ export default function EpisodeWorkspace({
   const [lastReason, setLastReason] = useState('')
   const [result, setResult] = useState<ResultNote | null>(null)
   const [simulateOpen, setSimulateOpen] = useState(false)
+  const [fillPending, setFillPending] = useState<ScriptConvertResult | null>(null)
+  const [fillConfirmOpen, setFillConfirmOpen] = useState(false)
 
   const save = useSaveAdventureDraft()
   const publish = usePublishAdventureEpisode()
@@ -135,6 +139,22 @@ export default function EpisodeWorkspace({
 
   const content = state.content
   const lintErrors = state.lint?.errors ?? []
+  const hasExistingContent =
+    content !== null &&
+    (content.title.trim() !== '' ||
+      (content.recap?.trim() ?? '') !== '' ||
+      content.segments.length > 0)
+
+  // 只填内容（标题 + 互动），不动这一集的主角与集号：业务键由这一集的身份决定，
+  // convert 返回的 characterKey/season/episodeNumber 是给「新建」用的自增值，这里丢弃。
+  function onConverted(result: ScriptConvertResult) {
+    if (state.dirty || hasExistingContent) {
+      setFillPending(result)
+      setFillConfirmOpen(true)
+      return
+    }
+    state.change(result.content)
+  }
   // 发布按钮不再把校验结论做进禁用条件：结论会变、也可能还没算出来，
   // 「为什么点不动」会变成一个猜谜。门改在弹窗里，且 fail closed（publishGateReason）。
   const canPublish =
@@ -439,6 +459,8 @@ export default function EpisodeWorkspace({
         />
       )}
 
+      {authoring && <DocxUploadButton onConverted={onConverted} />}
+
       {/* 校验是只读动作，只读环境同样可用（上面那段说明已经这么承诺了），所以这一行
           不受 authoring 门控；写动作仍然只在 authoring 下出现。 */}
       <Space size={8} wrap>
@@ -581,6 +603,28 @@ export default function EpisodeWorkspace({
             capabilities={capabilities}
           />
         )}
+      </Modal>
+
+      <Modal
+        open={fillConfirmOpen}
+        title="上传会覆盖当前内容"
+        okText="覆盖并填充"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+        onCancel={() => {
+          setFillConfirmOpen(false)
+          setFillPending(null)
+        }}
+        onOk={() => {
+          if (fillPending) state.change(fillPending.content)
+          setFillConfirmOpen(false)
+          setFillPending(null)
+        }}
+      >
+        <Typography.Text>
+          编辑器里已有内容，上传 docx 会整份覆盖标题与互动（只填内容，不动这一集的主角与集号），
+          且不会自动保存——覆盖后仍需点「存草稿」才会落库。是否继续？
+        </Typography.Text>
       </Modal>
 
       {dialog && (

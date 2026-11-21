@@ -4,6 +4,8 @@ import { UploadOutlined } from '@ant-design/icons'
 import type { ApiError } from '../../api/client'
 import { useAdventureScriptConvert } from '../../api/queries'
 import type { ScriptConvertResult } from '../../types/adventureAdmin'
+import { fileToBase64 } from './docxUpload'
+import DocxFormatHint from './DocxFormatHint'
 
 /**
  * docx 稿子上传卡片：把带标注的故事稿交给服务端，用 LLM 转成结构化草稿预览。
@@ -12,52 +14,6 @@ import type { ScriptConvertResult } from '../../types/adventureAdmin'
  * 点击「生成草稿」→ POST /script/convert（不落库）→ 拿到转换结果后交给父组件
  * 打开 NewEpisodeDrawer。落库仍由抽屉里的「存草稿」走 POST /episodes 完成。
  */
-
-/** 稿子标注约定，同时写进服务端 prompt 与这里——创作者照着写，LLM 照着转。 */
-const DOCX_FORMAT_HINT = (
-  <Space orientation="vertical" size={4} style={{ width: '100%' }}>
-    <Typography.Text>
-      正文第一个非空行 = 这一集的标题；未标注的普通段落 = 旁白。
-    </Typography.Text>
-    <Typography.Text>
-      交互点用独立一行标记，四种（各自成段）：
-    </Typography.Text>
-    <Typography.Text code>【互动·二选一】引导词</Typography.Text>
-    <Typography.Text>
-      {"    选项A：<文案>｜接话：<孩子选 A 后听到的话>"}
-      <br />
-      {"    选项B：<文案>｜接话：<孩子选 B 后听到的话>"}
-      <br />
-      {'    兜底：<孩子跑题/沉默时说的话>'}
-    </Typography.Text>
-    <Typography.Text code>【互动·开放问答】引导词</Typography.Text>
-    <Typography.Text>{'    兜底：<孩子跑题/沉默时说的话>'}</Typography.Text>
-    <Typography.Text code>【互动·跟我念】要念的句子</Typography.Text>
-    <Typography.Text>
-      {'    表扬：<孩子念对后的鼓励>'}
-      <br />
-      {'    兜底：<孩子跑题/沉默时说的话>'}
-    </Typography.Text>
-    <Typography.Text code>【互动·奖励】引导词</Typography.Text>
-    <Typography.Text>这一整段过完发一颗星，不需要兜底。</Typography.Text>
-  </Space>
-)
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') {
-        resolve(result.slice(result.indexOf(',') + 1))
-      } else {
-        reject(new Error('读取文件失败'))
-      }
-    }
-    reader.onerror = () => reject(new Error('读取文件失败'))
-    reader.readAsDataURL(file)
-  })
-}
 
 interface Props {
   onConverted: (seed: ScriptConvertResult) => void
@@ -141,7 +97,7 @@ export default function DocxImportCard({ onConverted }: Props) {
               {
                 key: 'format',
                 label: '稿子标注格式（怎么标交互 / 选项 / 接话 / 兜底）',
-                children: DOCX_FORMAT_HINT,
+                children: <DocxFormatHint />,
               },
             ]}
           />
