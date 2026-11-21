@@ -132,7 +132,8 @@ function fakeServer(initial: PromptDetail, versions: PromptVersionItem[] = []) {
           ...state.detail,
           publishedRevision: revision,
           publishedContent: target?.content ?? state.detail.defaultContent,
-          effectiveContent: target?.content ?? state.detail.defaultContent,
+          effectiveContent:
+            target?.content ?? state.detail.defaultContent ?? '',
           source: 'db',
           draftRevision: null,
           draftContent: null,
@@ -149,7 +150,7 @@ function fakeServer(initial: PromptDetail, versions: PromptVersionItem[] = []) {
           ...state.detail,
           publishedRevision: revision,
           publishedContent: state.detail.defaultContent,
-          effectiveContent: state.detail.defaultContent,
+          effectiveContent: state.detail.defaultContent ?? '',
           source: 'db',
           draftRevision: null,
           draftContent: null,
@@ -659,5 +660,26 @@ describe('PromptEditor 通知条', () => {
     await waitFor(() =>
       expect(screen.queryByText(/草稿已保存为 r1/)).not.toBeInTheDocument(),
     )
+  })
+})
+
+describe('PromptEditor 动态角色人设', () => {
+  it('没有代码默认值时禁用「恢复代码默认值」，正文为空也能渲染', async () => {
+    setup(
+      makeDetail({
+        key: 'persona_nemo',
+        name: '角色人设：nemo',
+        isDynamic: true,
+        characterKey: 'nemo',
+        characterRegistered: true,
+        defaultContent: null,
+        effectiveContent: '',
+        source: 'none',
+      }),
+    )
+
+    await screen.findByText('角色人设：nemo')
+    expect(button('恢复代码默认值')).toBeDisabled()
+    expect(bodyTextarea()).toHaveValue('')
   })
 })

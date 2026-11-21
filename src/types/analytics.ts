@@ -1082,8 +1082,8 @@ export interface AnalyticsMeta {
 
 export type PromptCategory = 'small_model' | 'main_rules' | 'story' | 'persona'
 
-/** 生效正文来自 DB 已发布版本，还是回落到代码默认值 */
-export type PromptSource = 'db' | 'default'
+/** 生效正文来自 DB 已发布版本、代码默认值，或动态角色人设尚未发布 */
+export type PromptSource = 'db' | 'default' | 'none'
 
 /** 变量契约由服务端代码定义，DB 里的 renderSchema 仅供展示 */
 export interface PromptVariableSpec {
@@ -1102,11 +1102,17 @@ export interface PromptCatalogItem {
   description: string
   variables: PromptVariableSpec[]
   maxChars: number
-  /** 代码默认值 */
-  defaultContent: string
-  /** 运行时真正生效的正文（DB published，无则代码默认值） */
+  /** 代码默认值；动态角色人设没有默认值，为 null */
+  defaultContent: string | null
+  /** 运行时真正生效的正文（DB published，无则代码默认值；动态人设未发布为空串） */
   effectiveContent: string
   source: PromptSource
+  /** true = 由音色管理新增的角色派生的人设，不在代码常量内 */
+  isDynamic?: boolean
+  /** 动态人设关联的角色 key；内置 key 为 null */
+  characterKey?: string | null
+  /** 动态人设：角色是否仍在 character_timbre */
+  characterRegistered?: boolean | null
   publishedRevision: number | null
   draftRevision: number | null
   publishedAt: string | null
