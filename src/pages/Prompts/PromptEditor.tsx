@@ -148,10 +148,11 @@ function PromptEditorForm({
     () => diffLines(detail.effectiveContent, text),
     [detail.effectiveContent, text],
   )
-  const sameAsDefault = isSameContent(
-    detail.effectiveContent,
-    detail.defaultContent,
-  )
+  const sameAsDefault =
+    detail.defaultContent !== null &&
+    isSameContent(detail.effectiveContent, detail.defaultContent)
+  // 动态角色人设没有代码默认值：「恢复默认」必须禁用，否则点下去只会得到 400
+  const hasCodeDefault = detail.defaultContent !== null && !detail.isDynamic
 
   const submitting =
     publish.isPending || rollback.isPending || resetToDefault.isPending
@@ -180,7 +181,7 @@ function PromptEditorForm({
       target: `${promptKey} · 恢复代码默认值`,
       consequence:
         '以代码默认正文新建一个版本并立即发布；不删除模板行，审计链上留下「谁在什么时候恢复的默认」。',
-      diff: diffLines(detail.effectiveContent, detail.defaultContent),
+      diff: diffLines(detail.effectiveContent, detail.defaultContent ?? ''),
     }
   }, [modal, promptKey, detail])
 
@@ -423,10 +424,16 @@ function PromptEditorForm({
             </Button>
           </Tooltip>
           <Tooltip
-            title={sameAsDefault ? '当前生效正文已经等于代码默认值' : ''}
+            title={
+              !hasCodeDefault
+                ? '动态角色人设没有代码默认值，请从版本历史回滚'
+                : sameAsDefault
+                  ? '当前生效正文已经等于代码默认值'
+                  : ''
+            }
           >
             <Button
-              disabled={sameAsDefault || submitting}
+              disabled={!hasCodeDefault || sameAsDefault || submitting}
               onClick={() => {
                 setActionError(null)
                 onNotice(null)

@@ -86,13 +86,13 @@ export function resolvePromptState(item: {
 }
 
 /** 生效来源：DB 已发布版本 / 回落到代码默认值 */
-export function sourceLabel(source: 'db' | 'default'): {
+export function sourceLabel(source: 'db' | 'default' | 'none'): {
   text: string
   color: string
 } {
-  return source === 'db'
-    ? { text: 'DB 已发布', color: 'blue' }
-    : { text: '代码默认值', color: 'default' }
+  if (source === 'db') return { text: 'DB 已发布', color: 'blue' }
+  if (source === 'none') return { text: '未发布', color: 'orange' }
+  return { text: '代码默认值', color: 'default' }
 }
 
 /** 发布 / 回滚 / 恢复默认三个动作的按钮文案与弹窗标题 */
