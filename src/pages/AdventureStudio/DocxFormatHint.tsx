@@ -2,8 +2,7 @@ import { Space, Typography } from 'antd'
 
 /**
  * 稿子标注约定，同时写进服务端 prompt 与这里——创作者照着写，LLM 照着转。
- * 从 DocxImportCard 抽出成独立组件：列表页大卡与抽屉里的「格式」popover 共用一份，
- * 避免同一份标注说明复制成两份、早晚漂移。
+ * 抽屉里的「格式」popover 用它展示，避免同一份标注说明复制成两份、早晚漂移。
  */
 export default function DocxFormatHint() {
   return (

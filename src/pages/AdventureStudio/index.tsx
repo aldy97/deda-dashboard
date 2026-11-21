@@ -5,7 +5,6 @@ import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queri
 import type { ScriptConvertResult } from '../../types/adventureAdmin'
 import PageHeader from '../../components/PageHeader'
 import CapabilityBanner from './CapabilityBanner'
-import DocxImportCard from './DocxImportCard'
 import EpisodeTable from './EpisodeTable'
 import EpisodeDetailDrawer from './EpisodeDetailDrawer'
 import NewEpisodeDrawer from './NewEpisodeDrawer'
@@ -69,13 +68,6 @@ export default function AdventureStudio() {
               children:
                 activeKey === 'episodes' ? (
                   <>
-                    {authoring && (
-                      <DocxImportCard
-                        onConverted={(seed) =>
-                          setNewDraft({ seed, nonce: Date.now() })
-                        }
-                      />
-                    )}
                     <EpisodeTable
                       onOpen={(episodeId) =>
                         setQuery({ episodeId }, { replace: false })

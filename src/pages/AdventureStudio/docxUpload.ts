@@ -1,6 +1,6 @@
 /**
  * 把本地文件读成 base64（去掉 data: 前缀）。docx 转换接口要的是纯 base64 正文。
- * 纯函数独立成文件，供 DocxImportCard 与 DocxUploadButton 共用。
+ * 纯函数独立成文件，供抽屉里的「从 docx 填充」按钮（DocxUploadButton）使用。
  */
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

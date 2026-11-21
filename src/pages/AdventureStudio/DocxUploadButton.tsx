@@ -10,9 +10,9 @@ import DocxFormatHint from './DocxFormatHint'
 /**
  * 抽屉里的紧凑「从 docx 填充」按钮：点一下选 .docx，选完立即转换并回调结果。
  *
- * 与列表页的 DocxImportCard 走同一条接口（POST /script/convert，不落库），但这里
- * 刻意不做成那块大蓝 Alert——就是一行小控件：按钮 + 「格式」popover + 文件名 + 错误。
- * 是否覆盖已有内容由父组件（抽屉）在 onConverted 里判断：这里只负责「拿结果上报」。
+ * 走 POST /script/convert（不落库），刻意做成一行小控件——按钮 + 「格式」popover +
+ * 文件名 + 错误，而不是大块区域。是否覆盖已有内容由父组件（抽屉）在 onConverted
+ * 里判断：这里只负责「拿结果上报」。
  */
 interface Props {
   onConverted: (result: ScriptConvertResult) => void
