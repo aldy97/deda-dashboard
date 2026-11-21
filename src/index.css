@@ -23,3 +23,12 @@ body {
 .llm-failure-row > td {
   background: #fff1f0 !important;
 }
+
+/* 页面 tab 标签栏吸顶：长内容滚动时标签栏固定，不随页面滚走。
+   仅作用于拆出 Card 的标签栏（当前 /llm），后续 /feedback、/adventure 复用。 */
+.page-tabs-sticky .ant-tabs-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+}
