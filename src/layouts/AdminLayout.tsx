@@ -11,6 +11,7 @@ import {
   MessageOutlined,
   ReadOutlined,
   RobotOutlined,
+  SoundOutlined,
   TeamOutlined,
   UsergroupAddOutlined,
 } from '@ant-design/icons'
@@ -64,6 +65,8 @@ const MENU_ITEMS: MenuProps['items'] = [
       { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
       // 技术监控之后是运维配置：改的是线上模型行为，不是看数据
       { key: '/prompts', label: 'Prompt 管理', icon: <FileTextOutlined /> },
+      // 语速：改的是线上设备整体语速行为，不是看数据
+      { key: '/speech-rate', label: '语速设置', icon: <SoundOutlined /> },
     ],
   },
 ]
