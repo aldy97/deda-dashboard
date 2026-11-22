@@ -7,6 +7,7 @@ import {
   useDeviceTestAssignment,
 } from '../../api/queries'
 import ReasonDialog from './ReasonDialog'
+import DeviceTestAssignList from './DeviceTestAssignList'
 import { characterLabel } from './labels'
 
 /**
@@ -21,6 +22,8 @@ import { characterLabel } from './labels'
  */
 interface Props {
   episodeId: string
+  /** 抽屉里这一集所属的 IP；列表按它查「同一 IP 下所有集」的下发设备 */
+  characterKey: string | null
   authoring: boolean
   testStoryEnabled: boolean
 }
@@ -34,6 +37,7 @@ interface ResultNote {
 
 export default function DeviceTestAssign({
   episodeId,
+  characterKey,
   authoring,
   testStoryEnabled,
 }: Props) {
@@ -104,20 +108,27 @@ export default function DeviceTestAssign({
     )
   }
 
+  const list = <DeviceTestAssignList characterKey={characterKey} />
+
   if (!testStoryEnabled) {
     return (
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        测试冒险故事未启用：当前环境没有打开 ADVENTURE_TEST_MODE_ENABLED（prod
-        永远不可用），孩子说「测试冒险故事」不会进入测试播放。
-      </Typography.Text>
+      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          测试冒险故事未启用：当前环境没有打开 ADVENTURE_TEST_MODE_ENABLED（prod
+          永远不可用），孩子说「测试冒险故事」不会进入测试播放。
+        </Typography.Text>
+      </Space>
     )
   }
 
   if (!authoring) {
     return (
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        本环境只读，不能下发或清除测试冒险故事（这两个动作都会写审计）。
-      </Typography.Text>
+      <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          本环境只读，不能下发或清除测试冒险故事（这两个动作都会写审计）。
+        </Typography.Text>
+        {list}
+      </Space>
     )
   }
 
@@ -192,6 +203,8 @@ export default function DeviceTestAssign({
       {assignment && assignment.enabled && !assignment.assignment && queried && (
         <Typography.Text type="secondary">该设备当前没有下发任何测试故事。</Typography.Text>
       )}
+
+      {list}
 
       {action === 'assign' && (
         <ReasonDialog

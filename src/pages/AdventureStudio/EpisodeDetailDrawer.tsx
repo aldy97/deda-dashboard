@@ -223,6 +223,7 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                       <DeviceTestAssign
                         key={episodeId}
                         episodeId={episodeId}
+                        characterKey={summary?.characterKey ?? null}
                         authoring={authoring}
                         testStoryEnabled={capabilities?.testStoryEnabled ?? false}
                       />
