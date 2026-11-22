@@ -7,6 +7,21 @@ export interface VoiceSpeedConfig {
   sleepSpd: number
 }
 
+export interface VoiceSpeedApplyResultItem {
+  deviceId: string
+  mac: string
+  applied: string
+  reason?: string
+}
+
+export interface VoiceSpeedApplyResult {
+  targeted: number
+  live: number
+  deferred: number
+  skipped: number
+  results: VoiceSpeedApplyResultItem[]
+}
+
 export const VOICE_SPEED_KEY = ['analytics', 'voiceSpeed'] as const
 
 export async function fetchVoiceSpeed(): Promise<VoiceSpeedConfig> {
@@ -21,6 +36,17 @@ export async function saveVoiceSpeed(
   return resp.data as VoiceSpeedConfig
 }
 
+export async function applyVoiceSpeed(payload?: {
+  macs?: string[]
+}): Promise<VoiceSpeedApplyResult> {
+  const resp = await apiClient.post(
+    '/analytics/voice-speed/apply',
+    payload ?? {},
+    { timeout: 30000 },
+  )
+  return resp.data as VoiceSpeedApplyResult
+}
+
 export function useVoiceSpeed() {
   return useQuery({ queryKey: VOICE_SPEED_KEY, queryFn: fetchVoiceSpeed })
 }
@@ -32,4 +58,8 @@ export function useSaveVoiceSpeed() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: VOICE_SPEED_KEY }),
   })
+}
+
+export function useApplyVoiceSpeed() {
+  return useMutation({ mutationFn: applyVoiceSpeed })
 }
