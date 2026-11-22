@@ -96,13 +96,32 @@ export default function MessageDetailDrawer({
             size="small"
             bordered
             items={[
-              { key: 'id', label: 'ID', children: row.id },
+              {
+                key: 'id',
+                label: 'ID',
+                children: (
+                  <Typography.Text
+                    copyable={{ text: row.id, tooltips: ['复制 ID', '已复制'] }}
+                    style={{ fontFamily: 'monospace' }}
+                  >
+                    {row.id}
+                  </Typography.Text>
+                ),
+              },
               {
                 key: 'turnId',
-                label: '轮次 ID（turnId）',
+                label: '轮次 ID',
                 children: (
-                  <span>
-                    {row.turnId}{' '}
+                  <Space size={4} wrap>
+                    <Typography.Text
+                      copyable={{
+                        text: row.turnId,
+                        tooltips: ['复制轮次 ID', '已复制'],
+                      }}
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      {row.turnId}
+                    </Typography.Text>
                     <Button
                       size="small"
                       type="link"
@@ -110,7 +129,7 @@ export default function MessageDetailDrawer({
                     >
                       查看同一轮问答
                     </Button>
-                  </span>
+                  </Space>
                 ),
               },
               // 厂商对话 ID 暂不需要，需要时取消注释
