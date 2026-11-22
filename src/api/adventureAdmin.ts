@@ -5,6 +5,7 @@ import type {
   AuditListResponse,
   AuditQuery,
   CapabilitiesResponse,
+  CharacterTestDevicesResponse,
   CreateEpisodeRequest,
   CreateEpisodeResult,
   DeviceTestAssignment,
@@ -308,6 +309,16 @@ export async function fetchDeviceTestAssignment(
 ): Promise<DeviceTestAssignment> {
   const resp = await apiClient.get(`${BASE}/device-test/assignment/${deviceId}`)
   return resp.data as DeviceTestAssignment
+}
+
+/** 按 IP 列出当前所有被下发的样机；prod（未启用）返回 enabled=false 与空列表 */
+export async function fetchCharacterTestDevices(
+  characterKey: string,
+): Promise<CharacterTestDevicesResponse> {
+  const resp = await apiClient.get(`${BASE}/device-test/assignments`, {
+    params: { characterKey },
+  })
+  return resp.data as CharacterTestDevicesResponse
 }
 
 // ---- docx 稿子转换（仅 staging）----

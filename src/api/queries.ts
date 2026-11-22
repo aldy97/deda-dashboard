@@ -64,6 +64,7 @@ import {
   exportBundle,
   fetchAudit,
   fetchCapabilities,
+  fetchCharacterTestDevices,
   fetchDeviceTestAssignment,
   fetchEpisode,
   fetchEpisodeImpact,
@@ -893,6 +894,22 @@ export function useDeviceTestAssignment(deviceId: string | null) {
     queryKey: [...ADVENTURE_QUERY_ROOT, 'device-test-assignment', deviceId],
     queryFn: () => fetchDeviceTestAssignment(deviceId!),
     enabled: deviceId !== null && deviceId.trim().length > 0,
+  })
+}
+
+/** 按 IP 读当前所有被下发的样机；characterKey 为空或环境未启用时不发请求 */
+export function useCharacterTestDevices(
+  characterKey: string | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [
+      ...ADVENTURE_QUERY_ROOT,
+      'character-test-devices',
+      characterKey,
+    ],
+    queryFn: () => fetchCharacterTestDevices(characterKey!),
+    enabled: enabled && characterKey !== null,
   })
 }
 
