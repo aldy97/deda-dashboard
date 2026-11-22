@@ -2,6 +2,7 @@ import { Alert, Table, Tag } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useLlmSlowCalls } from '../../api/queries'
+import InfoTip from '../../components/InfoTip'
 import { formatMs, sceneLabel } from './scenes'
 
 /**
@@ -56,9 +57,14 @@ export default function SlowCallsTable({
           render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
         },
         {
-          title: '场景',
+          title: (
+            <>
+              场景
+              <InfoTip title="场景 = 模型调用点，完整语义见上方「分场景汇总」的场景名问号。本表只统计成功调用，失败调用请到「最近失败明细」查看。" />
+            </>
+          ),
           dataIndex: 'scene',
-          width: 130,
+          width: 150,
           render: sceneLabel,
         },
         {
