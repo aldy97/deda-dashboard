@@ -5,7 +5,7 @@ interface PageHeaderProps {
   title: string
   /** 标题下方的次级说明；缺省不渲染，保证结构不因漏传而漂移。 */
   description?: ReactNode
-  /** 右侧操作区（日期选择、刷新、环境标签等）；缺省不渲染。 */
+  /** 右侧操作区（日期选择、刷新等）；缺省不渲染。 */
   actions?: ReactNode
 }
 

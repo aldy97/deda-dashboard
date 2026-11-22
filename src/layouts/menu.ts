@@ -28,7 +28,7 @@ export type OpsPath = (typeof OPS_PATHS)[number]
 export const OPS_ROUTE_META: Record<OpsPath, { title: string }> = {
   '/llm': { title: '模型监控' },
   '/adventure': { title: '冒险内容' },
-  '/prompts': { title: 'Prompt 管理' },
+  '/prompts': { title: '提示词管理' },
   '/voice': { title: '语速与音色' },
 }
 

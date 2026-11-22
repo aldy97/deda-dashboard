@@ -197,7 +197,7 @@ query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm
    的 `isSuperAdmin`），**不是** `authoring`：`authoring=false` 只表示当前环境只读
    （`CONTENT_ADMIN_PROFILE`），查看入口照常可用。`adventure-content` scope 已废弃，
    不再单独构成入口。
-   运维组（模型监控 / 冒险内容 / Prompt 管理 / 语速与音色）的路由统一由
+   运维组（模型监控 / 冒险内容 / 提示词管理 / 语速与音色）的路由统一由
    `src/components/access/OpsGate.tsx` 包裹：受限时 **children 不挂载**，只渲染
    静态骨架 + 雾层 + 原因。路径清单在 `src/layouts/menu.ts` 的 `OPS_PATHS` /
    `OPS_ROUTE_META`，新增运维页时同时改这两处与路由表。菜单项对普通 admin
