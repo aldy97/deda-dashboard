@@ -8,7 +8,7 @@ export default function Voice() {
     <>
       <PageHeader
         title="语速与音色"
-        description="全局语速两个倍数，以及每个 IP/角色使用的音色。改完下一轮对话即生效，无需重启。"
+        description="全局语速两个倍数，以及每个 IP/角色使用的音色。保存后下一轮对话生效；可立即下发到在线设备。"
       />
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         <SpeedSection />
