@@ -51,6 +51,8 @@ const MODES_RESPONSE: MessageModesResponse = {
   modes: [
     { key: 'free_chat', name: '自由对话', messageCount: 12 },
     { key: 'free_story', name: '自由故事', messageCount: 3 },
+    // 服务端 MODE_LABELS 把 adventure_story 叫「每日冒险」，前端统一文案是「冒险故事」
+    { key: 'adventure_story', name: '每日冒险', messageCount: 7 },
   ],
 }
 
@@ -154,6 +156,17 @@ describe('消息明细页 · mode 平级化', () => {
 
     expect(callsTo('/analytics/messages/modes').length).toBeGreaterThan(0)
     expect(screen.queryByText('消息列表加载失败')).toBeNull()
+  })
+
+  it('对话模式筛选用前端统一文案：服务端的「每日冒险」显示为「冒险故事」', async () => {
+    renderPage()
+    await screen.findByText('自由故事')
+
+    const modeSelect = screen.getByText('对话模式').closest('.ant-select')
+    fireEvent.mouseDown(modeSelect as Element)
+
+    expect(await screen.findByText('冒险故事（7）')).toBeInTheDocument()
+    expect(screen.queryByText('每日冒险（7）')).toBeNull()
   })
 
   it('选中对话模式后点查询：mode 是唯一进查询参数的模式维度', async () => {
