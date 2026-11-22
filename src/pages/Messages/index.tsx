@@ -188,7 +188,9 @@ export default function Messages() {
             value={draft.mode}
             onChange={(v) => setDraft({ ...draft, mode: v })}
             options={(modeOptions?.modes ?? []).map((m) => ({
-              label: `${m.name}（${m.messageCount}）`,
+              // 服务端 MODE_LABELS 文案与前端可能不一致（adventure_story 就是如此），
+              // 筛选器的显示名统一走前端 modeLabel，与列表「模式」列保持同一份映射
+              label: `${modeLabel(m.key)}（${m.messageCount}）`,
               value: m.key,
             }))}
           />

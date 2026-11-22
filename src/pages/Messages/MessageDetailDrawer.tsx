@@ -95,6 +95,8 @@ export default function MessageDetailDrawer({
             column={1}
             size="small"
             bordered
+            // 值列的长 UUID 会把标签列压到一字一行，nowrap 让标签列按整段文字取宽
+            styles={{ label: { whiteSpace: 'nowrap' } }}
             items={[
               {
                 key: 'id',

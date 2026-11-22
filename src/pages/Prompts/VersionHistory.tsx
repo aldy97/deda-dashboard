@@ -69,6 +69,8 @@ export default function VersionHistory({
     {
       title: '改动说明',
       dataIndex: 'changeNote',
+      // 时间戳列会把这一列挤成一字一行，定宽 + 横向滚动保住可读性
+      width: 240,
       render: (note: string | null) =>
         note ? (
           <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>{note}</Typography.Text>
@@ -130,6 +132,9 @@ export default function VersionHistory({
     <Table<PromptVersionItem>
       rowKey="revision"
       size="small"
+      tableLayout="fixed"
+      // 列宽合计 1020 + 展开列 48；容器更窄时横向滚动，不压缩列宽
+      scroll={{ x: 1068 }}
       loading={loading}
       columns={columns}
       dataSource={versions}
