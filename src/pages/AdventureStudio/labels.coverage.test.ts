@@ -96,17 +96,32 @@ describe('labels · 枚举展示映射', () => {
 })
 
 describe('labels · 格式化', () => {
+  // CI 跑 UTC、本地是 Asia/Shanghai：期望值按运行环境算，不硬编码钟点
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const localDateTime = (iso: string) => {
+    const d = new Date(iso)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+  const localDate = (iso: string) => {
+    const d = new Date(iso)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  }
+
   it('fmtDateTime：空值给破折号，合法时间按秒格式化，非法输入原样返回', () => {
     expect(fmtDateTime(null)).toBe('—')
     expect(fmtDateTime(undefined)).toBe('—')
     expect(fmtDateTime('')).toBe('—')
-    expect(fmtDateTime('2026-11-20T10:00:00+08:00')).toBe('2026-11-20 10:00:00')
+    expect(fmtDateTime('2026-11-20T10:00:00+08:00')).toBe(
+      localDateTime('2026-11-20T10:00:00+08:00'),
+    )
     expect(fmtDateTime('not-a-date')).toBe('not-a-date')
   })
 
   it('fmtDate：空值给破折号，合法时间按天格式化，非法输入原样返回', () => {
     expect(fmtDate(null)).toBe('—')
-    expect(fmtDate('2026-11-20T10:00:00+08:00')).toBe('2026-11-20')
+    expect(fmtDate('2026-11-20T10:00:00+08:00')).toBe(
+      localDate('2026-11-20T10:00:00+08:00'),
+    )
     expect(fmtDate('nonsense')).toBe('nonsense')
   })
 
