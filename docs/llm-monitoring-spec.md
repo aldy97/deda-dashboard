@@ -20,6 +20,7 @@
 | small | 同上 | `sleep_config_extract` | sleep-configs | 哄睡配置字段抽取 |
 | main | deepseek-flash | `chat_main` | 主对话链路 | 正式回答（流式） |
 | main | 同上 | `parent_report` | learning-stats/parent-report-generator | 家长日报生成 |
+| main | 同上 | `adventure_script_convert` | adventure-admin/script-import | docx 故事稿转结构化草稿（authoring 预览，不落库） |
 
 **风险特征**：小模型大量场景为静默降级设计（fail-open / 失败跳过 / 解析失败返回 null），
 故障不表现为用户报错而表现为质量悄悄下降，必须有指标监控。当前零指标（`quality/llm-usage` 一期恒 501）。
@@ -31,7 +32,8 @@
 model LlmUsageLog {
   id               String   @id @default(uuid())
   scene            String   // safety_l2 / intent_classify / filler / adventure_interaction
-                            // / memory_extract / sleep_config_extract / chat_main / parent_report
+                            // / adventure_script_convert / memory_extract / sleep_config_extract
+                            // / chat_main / parent_report
   model            String   // 实际模型名，如 qwen-flash / deepseek-flash
   tier             String   // small / main（冗余字段，查询方便）
   success          Boolean
@@ -57,7 +59,7 @@ model LlmUsageLog {
 
 在 `LlmService.complete()` 与 `completeStream()` 出入口统一埋点：
 
-1. `LlmCompleteOptions` 新增 **`scene: string` 必填**参数——现有 8 个调用点各自传入场景值；新增调用点编译期强制传值。
+1. `LlmCompleteOptions` 新增 **`scene: string` 必填**参数——现有各调用点各自传入场景值；新增调用点编译期强制传值。
 2. `latencyMs`：请求开始 → 完整响应结束。
 3. **`firstTokenMs`（TTFT）**：仅 `completeStream` 记录——请求开始 → 收到首个 content chunk；`complete()` 恒 null。
 4. token 取响应 `usage`（DashScope qwen-flash 流式已验证支持 `stream_options.include_usage`；DeepSeek 网关待复验，拿不到则 null，不影响其他字段）。
@@ -113,7 +115,7 @@ GET /analytics/llm/recent-failures?page=1&pageSize=20&scene=
 
 新增菜单「模型监控」`/llm`（位于「消息明细」之后），区间控件（默认近 7 天）驱动整页：
 
-1. **场景说明条**：8 个场景的中文名 + 一句话作用（静态文案，帮助读盘）
+1. **场景说明条**：9 个场景的中文名 + 一句话作用（静态文案，帮助读盘）
 2. **场景总览表**：每场景一行——tier 标签（小模型/主模型）、调用量、成功率（Progress 条，fail-open 场景带「静默降级」徽标）、延迟 P50/P90、**首包 P50/P90**（非流式场景显示「—」）、总 token、失败 Top1 原因
 3. **趋势图**：按日成功率 + 调用量双轴折线，可切场景（含「全部」）；流式场景可叠加首包均值线
 4. **最近失败明细表**：服务端分页；失败原因 Tag 着色（timeout 橙 / rate_limit 红 / parse_error 紫 / upstream_error 灰）

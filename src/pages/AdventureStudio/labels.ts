@@ -93,6 +93,8 @@ const AUDIT_ACTION_META: Record<string, Meta> = {
   self_check_failed: { label: '发布自检漂移', color: 'red' },
   recovery_sweep: { label: '手动巡检', color: 'purple' },
   recovery_breaker_reset: { label: '解除熔断', color: 'purple' },
+  device_test_assign: { label: '下发测试故事', color: 'cyan' },
+  device_test_clear: { label: '清除测试故事', color: 'cyan' },
 }
 
 export function auditActionMeta(action: string): Meta {
