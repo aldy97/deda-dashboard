@@ -78,4 +78,13 @@ describe('favicon 资源', () => {
     expect(header.height).toBe(180)
     expect([2, 6]).toContain(header.colorType)
   })
+
+  it('侧栏 logo 是 64x64 的 8bit RGBA', () => {
+    expect(pngHeader('src/assets/logo-header.png')).toEqual({
+      width: 64,
+      height: 64,
+      bitDepth: 8,
+      colorType: 6,
+    })
+  })
 })

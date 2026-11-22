@@ -14,7 +14,7 @@ import { selectedMenuKey } from './menu'
  *
  * 环境标签挂在 Sider 标题旁，是管理员判断「我在改哪个环境」的唯一常驻提示，
  * 所以这里盯三件事：
- * 1. 标签只信 /analytics/meta，请求失败或还在路上都是「未知环境」（fail-closed）；
+ * 1. 标签只信 /analytics/meta：请求失败落「未知环境」，请求中暂时隐藏（都 fail-closed）；
  * 2. 菜单里真的有 Prompt 管理，点了能跳到 /prompts；
  * 3. 退出登录清 localStorage 的 token。
  */
@@ -80,7 +80,7 @@ beforeEach(() => {
 })
 
 describe('AdminLayout 标题与环境标签', () => {
-  it('Sider 里「Deda Dashboard」旁边挂环境标签', async () => {
+  it('Sider 里 logo、标题、环境标签在同一行', async () => {
     stubMeta({
       nodeEnv: 'staging',
       promptWriteEnabled: true,
@@ -88,9 +88,14 @@ describe('AdminLayout 标题与环境标签', () => {
     })
     renderLayout()
 
-    expect(screen.getByText('Deda Dashboard')).toBeInTheDocument()
-    const tag = screen.getByTestId('env-tag')
+    const header = screen.getByTestId('brand-header')
+    expect(header).toHaveStyle('flex-wrap: nowrap')
+    expect(header).toContainElement(screen.getByTestId('brand-logo'))
+    expect(header).toContainElement(screen.getByText('Deda Dashboard'))
+
+    const tag = await screen.findByTestId('env-tag')
     await waitFor(() => expect(tag.dataset.tone).toBe('staging'))
+    expect(header).toContainElement(tag)
     expect(tag).toHaveTextContent('测试')
   })
 
@@ -106,7 +111,7 @@ describe('AdminLayout 标题与环境标签', () => {
     })
     renderLayout()
 
-    const tag = screen.getByTestId('env-tag')
+    const tag = await screen.findByTestId('env-tag')
     await waitFor(() => expect(tag.dataset.tone).toBe(tone))
     expect(tag).toHaveTextContent(text)
   })
@@ -115,19 +120,17 @@ describe('AdminLayout 标题与环境标签', () => {
     stubMeta(null, new Error('网络不通'))
     renderLayout()
 
-    const tag = screen.getByTestId('env-tag')
-    // tone 在 loading 与 failed 两态都是 unknown，必须等文案落定
+    const tag = await screen.findByTestId('env-tag')
     await waitFor(() => expect(tag).toHaveTextContent('未知环境'))
     expect(tag.dataset.tone).toBe('unknown')
   })
 
-  it('meta 还在路上：显示「环境识别中」而不是空白或默认环境', () => {
+  it('meta 还在路上：环境标签暂时隐藏', () => {
     stubMeta(null)
     renderLayout()
 
-    const tag = screen.getByTestId('env-tag')
-    expect(tag.dataset.tone).toBe('unknown')
-    expect(tag).toHaveTextContent('环境识别中')
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
+    expect(screen.getByText('Deda Dashboard')).toBeInTheDocument()
   })
 })
 

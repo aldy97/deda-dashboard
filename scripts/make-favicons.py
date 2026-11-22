@@ -9,6 +9,7 @@
 母版要求：RGBA PNG，背景已是透明（四角 alpha=0）。脚本会按 alpha 包围盒
 裁切、加 8% 透明内边距、补成正方形，再导出 16/32/48 PNG、多尺寸 ICO，
 以及 180×180 的 apple-touch-icon（品牌米白 #FDFDFD 不透明底）。
+同时导出侧栏标题用的 64×64 透明 logo 到 src/assets/logo-header.png。
 """
 
 from pathlib import Path
@@ -19,7 +20,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets/brand/logo-transparent.png"
 PUBLIC = ROOT / "public"
+SRC_ASSETS = ROOT / "src/assets"
 APPLE_BG = (253, 253, 253)
+HEADER_SIZE = 64
 
 
 def square_master() -> Image.Image:
@@ -64,7 +67,12 @@ def main() -> None:
         PUBLIC / "apple-touch-icon.png"
     )
 
-    print(f"favicons written to {PUBLIC}")
+    SRC_ASSETS.mkdir(parents=True, exist_ok=True)
+    master.resize((HEADER_SIZE, HEADER_SIZE), Image.LANCZOS).save(
+        SRC_ASSETS / "logo-header.png"
+    )
+
+    print(f"favicons written to {PUBLIC}; header logo to {SRC_ASSETS}")
 
 
 if __name__ == "__main__":
