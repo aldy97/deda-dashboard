@@ -30,7 +30,7 @@ const { Sider, Header, Content } = Layout
  * 菜单按阅读动线分四组：概览与增长 → 用户与体验 → 资产与明细 → 运维与配置。
  * 分组只是视觉分隔（antd Menu 的 group），不加折叠层级、不改路由。
  *
- * 运维与配置是**全部破坏性操作**的入口（模型监控、冒险内容、Prompt 管理、语速设置），
+ * 运维与配置是**全部破坏性操作**的入口（模型监控、冒险内容、提示词管理、语速设置），
  * 只对 superadmin 开放。普通 admin 仍然看得到、点得进——进去后由路由层的 OpsGate
  * 渲染雾与原因；隐藏菜单会让人以为功能不存在，反而来问「为什么没有这个页面」。
  */
@@ -79,7 +79,7 @@ function buildMenuItems(locked: boolean): MenuProps['items'] {
         { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
         // 冒险内容改的是线上内容快照，性质与下面的配置项相同，不再属于「用户与体验」
         { key: '/adventure', label: '冒险内容', icon: <CompassOutlined /> },
-        { key: '/prompts', label: 'Prompt 管理', icon: <FileTextOutlined /> },
+        { key: '/prompts', label: '提示词管理', icon: <FileTextOutlined /> },
         { key: '/voice', label: '语速与音色', icon: <AudioOutlined /> },
       ],
     },
@@ -90,7 +90,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   // 环境标签只信服务端 meta：同一份 dist 会部署到三个环境，构建期常量给不出答案。
-  // 取不到就是「未知环境」，Prompt 管理页据此 fail-closed 禁用全部写操作。
+  // 取不到就是「未知环境」，提示词管理页据此 fail-closed 禁用全部写操作。
   const metaQuery = useAnalyticsMeta()
   const meta = metaQuery.data ?? null
   // meta 还没回来时不下结论：既不加锁标也不放行——OpsGate 自己按 fail-closed 处理。

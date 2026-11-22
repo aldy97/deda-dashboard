@@ -10,12 +10,12 @@ import AdminLayout from './AdminLayout'
 import { selectedMenuKey } from './menu'
 
 /**
- * 布局层契约：环境标签与 Prompt 管理入口。
+ * 布局层契约：环境标签与 提示词管理入口。
  *
  * 环境标签挂在 Sider 标题旁，是管理员判断「我在改哪个环境」的唯一常驻提示，
  * 所以这里盯三件事：
  * 1. 标签只信 /analytics/meta：请求失败落「未知环境」，请求中暂时隐藏（都 fail-closed）；
- * 2. 菜单里真的有 Prompt 管理，点了能跳到 /prompts；
+ * 2. 菜单里真的有 提示词管理，点了能跳到 /prompts；
  * 3. 退出登录清 localStorage 的 token。
  */
 vi.mock('../api/client', () => ({
@@ -135,7 +135,7 @@ describe('AdminLayout 标题与环境标签', () => {
 })
 
 describe('AdminLayout 菜单与路由', () => {
-  it('菜单里有「Prompt 管理」，点击后路由变 /prompts 并挂载对应页面', async () => {
+  it('菜单里有「提示词管理」，点击后路由变 /prompts 并挂载对应页面', async () => {
     stubMeta({
       nodeEnv: 'staging',
       promptWriteEnabled: true,
@@ -143,7 +143,7 @@ describe('AdminLayout 菜单与路由', () => {
     })
     renderLayout()
 
-    const item = screen.getByRole('menuitem', { name: /Prompt 管理/ })
+    const item = screen.getByRole('menuitem', { name: /提示词管理/ })
     await userEvent.click(item)
 
     await waitFor(() =>
@@ -155,7 +155,7 @@ describe('AdminLayout 菜单与路由', () => {
     expect(item).toHaveClass('ant-menu-item-selected')
   })
 
-  it('直接进 /prompts 时菜单高亮 Prompt 管理', async () => {
+  it('直接进 /prompts 时菜单高亮 提示词管理', async () => {
     stubMeta({
       nodeEnv: 'production',
       promptWriteEnabled: false,
@@ -165,7 +165,7 @@ describe('AdminLayout 菜单与路由', () => {
 
     expect(screen.getByTestId('page-prompts')).toBeInTheDocument()
     expect(
-      screen.getByRole('menuitem', { name: /Prompt 管理/ }),
+      screen.getByRole('menuitem', { name: /提示词管理/ }),
     ).toHaveClass('ant-menu-item-selected')
   })
 
@@ -262,7 +262,7 @@ describe('AdminLayout 菜单分组', () => {
       '消息明细',
       '模型监控',
       '冒险内容',
-      'Prompt 管理',
+      '提示词管理',
       '语速与音色',
     ]
     const items = screen.getAllByRole('menuitem')
@@ -290,7 +290,7 @@ describe('AdminLayout 菜单分组', () => {
     ).toBeInTheDocument()
     // 菜单项不能禁用：点不进去就看不到「雾 + 原因」
     expect(
-      screen.getByRole('menuitem', { name: /Prompt 管理/ }),
+      screen.getByRole('menuitem', { name: /提示词管理/ }),
     ).not.toHaveAttribute('aria-disabled', 'true')
   })
 

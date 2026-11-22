@@ -48,7 +48,7 @@ const child = () => <div data-testid="ops-child">真实页面</div>
 
 function renderGate() {
   return render(
-    <OpsGate title="Prompt 管理" description="线上 prompt 的草稿与发布">
+    <OpsGate title="提示词管理" description="线上 prompt 的草稿与发布">
       {child()}
     </OpsGate>,
   )
@@ -80,7 +80,7 @@ describe('OpsGate', () => {
     expect(screen.getByText(/ops/)).toBeInTheDocument()
     expect(screen.getByText(/superadmin/)).toBeInTheDocument()
     // 标题仍然显示，admin 知道自己点进了哪个 tab
-    expect(screen.getByText('Prompt 管理')).toBeInTheDocument()
+    expect(screen.getByText('提示词管理')).toBeInTheDocument()
   })
 
   it('meta 加载中：显示确认中，不渲染真实页面', () => {
