@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, InputNumber, Modal, Popconfirm, message } from 'antd'
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Row,
+  Space,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd'
 import {
   useApplyVoiceSpeed,
   useSaveVoiceSpeed,
@@ -13,9 +26,9 @@ import type {
 const SPD_MIN = 0.5
 const SPD_MAX = 2
 const SPD_STEP = 0.05
-const SPD_HINT = '取值范围 0.5–2.0 倍，步进 0.05'
+const SPD_HINT = '两个语速取值范围均为 0.5–2.0 倍，步进 0.05'
 
-/** 语速区块：全局两值 + 立即下发到在线实例 */
+/** 语速区块：卡片内的全局两值 + 立即下发到在线实例 */
 export default function SpeedSection() {
   const { data, isPending } = useVoiceSpeed()
   const save = useSaveVoiceSpeed()
@@ -27,7 +40,15 @@ export default function SpeedSection() {
     if (data) form.setFieldsValue(data)
   }, [data, form])
 
+  const onValuesChange = (_: unknown, all: Partial<VoiceSpeedConfig>) => {
+    setDirty(
+      Number(all.normalSpd) !== Number(data?.normalSpd) ||
+        Number(all.sleepSpd) !== Number(data?.sleepSpd),
+    )
+  }
+
   const onFinish = async (values: VoiceSpeedConfig) => {
+    if (!dirty) return
     try {
       await save.mutateAsync(values)
       setDirty(false)
@@ -68,80 +89,119 @@ export default function SpeedSection() {
     }
   }
 
-  return (
-    <Form
-      form={form}
-      layout="inline"
-      disabled={isPending}
-      onValuesChange={() => setDirty(true)}
-      onFinish={onFinish}
+  const applyBlocked = isPending || dirty || save.isPending || apply.isPending
+  const applyBlockedReason = isPending
+    ? '正在读取当前配置'
+    : dirty
+      ? '有未保存的改动，先保存再下发'
+      : undefined
+
+  const applyButton = (
+    <Popconfirm
+      title="立即切换所有在线设备的语速？正在对话的设备会当场变化。"
+      okText="确认"
+      cancelText="取消"
+      okButtonProps={{ loading: apply.isPending }}
+      onConfirm={onApply}
+      disabled={applyBlocked}
     >
-      <Form.Item
-        name="normalSpd"
-        label="非哄睡语速"
-        extra={SPD_HINT}
-        rules={[
-          { required: true, message: '请输入非哄睡语速' },
-          {
-            type: 'number',
-            min: SPD_MIN,
-            max: SPD_MAX,
-            message: '取值范围 0.5–2.0',
-          },
-        ]}
+      <Button disabled={applyBlocked} loading={apply.isPending}>
+        立即下发到在线设备
+      </Button>
+    </Popconfirm>
+  )
+
+  return (
+    <Card
+      title="语速设置"
+      extra={
+        applyBlockedReason ? (
+          <Tooltip title={applyBlockedReason}>
+            <span>{applyButton}</span>
+          </Tooltip>
+        ) : (
+          applyButton
+        )
+      }
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        disabled={isPending}
+        onValuesChange={onValuesChange}
+        onFinish={onFinish}
       >
-        <InputNumber
-          min={SPD_MIN}
-          max={SPD_MAX}
-          step={SPD_STEP}
-          precision={2}
-          suffix="倍"
-        />
-      </Form.Item>
-      <Form.Item
-        name="sleepSpd"
-        label="哄睡语速"
-        extra={SPD_HINT}
-        rules={[
-          { required: true, message: '请输入哄睡语速' },
-          {
-            type: 'number',
-            min: SPD_MIN,
-            max: SPD_MAX,
-            message: '取值范围 0.5–2.0',
-          },
-        ]}
-      >
-        <InputNumber
-          min={SPD_MIN}
-          max={SPD_MAX}
-          step={SPD_STEP}
-          precision={2}
-          suffix="倍"
-        />
-      </Form.Item>
-      <Form.Item>
-        <Button type="primary" htmlType="submit" loading={save.isPending}>
-          保存
-        </Button>
-      </Form.Item>
-      <Form.Item>
-        <Popconfirm
-          title="立即切换所有在线设备的语速？正在对话的设备会当场变化。"
-          okText="确认"
-          cancelText="取消"
-          okButtonProps={{ loading: apply.isPending }}
-          onConfirm={onApply}
-          disabled={dirty || save.isPending || apply.isPending}
-        >
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+          {SPD_HINT}
+        </Typography.Paragraph>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="normalSpd"
+              label="非哄睡语速"
+              rules={[
+                { required: true, message: '请输入非哄睡语速' },
+                {
+                  type: 'number',
+                  min: SPD_MIN,
+                  max: SPD_MAX,
+                  message: '取值范围 0.5–2.0',
+                },
+              ]}
+            >
+              <InputNumber
+                min={SPD_MIN}
+                max={SPD_MAX}
+                step={SPD_STEP}
+                precision={2}
+                suffix="倍"
+                style={{ width: 160 }}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="sleepSpd"
+              label="哄睡语速"
+              rules={[
+                { required: true, message: '请输入哄睡语速' },
+                {
+                  type: 'number',
+                  min: SPD_MIN,
+                  max: SPD_MAX,
+                  message: '取值范围 0.5–2.0',
+                },
+              ]}
+            >
+              <InputNumber
+                min={SPD_MIN}
+                max={SPD_MAX}
+                step={SPD_STEP}
+                precision={2}
+                suffix="倍"
+                style={{ width: 160 }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Space wrap>
           <Button
-            disabled={dirty || save.isPending || apply.isPending}
-            loading={apply.isPending}
+            type="primary"
+            htmlType="submit"
+            loading={save.isPending}
+            disabled={!dirty || isPending || save.isPending}
           >
-            立即下发到在线设备
+            保存
           </Button>
-        </Popconfirm>
-      </Form.Item>
-    </Form>
+          <Typography.Text type="secondary">
+            {isPending
+              ? '正在读取当前配置…'
+              : dirty
+                ? '有未保存的改动，保存后下一轮对话生效'
+                : '当前与服务端一致'}
+          </Typography.Text>
+        </Space>
+      </Form>
+    </Card>
   )
 }
