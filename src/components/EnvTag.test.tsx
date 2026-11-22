@@ -4,7 +4,7 @@ import EnvTag from './EnvTag'
 
 /**
  * 组件只考核渲染口径；环境判定本身在 env.test.ts。
- * 重点是 fail-closed 的两个态（请求中 / 请求失败）都不许退回上一个已知值。
+ * 加载中隐藏标签；请求失败落「未知环境」；两态都不许退回上一个已知值。
  */
 describe('EnvTag 组件', () => {
   it.each([
@@ -28,12 +28,10 @@ describe('EnvTag 组件', () => {
     expect(screen.getByTestId('env-tag')).toHaveStyle('font-weight: 400')
   })
 
-  it('请求中：显示「环境识别中」且按未知环境处理（fail-closed）', () => {
+  it('请求中：暂时隐藏标签，不显示任何看似结论的环境文案', () => {
     render(<EnvTag loading />)
 
-    const tag = screen.getByTestId('env-tag')
-    expect(tag).toHaveTextContent('环境识别中')
-    expect(tag.getAttribute('data-tone')).toBe('unknown')
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 
   it('请求失败：显示「未知环境」，不退回上一个已知值', () => {

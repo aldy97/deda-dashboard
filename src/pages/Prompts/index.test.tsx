@@ -250,13 +250,11 @@ describe('Prompts 环境识别与写闸口', () => {
     expect(screen.queryByText('当前为生产环境')).not.toBeInTheDocument()
   })
 
-  it('meta 未返回时先渲染「环境识别中」，不抢答一个环境', () => {
+  it('meta 未返回时暂时隐藏环境标签，不抢答一个环境', () => {
     stubServer({ meta: null })
     renderPage()
 
-    const tag = screen.getByTestId('env-tag')
-    expect(tag.dataset.tone).toBe('unknown')
-    expect(tag).toHaveTextContent('环境识别中')
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 })
 

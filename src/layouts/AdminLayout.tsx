@@ -22,6 +22,7 @@ import { useAnalyticsMeta } from '../api/meta'
 import EnvTag from '../components/EnvTag'
 import { isSuperAdmin } from '../components/access/role'
 import { selectedMenuKey } from './menu'
+import logoHeader from '../assets/logo-header.png'
 
 const { Sider, Header, Content } = Layout
 
@@ -103,8 +104,9 @@ export default function AdminLayout() {
 
   return (
     <Layout style={{ height: '100vh' }}>
-      <Sider theme="dark" width={200} style={{ overflowY: 'auto' }}>
+      <Sider theme="dark" width={240} style={{ overflowY: 'auto' }}>
         <div
+          data-testid="brand-header"
           style={{
             color: '#fff',
             fontWeight: 600,
@@ -115,11 +117,30 @@ export default function AdminLayout() {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 6,
-            // Sider 只有 200px：「未知环境」四个字放不下时换行，不截断
-            flexWrap: 'wrap',
+            // logo + 标题 + 环境标签必须同一行；实测「生产」标签整行约 230px，
+            // 240px 留出字体回退余量，不会把标签挤到第二行
+            flexWrap: 'nowrap',
           }}
         >
-          <span>Deda Dashboard</span>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              minWidth: 0,
+            }}
+          >
+            <img
+              data-testid="brand-logo"
+              src={logoHeader}
+              alt=""
+              aria-hidden="true"
+              width={28}
+              height={28}
+              style={{ display: 'block', flex: '0 0 auto' }}
+            />
+            <span style={{ whiteSpace: 'nowrap' }}>Deda Dashboard</span>
+          </span>
           <EnvTag
             nodeEnv={meta?.nodeEnv}
             loading={metaQuery.isPending}
