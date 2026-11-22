@@ -102,3 +102,23 @@ describe('MessageDetailDrawer 复制入口', () => {
     expect(onViewTurn).toHaveBeenCalledWith('t-1')
   })
 })
+
+/**
+ * 标签列曾被值列的长 UUID 挤到一字一行（2026-11-22 线上截图）。
+ * jsdom 没有布局引擎，这里守的是根因约束：标签单元格必须声明 nowrap，
+ * 浏览器才会把标签列的 min-content 撑到整段标签宽度。
+ */
+describe('MessageDetailDrawer 标签排版', () => {
+  it('每个字段标签单元格都禁止换行', async () => {
+    renderDrawer({ message: makeMessage() })
+    expect(await screen.findByText('轮次 ID')).toBeInTheDocument()
+
+    const labels = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-descriptions-item-label'),
+    )
+    expect(labels.length).toBeGreaterThanOrEqual(10)
+    labels.forEach((label) => {
+      expect(label).toHaveStyle({ whiteSpace: 'nowrap' })
+    })
+  })
+})
