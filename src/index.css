@@ -19,6 +19,24 @@ body {
   background: #f5f6f8;
 }
 
+/* 总览 KPI 卡：整卡即出口，箭头只在悬停 / 键盘聚焦时显形 */
+.kpi-card {
+  display: block;
+  height: 100%;
+}
+
+.kpi-card .kpi-card-arrow {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.kpi-card:hover .kpi-card-arrow,
+.kpi-card:focus-visible .kpi-card-arrow {
+  opacity: 1;
+}
+
 /* 失败记录行红底（模型监控-最近失败明细 / 链路失败节点） */
 .llm-failure-row > td {
   background: #fff1f0 !important;

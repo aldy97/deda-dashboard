@@ -103,8 +103,9 @@ describe('总览页 · 跨页出口', () => {
   it('KPI 卡渲染出来，设备类指标指向 /fleet', async () => {
     renderPage()
     expect(await screen.findByText('累计激活设备')).toBeTruthy()
+    // 整卡即出口：链接包住卡片，所以按可访问名找，而不是在卡片内部找
     expect(
-      cardOf('累计激活设备').querySelector('a[href="/fleet"]'),
-    ).toBeTruthy()
+      screen.getByRole('link', { name: /累计激活设备.*设备舰队/ }),
+    ).toHaveAttribute('href', '/fleet')
   })
 })

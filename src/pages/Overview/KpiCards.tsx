@@ -1,12 +1,10 @@
+import type { MouseEvent } from 'react'
+import { ArrowRightOutlined } from '@ant-design/icons'
 import { Card, Col, Row, Statistic, Tag, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import type { OverviewResponse } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
-
-function pct(value: number | null): string {
-  if (value === null) return '-'
-  return `${(value * 100).toFixed(1)}%`
-}
+import { PAGE_LABELS, kpiDefs, type KpiFooter } from './kpi-defs'
 
 /** 环比标签：正绿负红，null/0 灰色 */
 function DeltaTag({ value }: { value: number | null }) {
@@ -25,162 +23,61 @@ function DeltaTag({ value }: { value: number | null }) {
   )
 }
 
+function Footer({ footer }: { footer: KpiFooter }) {
+  if (footer.kind === 'delta') return <DeltaTag value={footer.value} />
+  return <Tag style={{ marginTop: 8 }}>估算口径</Tag>
+}
+
+/**
+ * 整卡即出口：说明图标与文字选择这两类「不是想跳转」的点击要放行给原行为，
+ * 否则点问号看口径、或拖选文字松手，都会把人带到别的页面。
+ */
+function handleCardClick(event: MouseEvent<HTMLAnchorElement>) {
+  const clickedInfoIcon = (event.target as Element).closest('.anticon') !== null
+  const hasTextSelection = (window.getSelection()?.toString() ?? '') !== ''
+  if (clickedInfoIcon || hasTextSelection) event.preventDefault()
+}
+
 export default function KpiCards({ data }: { data: OverviewResponse }) {
-  const { totals, today, retention } = data
   return (
     <Row gutter={[16, 16]}>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/fleet">设备舰队 →</Link>}
-        >
-          <Statistic
-            title="累计激活设备"
-            value={totals.devicesActivated}
-            suffix="台"
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            累计入库 {totals.devicesRegistered} 台
-          </Typography.Text>
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/fleet">设备舰队 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                激活率
-                <InfoTip title="已激活设备 ÷ 已入库设备。「激活」= 家长扫码完成绑定（user_device_bindings 有记录）；接入出货数据后分母切换为出货口径" />
-              </>
-              }
-            value={pct(totals.activationRate)}
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/users">用户画像 →</Link>}
-        >
-          <Statistic
-            title="累计家长用户"
-            value={totals.usersRegistered}
-            suffix="人"
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/engagement">使用行为 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                活跃设备（当日）
-                <InfoTip title="DAU 口径：当天有 ≥1 条孩子发言（role=user 消息）的去重设备数，按 Asia/Shanghai 自然日统计" />
-              </>
-              }
-            value={today.dau}
-            suffix="台"
-          />
-          <DeltaTag value={today.dauDeltaPct} />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/engagement">使用行为 →</Link>}
-        >
-          <Statistic
-            title="活跃设备日均使用时长"
-            value={Math.round(today.avgDurationSecondsPerActiveDevice / 60)}
-            suffix="分钟"
-          />
-          <Tag style={{ marginTop: 8 }}>估算口径</Tag>
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/engagement">使用行为 →</Link>}
-        >
-          <Statistic
-            title="人均对话轮次"
-            value={today.avgTurnsPerActiveDevice}
-            suffix="轮"
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/retention">留存与激活 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                7 日留存
-                <InfoTip title="激活日恰好为 7 天前的设备中，数据日当天仍有对话的比例；当天没有「满 7 天」的设备时显示 -" />
-              </>
-              }
-            value={pct(retention.d7)}
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/fleet">设备舰队 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                实时在线
-                <InfoTip title="实时口径：Redis device:link:{MAC} 的 lastSeenAt 落在 15 秒窗口内。与「当日开机」的天级口径不可互相校验；Redis 查询失败显示 -（不是 0）" />
-              </>
-              }
-            value={today.onlineNow ?? '-'}
-            suffix={today.onlineNow !== null ? '台' : ''}
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/fleet">设备舰队 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                当日开机
-                <InfoTip title="天级口径：device_presence_daily 当日有行的去重设备数（设备心跳按 5 分钟聚合）。显示 - 表示该日早于落库上线日（无数据），不是 0 台开机" />
-              </>
-              }
-            value={today.devicesPoweredOn ?? '-'}
-            suffix={today.devicesPoweredOn !== null ? '台' : ''}
-          />
-        </Card>
-      </Col>
-      <Col xs={12} md={6}>
-        <Card
-          style={{ height: '100%' }}
-          extra={<Link to="/fleet">设备舰队 →</Link>}
-        >
-          <Statistic
-            title={
-              <>
-                开机率
-                <InfoTip title="当日开机设备 ÷ 已激活设备（distinct deviceId）。分母为 0 或当日开机无数据时显示 -。与「激活率」分母口径不同（已入库 vs 已激活），两者不可互比" />
-              </>
-              }
-            value={pct(today.powerOnRate)}
-          />
-        </Card>
-      </Col>
+      {kpiDefs(data).map((def) => (
+        <Col key={def.key} xs={12} md={6}>
+          <Link
+            to={def.href}
+            className="kpi-card"
+            aria-label={`${def.title}，前往${PAGE_LABELS[def.href]}`}
+            onClick={handleCardClick}
+          >
+            <Card
+              hoverable
+              style={{ height: '100%' }}
+              extra={<ArrowRightOutlined className="kpi-card-arrow" />}
+            >
+              <Statistic
+                title={
+                  def.tip ? (
+                    <>
+                      {def.title}
+                      <InfoTip title={def.tip} />
+                    </>
+                  ) : (
+                    def.title
+                  )
+                }
+                value={def.value}
+                suffix={def.suffix}
+              />
+              {def.note && (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {def.note}
+                </Typography.Text>
+              )}
+              {def.footer && <Footer footer={def.footer} />}
+            </Card>
+          </Link>
+        </Col>
+      ))}
     </Row>
   )
 }
