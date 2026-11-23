@@ -17,6 +17,15 @@ import {
 } from '../../types/analytics'
 import LlmTurnChain from './LlmTurnChain'
 import {
+  readMessageSafety,
+  safetyReplyLabel,
+  safetySourceLabelForMessage,
+} from './message-safety'
+import {
+  SAFETY_CATEGORY_META,
+  safetyCategoryLabel,
+} from '../Llm/decisions'
+import {
   modeLabel,
   roleTag,
   statusTag,
@@ -61,6 +70,7 @@ export default function MessageDetailDrawer({
 
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
   const turnId = row?.turnId ?? null
+  const safety = readMessageSafety(detail?.rawPayload)
   const turnQuery = useMessages(
     {
       turnId: turnId ?? '',
@@ -276,6 +286,86 @@ export default function MessageDetailDrawer({
                 </Typography.Paragraph>
               )}
             </>
+          )}
+          <Typography.Title level={5} style={{ marginTop: 16 }}>
+            本轮安全判定
+          </Typography.Title>
+          {safety ? (
+            <Descriptions
+              column={1}
+              size="small"
+              bordered
+              styles={{ label: { whiteSpace: 'nowrap' } }}
+              items={[
+                {
+                  key: 'layer',
+                  label: '层级',
+                  children: safety.layer ?? '—',
+                },
+                {
+                  key: 'category',
+                  label: '类别',
+                  children: (
+                    <Tag
+                      color={
+                        safety.category === null
+                          ? 'default'
+                          : (SAFETY_CATEGORY_META[safety.category]?.color ??
+                            'default')
+                      }
+                    >
+                      {safetyCategoryLabel(safety.category)}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: 'blocked',
+                  label: '是否拦截',
+                  children: (
+                    <Tag color={safety.blocked ? 'red' : 'default'}>
+                      {safety.blocked ? '已拦截' : '未拦截'}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: 'source',
+                  label: '判定来源',
+                  children: safetySourceLabelForMessage(safety.source),
+                },
+                {
+                  key: 'reply',
+                  label: '安全处置',
+                  children: safetyReplyLabel(safety.reply),
+                },
+                {
+                  key: 'matched',
+                  label: '命中关键词',
+                  children: safety.matched ?? '—',
+                },
+                ...(safety.inferred || safety.backfilledAt
+                  ? [
+                      {
+                        key: 'provenance',
+                        label: '回补标记',
+                        children: (
+                          <Space size={4} wrap>
+                            {safety.inferred && (
+                              <Tag color="warning">推断回补</Tag>
+                            )}
+                            {safety.backfilledAt && (
+                              <Tag>历史回补</Tag>
+                            )}
+                          </Space>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          ) : (
+            <Typography.Text type="secondary">
+              本轮未记录安全判定（早于埋点、未回补或非安全轮次）。
+            </Typography.Text>
           )}
           <Typography.Title level={5} style={{ marginTop: 16 }}>
             LLM 调用链路
