@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { message } from 'antd'
 import TestDevices from './index'
 import {
@@ -96,13 +97,26 @@ beforeEach(() => {
   vi.spyOn(message, 'success').mockImplementation(() => undefined as never)
 })
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <TestDevices />
+    </MemoryRouter>,
+  )
+}
+
 describe('测试设备白名单页面', () => {
   it('展示在册设备、状态、备注与添加信息', () => {
-    render(<TestDevices />)
+    renderPage()
 
     expect(screen.getByText('测试设备白名单')).toBeTruthy()
-    expect(screen.getByText('aa:bb:cc:dd:ee:ff')).toBeTruthy()
-    expect(screen.getByText('CN-001')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'aa:bb:cc:dd:ee:ff' })).toHaveAttribute(
+      'href',
+      '/users/aa%3Abb%3Acc%3Add%3Aee%3Aff',
+    )
+    expect(screen.queryByText('CN-001')).toBeNull()
+    expect(screen.queryByText('未登记设备编码')).toBeNull()
+    expect(screen.queryByText('MAC')).toBeNull()
     expect(screen.getByText('在册')).toBeTruthy()
     expect(screen.getByText('3 号样机')).toBeTruthy()
     expect(screen.getByText(/alice/)).toBeTruthy()
@@ -113,7 +127,7 @@ describe('测试设备白名单页面', () => {
       idle(response({ enabled: { adventure: false, sleep: false } })),
     )
 
-    render(<TestDevices />)
+    renderPage()
 
     expect(screen.getByText(/当前环境未开启测试模式/)).toBeTruthy()
     expect(
@@ -123,7 +137,7 @@ describe('测试设备白名单页面', () => {
 
   it('添加成功后清空表单并提示', async () => {
     const user = userEvent.setup()
-    render(<TestDevices />)
+    renderPage()
 
     await user.type(
       screen.getByPlaceholderText('设备 ID / 设备编码 / MAC'),
@@ -157,7 +171,7 @@ describe('测试设备白名单页面', () => {
 
   it('理由不足 8 字时前端先拦住，不发请求', async () => {
     const user = userEvent.setup()
-    render(<TestDevices />)
+    renderPage()
 
     await user.type(
       screen.getByPlaceholderText('设备 ID / 设备编码 / MAC'),
@@ -180,14 +194,14 @@ describe('测试设备白名单页面', () => {
       error: new Error('这台设备已经在测试白名单里。'),
     })
 
-    render(<TestDevices />)
+    renderPage()
 
     expect(screen.getByText('这台设备已经在测试白名单里。')).toBeTruthy()
   })
 
   it('撤销走理由弹窗，成功后提示已清空下发', async () => {
     const user = userEvent.setup()
-    render(<TestDevices />)
+    renderPage()
 
     await user.click(screen.getByRole('button', { name: /撤\s*销/ }))
     await user.type(
@@ -215,7 +229,7 @@ describe('测试设备白名单页面', () => {
     const user = userEvent.setup()
     mockQuery.mockReturnValue(idle(response({ items: [ITEM, REVOKED] })))
 
-    render(<TestDevices />)
+    renderPage()
 
     await user.click(screen.getByRole('switch'))
     expect(mockQuery).toHaveBeenLastCalledWith(
@@ -225,7 +239,7 @@ describe('测试设备白名单页面', () => {
 
   it('搜索词提交后进入查询参数', async () => {
     const user = userEvent.setup()
-    render(<TestDevices />)
+    renderPage()
 
     await user.type(
       screen.getByPlaceholderText('按设备号 / 编码 / MAC 搜索'),
@@ -243,7 +257,7 @@ describe('测试设备白名单页面', () => {
       error: new Error('boom'),
     })
 
-    render(<TestDevices />)
+    renderPage()
 
     expect(screen.getByText('白名单加载失败')).toBeTruthy()
     expect(screen.getByText('boom')).toBeTruthy()
