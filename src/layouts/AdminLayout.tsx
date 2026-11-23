@@ -80,7 +80,7 @@ function buildMenuItems(locked: boolean): MenuProps['items'] {
         { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
         // 冒险内容改的是线上内容快照，性质与下面的配置项相同，不再属于「用户与体验」
         { key: '/adventure', label: '冒险内容', icon: <CompassOutlined /> },
-        // 测试设备白名单同时管冒险测试与哄睡测试，必须与两者相邻但不能藏在其中
+        // 测试设备白名单管冒险测试，必须与冒险内容相邻但不能藏在其中
         {
           key: '/test-devices',
           label: '测试设备白名单',

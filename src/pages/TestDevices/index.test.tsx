@@ -59,7 +59,7 @@ const REVOKED = {
 
 function response(overrides: Partial<TestDevicesResponse> = {}): TestDevicesResponse {
   return {
-    enabled: { adventure: true, sleep: true },
+    enabled: { adventure: true },
     items: [ITEM],
     total: 1,
     ...overrides,
@@ -120,16 +120,19 @@ describe('测试设备白名单页面', () => {
     expect(screen.getByText('在册')).toBeTruthy()
     expect(screen.getByText('3 号样机')).toBeTruthy()
     expect(screen.getByText(/alice/)).toBeTruthy()
+    expect(screen.getByText('测试开关：冒险测试已开启')).toBeTruthy()
+    expect(screen.queryByText(/哄睡/)).toBeNull()
+    expect(screen.queryByText(/两个测试开关/)).toBeNull()
   })
 
-  it('两个测试开关都关时给只读提示并禁用添加', () => {
+  it('冒险测试开关关闭时给只读提示并禁用添加', () => {
     mockQuery.mockReturnValue(
-      idle(response({ enabled: { adventure: false, sleep: false } })),
+      idle(response({ enabled: { adventure: false } })),
     )
 
     renderPage()
 
-    expect(screen.getByText(/当前环境未开启测试模式/)).toBeTruthy()
+    expect(screen.getByText(/当前环境未开启冒险测试模式/)).toBeTruthy()
     expect(
       screen.getByRole('button', { name: /添加到白名单/ }),
     ).toBeDisabled()

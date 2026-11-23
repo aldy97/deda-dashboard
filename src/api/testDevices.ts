@@ -4,8 +4,8 @@ import { apiClient } from './client'
 /**
  * 测试设备白名单（仅 staging 有意义）。
  *
- * 冒险测试与哄睡测试共用这一份名单：只有 active=true 的设备才能被下发测试
- * 冒险故事，也才能用「测试冒险故事」「测试哄睡模式」两个语音触发词。
+ * 这份名单只服务冒险测试：只有 active=true 的设备才能被下发测试冒险故事，
+ * 也才能用「测试冒险故事」语音触发词。
  * 契约见 deda-server `docs/analytics-api.md` →「测试设备白名单」。
  */
 
@@ -30,8 +30,8 @@ export interface TestDeviceWhitelistItem {
 }
 
 export interface TestDevicesResponse {
-  /** 两个测试开关的当前状态；都为 false 时页面只读 */
-  enabled: { adventure: boolean; sleep: boolean }
+  /** 冒险测试开关的当前状态；为 false 时页面只读 */
+  enabled: { adventure: boolean }
   items: TestDeviceWhitelistItem[]
   total: number
 }

@@ -32,11 +32,11 @@ function fmtTime(iso: string | null): string {
 /**
  * 测试设备白名单（仅 superadmin）。
  *
- * 这份名单同时管两件事：设备能不能被下发测试冒险故事，以及能不能用
- * 「测试冒险故事」「测试哄睡模式」两个语音触发词。页面只做增删查，
- * 真正的安全闸在服务端；这里不做任何前端側的「白名单判断」。
+ * 这份名单管一件事：设备能不能被下发测试冒险故事，以及能不能用
+ * 「测试冒险故事」语音触发词。页面只做增删查，
+ * 真正的安全闸在服务端；这里不做任何前端侧的「白名单判断」。
  *
- * 两个测试开关都关（prod）时整页只读：不是权限不足，而是这个环境没有测试模式。
+ * 冒险测试开关关闭（prod）时整页只读：不是权限不足，而是这个环境没有测试模式。
  */
 export default function TestDevices() {
   const [keyword, setKeyword] = useState('')
@@ -58,9 +58,7 @@ export default function TestDevices() {
   const revoke = useRevokeTestDevice()
 
   const data = query.data
-  const bothOff = data
-    ? !data.enabled.adventure && !data.enabled.sleep
-    : false
+  const adventureTestOff = data ? !data.enabled.adventure : false
 
   function submitAdd(values: {
     deviceId: string
@@ -214,25 +212,25 @@ export default function TestDevices() {
     <div>
       <PageHeader
         title="测试设备白名单"
-        description="只有名单内在册的设备才能被下发测试冒险故事，才能用「测试冒险故事」「测试哄睡模式」两个语音触发词。添加与撤销都会留操作人与理由；撤销会同时清空该设备的测试冒险下发。"
+        description="只有名单内在册的设备才能被下发测试冒险故事，才能用「测试冒险故事」语音触发词。添加与撤销都会留操作人与理由；撤销会同时清空该设备的测试冒险下发。"
       />
 
-      {bothOff && (
+      {adventureTestOff && (
         <Alert
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="当前环境未开启测试模式（冒险 / 哄睡都为关），白名单只读。"
+          message="当前环境未开启冒险测试模式，白名单只读。"
           description="这是生产环境的预期状态：白名单可以查看，但不能添加或撤销。需要测试请使用 staging。"
         />
       )}
 
-      {data && !bothOff && (
+      {data && !adventureTestOff && (
         <Alert
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message={`测试开关：冒险测试${data.enabled.adventure ? '已开启' : '未开启'}；哄睡测试${data.enabled.sleep ? '已开启' : '未开启'}`}
+          message={`测试开关：冒险测试${data.enabled.adventure ? '已开启' : '未开启'}`}
         />
       )}
 
@@ -241,7 +239,7 @@ export default function TestDevices() {
           form={addForm}
           layout="vertical"
           onFinish={submitAdd}
-          disabled={bothOff}
+          disabled={adventureTestOff}
         >
           <Space size={12} wrap align="start">
             <Form.Item
@@ -271,7 +269,7 @@ export default function TestDevices() {
                 type="primary"
                 htmlType="submit"
                 loading={add.isPending}
-                disabled={bothOff}
+                disabled={adventureTestOff}
               >
                 添加到白名单
               </Button>
