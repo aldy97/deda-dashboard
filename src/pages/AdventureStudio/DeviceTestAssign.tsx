@@ -109,7 +109,9 @@ export default function DeviceTestAssign({
     )
   }
 
-  const list = <DeviceTestAssignList characterKey={characterKey} />
+  const list = (
+    <DeviceTestAssignList characterKey={characterKey} writable={authoring} />
+  )
 
   if (!testStoryEnabled) {
     return (
