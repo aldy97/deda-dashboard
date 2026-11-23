@@ -72,6 +72,49 @@ export async function fetchTestDevices(
   return resp.data as TestDevicesResponse
 }
 
+/** 下拉一次性展示全量白名单：每页 200（服务端上限），最多 5 页。 */
+const WHITELIST_PAGE_SIZE = 200
+const WHITELIST_MAX_PAGES = 5
+
+export interface AllTestDevicesResult extends TestDevicesResponse {
+  /** true = 白名单超过安全上限，items 已被截断 */
+  truncated: boolean
+}
+
+/**
+ * 拉全量白名单，供「样机下发」下拉使用。
+ *
+ * 不按 IP 过滤：白名单是全 IP 共用的运营集合。超过 1000 台时只取前 1000 台并
+ * 标记 truncated，避免异常数据把下拉撑爆；正常样机规模远小于这个上限。
+ */
+export async function fetchAllTestDevices(): Promise<AllTestDevicesResult> {
+  const first = await fetchTestDevices({
+    page: 1,
+    pageSize: WHITELIST_PAGE_SIZE,
+  })
+  const items = [...first.items]
+  let page = 1
+  while (items.length < first.total && page < WHITELIST_MAX_PAGES) {
+    page += 1
+    const next = await fetchTestDevices({
+      page,
+      pageSize: WHITELIST_PAGE_SIZE,
+    })
+    if (next.items.length === 0) break
+    items.push(...next.items)
+  }
+  return { ...first, items, truncated: items.length < first.total }
+}
+
+/** 下拉用全量白名单；enabled=false 时一次请求都不发 */
+export function useAllTestDevices(enabled = true) {
+  return useQuery({
+    queryKey: [...TEST_DEVICES_KEY, 'all'],
+    queryFn: fetchAllTestDevices,
+    enabled,
+  })
+}
+
 export async function addTestDevice(
   input: AddTestDeviceInput,
 ): Promise<AddTestDeviceResult> {

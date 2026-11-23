@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import DeviceTestAssign from './DeviceTestAssign'
@@ -9,7 +9,9 @@ import {
   useClearTestStory,
   useDeviceTestAssignment,
 } from '../../api/queries'
+import { useAllTestDevices } from '../../api/testDevices'
 import type { DeviceTestAssignment } from '../../types/adventureAdmin'
+import type { AllTestDevicesResult } from '../../api/testDevices'
 
 vi.mock('../../api/queries', () => ({
   useDeviceTestAssignment: vi.fn(),
@@ -18,12 +20,17 @@ vi.mock('../../api/queries', () => ({
   useCharacterTestDevices: vi.fn(),
 }))
 
+vi.mock('../../api/testDevices', () => ({
+  useAllTestDevices: vi.fn(),
+}))
+
 const mockAssignmentQuery = useDeviceTestAssignment as unknown as ReturnType<
   typeof vi.fn
 >
 const mockAssign = useAssignTestStory as unknown as ReturnType<typeof vi.fn>
 const mockClear = useClearTestStory as unknown as ReturnType<typeof vi.fn>
 const mockList = useCharacterTestDevices as unknown as ReturnType<typeof vi.fn>
+const mockDevices = useAllTestDevices as unknown as ReturnType<typeof vi.fn>
 
 function queryResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -38,6 +45,52 @@ function queryResult(overrides: Record<string, unknown> = {}) {
 
 function mutation(overrides: Record<string, unknown> = {}) {
   return { mutate: vi.fn(), isPending: false, error: null, ...overrides }
+}
+
+const WHITELIST: AllTestDevicesResult = {
+  enabled: { adventure: true, sleep: true },
+  total: 2,
+  truncated: false,
+  items: [
+    {
+      id: 'wl-1',
+      active: true,
+      note: '3 号样机',
+      addedBy: 'alice',
+      addedAt: '2026-11-22T10:00:00.000Z',
+      addedReason: '需要验证新一集',
+      revokedBy: null,
+      revokedAt: null,
+      revokeReason: null,
+      device: {
+        id: 'uuid-1',
+        deviceId: 'dev-1',
+        deviceCode: null,
+        macAddress: null,
+        characterKey: 'elly',
+        firmwareVersion: null,
+      },
+    },
+    {
+      id: 'wl-2',
+      active: true,
+      note: null,
+      addedBy: 'alice',
+      addedAt: '2026-11-22T10:00:00.000Z',
+      addedReason: null,
+      revokedBy: null,
+      revokedAt: null,
+      revokeReason: null,
+      device: {
+        id: 'uuid-2',
+        deviceId: 'dev-2',
+        deviceCode: null,
+        macAddress: null,
+        characterKey: 'polly',
+        firmwareVersion: null,
+      },
+    },
+  ],
 }
 
 const ASSIGNED: DeviceTestAssignment = {
@@ -60,14 +113,33 @@ function setup(
     testStoryEnabled: boolean
     authoring: boolean
     assignment: DeviceTestAssignment | undefined
+    assignmentLoading: boolean
+    devices: AllTestDevicesResult | undefined
+    devicesError: Error | null
+    devicesLoading: boolean
+    assignError: { status: number; message: string; domainCode?: string } | null
   }> = {},
 ) {
-  const assignMutation = mutation()
+  const assignMutation = mutation({ error: props.assignError ?? null })
   const clearMutation = mutation()
-  mockAssignmentQuery.mockReturnValue(queryResult({ data: props.assignment }))
+  const devicesRefetch = vi.fn()
+  mockAssignmentQuery.mockReturnValue(
+    queryResult({
+      data: props.assignment,
+      isLoading: props.assignmentLoading ?? false,
+    }),
+  )
   mockAssign.mockReturnValue(assignMutation)
   mockClear.mockReturnValue(clearMutation)
   mockList.mockReturnValue(queryResult({ data: undefined }))
+  mockDevices.mockReturnValue(
+    queryResult({
+      data: props.devices ?? WHITELIST,
+      error: props.devicesError ?? null,
+      isLoading: props.devicesLoading ?? false,
+      refetch: devicesRefetch,
+    }),
+  )
 
   render(
     <MemoryRouter>
@@ -80,7 +152,20 @@ function setup(
     </MemoryRouter>,
   )
 
-  return { assignMutation, clearMutation }
+  return { assignMutation, clearMutation, devicesRefetch }
+}
+
+async function openDeviceSelect() {
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('combobox'))
+  return user
+}
+
+async function pickDevice(deviceId: string) {
+  const user = await openDeviceSelect()
+  const option = await screen.findByTitle(deviceId)
+  await user.click(option)
+  return user
 }
 
 async function openAssign() {
@@ -104,7 +189,7 @@ describe('DeviceTestAssign', () => {
 
     expect(screen.getByText(/测试冒险故事未启用/)).toBeTruthy()
     expect(screen.queryByText('当前已下发的样机')).toBeNull()
-    expect(screen.queryByRole('button', { name: '下发当前集' })).toBeNull()
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 
   it('keeps the list visible but hides write entry points in a read-only environment', () => {
@@ -112,65 +197,58 @@ describe('DeviceTestAssign', () => {
 
     expect(screen.getByText(/本环境只读/)).toBeTruthy()
     expect(screen.getByText('当前已下发的样机')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: '下发当前集' })).toBeNull()
+    expect(screen.queryByRole('combobox')).toBeNull()
     expect(screen.queryByRole('button', { name: '操作' })).toBeNull()
   })
 
-  it('queries the trimmed device id and shows what the device currently plays', async () => {
+  it('only requests the whitelist after the dropdown is opened, and refetches on reopen', async () => {
+    const { devicesRefetch } = setup()
+
+    expect(mockDevices).toHaveBeenCalledWith(false)
+
+    const user = await openDeviceSelect()
+    await waitFor(() => expect(mockDevices).toHaveBeenCalledWith(true))
+
+    await user.click(screen.getByRole('combobox'))
+    await user.click(screen.getByRole('combobox'))
+    expect(devicesRefetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows device id plus the note tag, and a grey tag when note is empty', async () => {
+    setup()
+
+    await openDeviceSelect()
+
+    expect(await screen.findByText('3 号样机')).toBeTruthy()
+    expect(screen.getByText('未填备注')).toBeTruthy()
+    expect(screen.getAllByText('dev-1').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('dev-2').length).toBeGreaterThan(0)
+  })
+
+  it('queries the assignment automatically after picking a device', async () => {
     setup({ assignment: ASSIGNED })
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      '  dev-1  ',
-    )
-    await userEvent.click(screen.getByRole('button', { name: '查询当前下发' }))
+    await pickDevice('dev-1')
 
-    expect(mockAssignmentQuery).toHaveBeenCalledWith('dev-1')
+    await waitFor(() =>
+      expect(mockAssignmentQuery).toHaveBeenLastCalledWith('dev-1'),
+    )
     expect(await screen.findByText('当前下发')).toBeTruthy()
     expect(screen.getByText('听风原野第一天')).toBeTruthy()
     expect(screen.getByText('草稿 v3')).toBeTruthy()
   })
 
-  it('tells the operator when the queried device has no assignment', async () => {
-    setup({
-      assignment: { enabled: true, assignment: null },
-    })
+  it('tells the operator when the picked device has no assignment', async () => {
+    setup({ assignment: { enabled: true, assignment: null } })
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      'dev-2',
-    )
-    await userEvent.click(screen.getByRole('button', { name: '查询当前下发' }))
+    await pickDevice('dev-2')
 
     expect(
       await screen.findByText('该设备当前没有下发任何测试故事。'),
     ).toBeTruthy()
   })
 
-  it('shows the device even when its assigned episode row is gone', async () => {
-    setup({
-      assignment: {
-        enabled: true,
-        assignment: {
-          device: { id: 'uuid-9', deviceId: 'dev-9', deviceCode: null },
-          episode: null,
-          episodeVersion: null,
-        },
-      },
-    })
-
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      'dev-9',
-    )
-    await userEvent.click(screen.getByRole('button', { name: '查询当前下发' }))
-
-    expect(await screen.findByText('当前下发')).toBeTruthy()
-    expect(screen.getByText('dev-9')).toBeTruthy()
-    expect(screen.getByText('（无）')).toBeTruthy()
-  })
-
-  it('assigns the current episode with the trimmed device id and the reason', async () => {
+  it('assigns the picked device with the reason', async () => {
     const { assignMutation } = setup()
     assignMutation.mutate.mockImplementation(
       (_vars: unknown, options: { onSuccess: (res: unknown) => void }) => {
@@ -187,10 +265,7 @@ describe('DeviceTestAssign', () => {
       },
     )
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      ' dev-1 ',
-    )
+    await pickDevice('dev-1')
     const { user, dialog } = await openAssign()
     await user.click(within(dialog).getByRole('button', { name: '确认下发' }))
 
@@ -222,25 +297,14 @@ describe('DeviceTestAssign', () => {
       },
     )
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      'dev-1',
-    )
+    await pickDevice('dev-1')
     const { user, dialog } = await openAssign()
     await user.click(within(dialog).getByRole('button', { name: '确认下发' }))
 
     expect(await screen.findByText(/审计没写进去/)).toBeTruthy()
   })
 
-  it('refuses to submit without a device id', async () => {
-    setup()
-
-    await userEvent.click(screen.getByRole('button', { name: '下发当前集' }))
-    // 无设备 ID 时按钮已禁用，弹窗不应打开
-    expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('clears the assignment with the trimmed device id and the reason', async () => {
+  it('clears the picked device with the reason', async () => {
     const { clearMutation } = setup()
     clearMutation.mutate.mockImplementation(
       (_vars: unknown, options: { onSuccess: (res: unknown) => void }) => {
@@ -248,10 +312,7 @@ describe('DeviceTestAssign', () => {
       },
     )
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      ' dev-1 ',
-    )
+    await pickDevice('dev-1')
     await userEvent.click(screen.getByRole('button', { name: '清除下发' }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(
@@ -279,10 +340,7 @@ describe('DeviceTestAssign', () => {
       },
     )
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      'dev-1',
-    )
+    await pickDevice('dev-1')
     await userEvent.click(screen.getByRole('button', { name: '清除下发' }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(
@@ -294,7 +352,97 @@ describe('DeviceTestAssign', () => {
     expect(await screen.findByText(/已清除下发，但审计没写进去/)).toBeTruthy()
   })
 
-  it('lets the operator dismiss the result alert and cancel both dialogs', async () => {
+  it('points to the whitelist page when the whitelist is empty', async () => {
+    setup({
+      devices: {
+        enabled: { adventure: true, sleep: true },
+        items: [],
+        total: 0,
+        truncated: false,
+      },
+    })
+
+    await openDeviceSelect()
+
+    expect((await screen.findAllByText(/白名单暂无设备/)).length).toBeGreaterThan(0)
+    const link = screen.getByRole('link', { name: /测试设备白名单/ })
+    expect(link).toHaveAttribute('href', '/test-devices')
+  })
+
+  it('surfaces a whitelist load failure with a retry action', async () => {
+    const { devicesRefetch } = setup({
+      devices: undefined,
+      devicesError: new Error('boom'),
+    })
+
+    expect(screen.getByText('白名单加载失败')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: /重\s*试/ }))
+
+    expect(devicesRefetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns when the whitelist is truncated and when adventure testing is off', async () => {
+    setup({
+      devices: {
+        ...WHITELIST,
+        enabled: { adventure: false, sleep: false },
+        truncated: true,
+      },
+    })
+
+    expect(screen.getByText(/仅显示前 1000 台/)).toBeTruthy()
+    expect(screen.getByText(/测试模式未开启/)).toBeTruthy()
+
+    await pickDevice('dev-1')
+    expect(screen.getByRole('button', { name: '下发当前集' })).toBeDisabled()
+  })
+
+  it('shows the revocation warning when the picked device is no longer whitelisted', async () => {
+    setup({
+      assignment: { ...ASSIGNED, whitelisted: false },
+    })
+
+    await pickDevice('dev-1')
+
+    expect(await screen.findByText(/不在测试设备白名单里/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: '下发当前集' })).toBeDisabled()
+  })
+
+  it('labels the pinned snapshot as the current published version', async () => {
+    setup({
+      assignment: {
+        ...ASSIGNED,
+        assignment: { ...ASSIGNED.assignment!, episodeVersion: null },
+      },
+    })
+
+    await pickDevice('dev-1')
+    expect(await screen.findByText('当前发布版')).toBeTruthy()
+  })
+
+  it('shows the loading hint while the assignment is being read', () => {
+    setup({ assignmentLoading: true })
+    expect(screen.getByText('正在读取…')).toBeTruthy()
+  })
+
+  it('keeps a mutation error inside the reason dialog with its domain code', async () => {
+    setup({
+      assignError: {
+        status: 409,
+        message: '该设备在别处被占用',
+        domainCode: 'DEVICE_BUSY',
+      },
+    })
+
+    await pickDevice('dev-1')
+    await openAssign()
+
+    expect(screen.getByText('服务端拒绝了这次操作')).toBeTruthy()
+    expect(screen.getByText('该设备在别处被占用')).toBeTruthy()
+    expect(screen.getByText('DEVICE_BUSY')).toBeTruthy()
+  })
+
+  it('dismisses the result alert and cancels both dialogs without writing', async () => {
     const { assignMutation } = setup()
     assignMutation.mutate.mockImplementation(
       (_vars: unknown, options: { onSuccess: (res: unknown) => void }) => {
@@ -311,11 +459,7 @@ describe('DeviceTestAssign', () => {
       },
     )
 
-    await userEvent.type(
-      screen.getByPlaceholderText('设备 ID（小写 MAC）或设备编码'),
-      'dev-1',
-    )
-
+    await pickDevice('dev-1')
     const first = await openAssign()
     await first.user.click(
       within(first.dialog).getByRole('button', { name: '确认下发' }),
