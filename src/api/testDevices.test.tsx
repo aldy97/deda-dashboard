@@ -43,7 +43,7 @@ const ITEM = {
 }
 
 const LIST = {
-  enabled: { adventure: true, sleep: true },
+  enabled: { adventure: true },
   items: [ITEM],
   total: 1,
 }
@@ -137,7 +137,7 @@ describe('testDevices 全量列表（样机下发下拉）', () => {
   function page(count: number, total: number) {
     return {
       data: {
-        enabled: { adventure: true, sleep: true },
+        enabled: { adventure: true },
         items: Array.from({ length: count }, (_, i) => ({
           ...ITEM,
           id: `wl-${i}`,

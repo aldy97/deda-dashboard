@@ -48,7 +48,7 @@ function mutation(overrides: Record<string, unknown> = {}) {
 }
 
 const WHITELIST: AllTestDevicesResult = {
-  enabled: { adventure: true, sleep: true },
+  enabled: { adventure: true },
   total: 2,
   truncated: false,
   items: [
@@ -355,7 +355,7 @@ describe('DeviceTestAssign', () => {
   it('points to the whitelist page when the whitelist is empty', async () => {
     setup({
       devices: {
-        enabled: { adventure: true, sleep: true },
+        enabled: { adventure: true },
         items: [],
         total: 0,
         truncated: false,
@@ -385,7 +385,7 @@ describe('DeviceTestAssign', () => {
     setup({
       devices: {
         ...WHITELIST,
-        enabled: { adventure: false, sleep: false },
+        enabled: { adventure: false },
         truncated: true,
       },
     })
@@ -405,6 +405,7 @@ describe('DeviceTestAssign', () => {
     await pickDevice('dev-1')
 
     expect(await screen.findByText(/不在测试设备白名单里/)).toBeTruthy()
+    expect(screen.queryByText(/哄睡/)).toBeNull()
     expect(screen.getByRole('button', { name: '下发当前集' })).toBeDisabled()
   })
 
