@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { message, Modal } from 'antd'
 import Voice from './index'
 import {
   useApplyVoiceSpeed,
@@ -85,7 +86,24 @@ function mockLoaded() {
   mockDelete.mockReturnValue(mutation())
 }
 
+/**
+ * 静态 message / Modal.info 各自创建一棵脱离组件树的全局 React 根，
+ * toast 与弹窗的定时器会活过 jsdom 拆除；打桩掉静态调用，只断言参数
+ * （与 SpeedSection.test / TestDevices 既有写法一致）。
+ */
+let successSpy: ReturnType<typeof vi.spyOn>
+let errorSpy: ReturnType<typeof vi.spyOn>
+
 beforeEach(() => {
+  successSpy = vi
+    .spyOn(message, 'success')
+    .mockImplementation(() => undefined as never)
+  errorSpy = vi
+    .spyOn(message, 'error')
+    .mockImplementation(() => undefined as never)
+  vi.spyOn(Modal, 'info').mockImplementation(
+    () => ({ destroy: vi.fn(), update: vi.fn() }) as never,
+  )
   mockLoaded()
 })
 
@@ -154,6 +172,11 @@ describe('语速与音色页集成 · 语速区可写', () => {
         sleepSpd: 0.5,
       }),
     )
+    await waitFor(() =>
+      expect(successSpy).toHaveBeenCalledWith(
+        '已保存；当前这轮不受影响，下一轮起生效',
+      ),
+    )
   })
 
   it('保存失败时提示服务端 message', async () => {
@@ -173,7 +196,7 @@ describe('语速与音色页集成 · 语速区可写', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }))
 
-    expect(await screen.findByText('写入被拒绝')).toBeInTheDocument()
+    await waitFor(() => expect(errorSpy).toHaveBeenCalledWith('写入被拒绝'))
   })
 })
 
@@ -213,6 +236,9 @@ describe('语速与音色页集成 · 音色区可写', () => {
         timbreId: '1000999',
       }),
     )
+    await waitFor(() =>
+      expect(successSpy).toHaveBeenCalledWith('角色已新增，下一轮对话生效'),
+    )
   })
 
   it('编辑音色：角色标识锁定，只改 timbreId', async () => {
@@ -239,6 +265,9 @@ describe('语速与音色页集成 · 音色区可写', () => {
         characterKey: 'elly',
         timbreId: '222',
       }),
+    )
+    await waitFor(() =>
+      expect(successSpy).toHaveBeenCalledWith('音色已更新，下一轮对话生效'),
     )
   })
 
