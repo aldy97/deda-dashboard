@@ -13,6 +13,7 @@ import {
   MessageOutlined,
   ReadOutlined,
   RobotOutlined,
+  SafetyCertificateOutlined,
   TeamOutlined,
   UsergroupAddOutlined,
 } from '@ant-design/icons'
@@ -79,6 +80,12 @@ function buildMenuItems(locked: boolean): MenuProps['items'] {
         { key: '/llm', label: '模型监控', icon: <ApiOutlined /> },
         // 冒险内容改的是线上内容快照，性质与下面的配置项相同，不再属于「用户与体验」
         { key: '/adventure', label: '冒险内容', icon: <CompassOutlined /> },
+        // 测试设备白名单同时管冒险测试与哄睡测试，必须与两者相邻但不能藏在其中
+        {
+          key: '/test-devices',
+          label: '测试设备白名单',
+          icon: <SafetyCertificateOutlined />,
+        },
         { key: '/prompts', label: '提示词管理', icon: <FileTextOutlined /> },
         { key: '/voice', label: '语速与音色', icon: <AudioOutlined /> },
       ],

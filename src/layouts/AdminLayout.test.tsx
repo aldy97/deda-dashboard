@@ -242,7 +242,7 @@ describe('AdminLayout 菜单分组', () => {
     }
   })
 
-  it('13 个入口一个不少（分组不能顺手丢菜单项）', () => {
+  it('14 个入口一个不少（分组不能顺手丢菜单项）', () => {
     stubMeta({
       nodeEnv: 'development',
       promptWriteEnabled: true,
@@ -262,6 +262,7 @@ describe('AdminLayout 菜单分组', () => {
       '消息明细',
       '模型监控',
       '冒险内容',
+      '测试设备白名单',
       '提示词管理',
       '语速与音色',
     ]

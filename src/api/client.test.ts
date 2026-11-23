@@ -148,6 +148,7 @@ describe('apiClient 拦截器', () => {
     '/analytics/prompts',
     '/analytics/llm/summary',
     '/analytics/voice-speed',
+    '/analytics/test-devices',
   ])(
     '运维组前缀 %s 的 403 是角色不足：不清 token、不跳登录',
     async (url) => {

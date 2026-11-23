@@ -9,6 +9,7 @@ import Users from '../pages/Users'
 import UserDeviceDetail from '../pages/Users/DeviceDetail'
 import Content from '../pages/Content'
 import AdventureStudio from '../pages/AdventureStudio'
+import TestDevices from '../pages/TestDevices'
 import Messages from '../pages/Messages'
 import LlmMonitor from '../pages/Llm'
 import Memories from '../pages/Memories'
@@ -74,6 +75,14 @@ export const router = createBrowserRouter(
           element: (
             <OpsGate {...OPS_ROUTE_META['/adventure']}>
               <AdventureStudio />
+            </OpsGate>
+          ),
+        },
+        {
+          path: 'test-devices',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/test-devices']}>
+              <TestDevices />
             </OpsGate>
           ),
         },
