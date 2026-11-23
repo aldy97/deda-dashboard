@@ -15,20 +15,34 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 覆盖率闸口要 diff 出本次改动的文件，浅克隆拿不到 base
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
+      - name: Install
+        run: npm ci
+
+      # 部署前再跑一遍全量测试：任一测试失败即中止部署；
+      # 覆盖率闸口只考核本次新增/改动的生产文件 ≥90%。
+      - name: Test & coverage gate
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          npm run test:coverage
+          node .github/scripts/coverage-gate.mjs
+
       - name: Build
         env:
           # ARMS 前端监控 pid，在仓库 Settings → Environments → production 的变量里配置；
           # 未配置时构建产物中的监控层为 no-op，不上报任何数据
           VITE_ARMS_PID: ${{ vars.VITE_ARMS_PID }}
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
 
       # sourcemap 含完整源码（本仓库为 public），不随产物上服务器；
       # 存为 Actions artifact（保留 30 天），需要反解混淆堆栈时手动上传 ARMS 控制台

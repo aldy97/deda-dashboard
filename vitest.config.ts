@@ -17,7 +17,7 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json-summary'],
+      reporter: ['text', 'json', 'json-summary'],
       reportsDirectory: './coverage',
       // 只统计有运行时逻辑的文件：纯类型声明、入口装配、测试自身不计入
       include: ['src/**/*.{ts,tsx}'],

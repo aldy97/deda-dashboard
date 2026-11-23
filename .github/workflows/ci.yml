@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 覆盖率闸口要 diff 出本次改动的文件，浅克隆拿不到 base
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -21,9 +24,15 @@ jobs:
 
       - run: npm run lint
 
-      # vitest（jsdom + @testing-library/react）；--passWithNoTests 保证
-      # 尚无测试的分支合入 staging 后不会因「No test files found」直接红
-      - run: npm run test
+      # vitest（jsdom + @testing-library/react）跑全量测试并产出覆盖率；
+      # 任一测试失败即中止。覆盖率闸口只考核本次新增/改动的生产文件 ≥90%。
+      - run: npm run test:coverage
+
+      - name: 覆盖率闸口（改动文件行覆盖 ≥90%）
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node .github/scripts/coverage-gate.mjs
 
       # tsc -b 含完整类型检查，随后 vite build 产物即部署产物
       - run: npm run build
