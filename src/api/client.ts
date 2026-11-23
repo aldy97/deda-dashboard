@@ -33,6 +33,7 @@ const CAPABILITY_DENIED_PREFIXES = [
   '/analytics/prompts',
   '/analytics/llm',
   '/analytics/voice-speed',
+  '/analytics/test-devices',
 ]
 
 export const apiClient = axios.create({

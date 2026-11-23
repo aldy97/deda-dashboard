@@ -15,7 +15,13 @@ export function selectedMenuKey(pathname: string): string[] {
 }
 
 /** 运维组 = 全部破坏性操作所在的 tab，只对 superadmin 开放。顺序即菜单顺序。 */
-export const OPS_PATHS = ['/llm', '/adventure', '/prompts', '/voice'] as const
+export const OPS_PATHS = [
+  '/llm',
+  '/adventure',
+  '/test-devices',
+  '/prompts',
+  '/voice',
+] as const
 
 export type OpsPath = (typeof OPS_PATHS)[number]
 
@@ -28,6 +34,7 @@ export type OpsPath = (typeof OPS_PATHS)[number]
 export const OPS_ROUTE_META: Record<OpsPath, { title: string }> = {
   '/llm': { title: '模型监控' },
   '/adventure': { title: '冒险内容' },
+  '/test-devices': { title: '测试设备白名单' },
   '/prompts': { title: '提示词管理' },
   '/voice': { title: '语速与音色' },
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Button, Input, Space, Tag, Typography } from 'antd'
+import { Link } from 'react-router-dom'
 import type { ApiError } from '../../api/client'
 import {
   useAssignTestStory,
@@ -151,7 +152,7 @@ export default function DeviceTestAssign({
         <Button
           type="primary"
           loading={assign.isPending}
-          disabled={!deviceId.trim()}
+          disabled={!deviceId.trim() || assignment?.whitelisted === false}
           onClick={() => setAction('assign')}
         >
           下发当前集
@@ -202,6 +203,20 @@ export default function DeviceTestAssign({
 
       {assignment && assignment.enabled && !assignment.assignment && queried && (
         <Typography.Text type="secondary">该设备当前没有下发任何测试故事。</Typography.Text>
+      )}
+
+      {assignment && assignment.enabled && assignment.whitelisted === false && (
+        <Alert
+          type="warning"
+          showIcon
+          message="该设备不在测试设备白名单里，不能下发测试冒险故事"
+          description={
+            <Typography.Text>
+              请先到 <Link to="/test-devices">运维与配置 → 测试设备白名单</Link>{' '}
+              添加这台设备，然后重新查询再下发。白名单同时管「测试冒险故事」与「测试哄睡模式」。
+            </Typography.Text>
+          }
+        />
       )}
 
       {list}

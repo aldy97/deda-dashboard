@@ -94,6 +94,11 @@ describe('路由表', () => {
     expect(paths).toContain('memories')
     expect(paths).toContain('memories/:deviceId')
   })
+
+  it('测试设备白名单是受保护父路由的子路由，走运维组闸口', () => {
+    expect(childPaths()).toContain('test-devices')
+    expect(routes.map((route) => route.path)).not.toContain('test-devices')
+  })
 })
 
 describe('/prompts 的登录闸口', () => {

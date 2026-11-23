@@ -628,6 +628,8 @@ export interface TestClearResult {
 
 export interface DeviceTestAssignment {
   enabled: boolean
+  /** false = 设备不在测试白名单；此时下发会被服务端 403 拒绝 */
+  whitelisted?: boolean
   assignment: {
     device: { id: string; deviceId: string; deviceCode: string | null }
     episode: {
