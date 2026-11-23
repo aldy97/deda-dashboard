@@ -419,6 +419,21 @@ export interface MessageDetailResponse extends MessageListItem {
 }
 
 /**
+ * 回补到 messages.rawPayload.safety 的本轮安全判定快照。
+ * inferred=true 表示没有判定行，只能从 AI 回复内容推断。
+ */
+export interface MessageSafetySnapshot {
+  layer: string | null
+  category: string | null
+  blocked: boolean
+  source: string
+  matched: string | null
+  reply: string
+  inferred?: boolean
+  backfilledAt?: string
+}
+
+/**
  * assistant 消息的 rawPayload 结构化形态（filler/answer 边界，后端 11-09 起写入）；
  * 更早的历史行没有该结构，UI 需降级展示 content 全文
  */

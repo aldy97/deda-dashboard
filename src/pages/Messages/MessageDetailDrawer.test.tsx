@@ -78,6 +78,7 @@ describe('MessageDetailDrawer 复制入口', () => {
     const copyTurn = screen.getByRole('button', { name: '复制轮次 ID' })
     expect(copyId).toBeInTheDocument()
     expect(copyTurn).toBeInTheDocument()
+    expect(copyTurn).toBeInTheDocument()
 
     fireEvent.click(copyId)
     await waitFor(() =>
@@ -100,6 +101,90 @@ describe('MessageDetailDrawer 复制入口', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /查看同一轮问答/ }))
     expect(onViewTurn).toHaveBeenCalledWith('t-1')
+  })
+})
+
+describe('MessageDetailDrawer 本轮安全判定', () => {
+  it('展示回补的原始判定', async () => {
+    mockDetail.mockReturnValue({
+      data: {
+        ...makeMessage({ role: 'assistant' }),
+        rawPayload: {
+          filler: null,
+          answer: '我们先回到故事里，好吗？',
+          safety: {
+            layer: 'L2',
+            category: 'violence',
+            blocked: true,
+            source: 'l2_model',
+            matched: null,
+            reply: 'canned_block',
+            inferred: false,
+            backfilledAt: '2026-11-23T10:00:00.000Z',
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage({ role: 'assistant' }) })
+
+    expect(await screen.findByText('本轮安全判定')).toBeInTheDocument()
+    expect(screen.getByText('L2')).toBeInTheDocument()
+    expect(screen.getByText('暴力')).toBeInTheDocument()
+    expect(screen.getByText('已拦截')).toBeInTheDocument()
+    expect(screen.getByText('L2 小模型判定')).toBeInTheDocument()
+    expect(screen.getByText('代码固定话术')).toBeInTheDocument()
+    expect(screen.getByText('历史回补')).toBeInTheDocument()
+  })
+
+  it('推断回补必须标注来源，不能伪装成模型原始判定', async () => {
+    mockDetail.mockReturnValue({
+      data: {
+        ...makeMessage({ role: 'assistant' }),
+        rawPayload: {
+          answer: '我们先回到故事里，好吗？',
+          safety: {
+            layer: null,
+            category: null,
+            blocked: false,
+            source: 'inferred_from_reply',
+            matched: null,
+            reply: 'unsafe_line_echo',
+            inferred: true,
+            backfilledAt: '2026-11-23T10:00:00.000Z',
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage({ role: 'assistant' }) })
+
+    expect(await screen.findByText('由 AI 回复推断')).toBeInTheDocument()
+    expect(screen.getByText('推断回补')).toBeInTheDocument()
+    expect(screen.getByText('模型回抄安全句')).toBeInTheDocument()
+    expect(screen.getByText('未能判定')).toBeInTheDocument()
+    expect(screen.queryByText('L2 小模型判定')).not.toBeInTheDocument()
+  })
+
+  it('没有快照时明确显示未记录，不能显示成安全', async () => {
+    mockDetail.mockReturnValue({
+      data: {
+        ...makeMessage({ role: 'assistant' }),
+        rawPayload: { filler: null, answer: '我们继续吧。' },
+      },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage({ role: 'assistant' }) })
+
+    expect(await screen.findByText('本轮安全判定')).toBeInTheDocument()
+    expect(screen.getByText(/本轮未记录安全判定/)).toBeInTheDocument()
+    expect(screen.queryByText('安全')).not.toBeInTheDocument()
   })
 })
 
