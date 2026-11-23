@@ -14,6 +14,7 @@ import {
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
 import {
   useAddTestDevice,
@@ -119,23 +120,17 @@ export default function TestDevices() {
 
   const columns: ColumnsType<TestDeviceWhitelistItem> = [
     {
-      title: '设备',
+      title: '设备ID',
       key: 'device',
       width: 220,
       render: (_, row) => (
-        <Space orientation="vertical" size={0}>
-          <Typography.Text code>{row.device.deviceId}</Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {row.device.deviceCode ?? '未登记设备编码'}
-          </Typography.Text>
-        </Space>
+        <Link
+          to={`/users/${encodeURIComponent(row.device.deviceId)}`}
+          style={{ fontFamily: 'monospace' }}
+        >
+          {row.device.deviceId}
+        </Link>
       ),
-    },
-    {
-      title: 'MAC',
-      key: 'mac',
-      width: 170,
-      render: (_, row) => row.device.macAddress ?? '—',
     },
     {
       title: '角色',
