@@ -11,6 +11,8 @@ import {
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMessageDetail, useMessages } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { isSuperAdmin } from '../../components/access/role'
 import {
   isAssistantRawPayload,
   type MessageListItem,
@@ -67,6 +69,11 @@ export default function MessageDetailDrawer({
     : null
 
   const row = detail ?? message ?? null
+
+  // 冒险故事：集身份 + 该轮播放时锁定的版本；旧服务端没有该字段时按「未记录」处理
+  const adventureEpisode = detail?.adventureEpisode ?? null
+  const metaQuery = useAnalyticsMeta()
+  const superadmin = isSuperAdmin(metaQuery.data)
 
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
   const turnId = row?.turnId ?? null
@@ -161,6 +168,44 @@ export default function MessageDetailDrawer({
                 label: '模式',
                 children: modeLabel(row.mode),
               },
+              ...(row.mode === 'adventure_story'
+                ? [
+                    {
+                      key: 'adventureEpisode',
+                      label: '故事',
+                      children: adventureEpisode ? (
+                        <Space size={4} wrap>
+                          <Typography.Text style={{ fontFamily: 'monospace' }}>
+                            {adventureEpisode.businessKey}
+                          </Typography.Text>
+                          <Typography.Text italic>
+                            {adventureEpisode.title}
+                          </Typography.Text>
+                          {adventureEpisode.versionId === null && (
+                            <Tag>版本未记录</Tag>
+                          )}
+                          {!superadmin ? null : adventureEpisode.versionId ? (
+                            <Link
+                              to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}&versionId=${encodeURIComponent(adventureEpisode.versionId)}`}
+                            >
+                              查看当时版本 v{adventureEpisode.version}
+                            </Link>
+                          ) : (
+                            <Link
+                              to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}`}
+                            >
+                              查看该集版本历史
+                            </Link>
+                          )}
+                        </Space>
+                      ) : (
+                        <Typography.Text type="secondary">
+                          {loading ? '加载中…' : '—'}
+                        </Typography.Text>
+                      ),
+                    },
+                  ]
+                : []),
               // CEFR 等级暂不需要，需要时取消注释
               // {
               //   key: 'cefrLevel',

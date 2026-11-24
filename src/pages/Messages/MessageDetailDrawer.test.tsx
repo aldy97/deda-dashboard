@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { useLlmCallsByTurn, useMessageDetail, useMessages } from '../../api/queries'
-import type { MessageListItem } from '../../types/analytics'
+import { useAnalyticsMeta } from '../../api/meta'
+import type {
+  MessageAdventureEpisode,
+  MessageListItem,
+} from '../../types/analytics'
 import MessageDetailDrawer from './MessageDetailDrawer'
 
 vi.mock('../../api/queries', () => ({
@@ -11,9 +15,14 @@ vi.mock('../../api/queries', () => ({
   useLlmCallsByTurn: vi.fn(),
 }))
 
+vi.mock('../../api/meta', () => ({
+  useAnalyticsMeta: vi.fn(),
+}))
+
 const mockDetail = vi.mocked(useMessageDetail)
 const mockMessages = vi.mocked(useMessages)
 const mockCalls = vi.mocked(useLlmCallsByTurn)
+const mockMeta = vi.mocked(useAnalyticsMeta)
 
 function makeMessage(overrides: Partial<MessageListItem> = {}): MessageListItem {
   return {
@@ -64,6 +73,9 @@ beforeEach(() => {
     data: { turnId: 't-1', calls: [] },
     isLoading: false,
     error: null,
+  } as never)
+  mockMeta.mockReturnValue({
+    data: { admin: { role: 'superadmin' } },
   } as never)
 })
 
@@ -205,5 +217,93 @@ describe('MessageDetailDrawer 标签排版', () => {
     labels.forEach((label) => {
       expect(label).toHaveStyle({ whiteSpace: 'nowrap' })
     })
+  })
+})
+
+describe('MessageDetailDrawer 冒险故事', () => {
+  const adventureEpisode: MessageAdventureEpisode = {
+    episodeId: 'ep-1',
+    businessKey: 'elly/1/1',
+    characterKey: 'elly',
+    season: 1,
+    episodeNumber: 1,
+    title: '星海奇遇',
+    versionId: 'ver-2',
+    version: 2,
+  }
+
+  function withAdventure(
+    adventure: typeof adventureEpisode | null = adventureEpisode,
+    mode = 'adventure_story',
+  ) {
+    mockDetail.mockReturnValue({
+      data: {
+        ...makeMessage({ role: 'assistant', mode }),
+        rawPayload: { filler: null, answer: '我们继续冒险吧。' },
+        adventureEpisode: adventure,
+      },
+      isLoading: false,
+      error: null,
+    } as never)
+  }
+
+  it('冒险故事轮次展示集身份、当时标题与时间点版本链接', async () => {
+    withAdventure()
+
+    renderDrawer({
+      message: makeMessage({ role: 'assistant', mode: 'adventure_story' }),
+    })
+
+    expect(await screen.findByText('故事')).toBeInTheDocument()
+    expect(screen.getByText('elly/1/1')).toBeInTheDocument()
+    expect(screen.getByText('星海奇遇')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /查看当时版本 v2/ })
+    expect(link).toHaveAttribute(
+      'href',
+      '/adventure?tab=episodes&episodeId=ep-1&versionId=ver-2',
+    )
+    expect(screen.queryByText('版本未记录')).not.toBeInTheDocument()
+  })
+
+  it('没有版本记录时标注版本未记录，只链接到该集版本历史', async () => {
+    withAdventure({ ...adventureEpisode, versionId: null, version: null })
+
+    renderDrawer({
+      message: makeMessage({ role: 'assistant', mode: 'adventure_story' }),
+    })
+
+    expect(await screen.findByText('版本未记录')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /查看该集版本历史/ })
+    expect(link).toHaveAttribute(
+      'href',
+      '/adventure?tab=episodes&episodeId=ep-1',
+    )
+  })
+
+  it('普通 admin 只展示故事信息，不给冒险工作台的链接', async () => {
+    mockMeta.mockReturnValue({
+      data: { admin: { role: 'admin' } },
+    } as never)
+    withAdventure()
+
+    renderDrawer({
+      message: makeMessage({ role: 'assistant', mode: 'adventure_story' }),
+    })
+
+    expect(await screen.findByText('elly/1/1')).toBeInTheDocument()
+    expect(screen.getByText('星海奇遇')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /查看当时版本|查看该集版本历史/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('非冒险故事模式不展示故事行，即使服务端误带字段', async () => {
+    withAdventure(adventureEpisode, 'free_chat')
+
+    renderDrawer({ message: makeMessage({ mode: 'free_chat' }) })
+
+    expect(await screen.findByText('轮次 ID')).toBeInTheDocument()
+    expect(screen.queryByText('故事')).not.toBeInTheDocument()
+    expect(screen.queryByText('elly/1/1')).not.toBeInTheDocument()
   })
 })

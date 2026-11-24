@@ -35,6 +35,10 @@ import { fmtDateTime, shortHash, versionStatusMeta } from './labels'
  */
 interface Props {
   episodeId: string
+  /** 深链带来的版本快照：挂载时直接打开该版内容 */
+  initialVersionId?: string | null
+  /** 快照弹窗关闭后通知外层，避免切 tab 回来时反复自动弹 */
+  onPreviewClosed?: () => void
 }
 
 /** 可作为回滚目标的状态：草稿与已作废的都不是「曾经上线过」的内容 */
@@ -78,7 +82,11 @@ function VersionContentModal({
   )
 }
 
-export default function VersionHistory({ episodeId }: Props) {
+export default function VersionHistory({
+  episodeId,
+  initialVersionId,
+  onPreviewClosed,
+}: Props) {
   const versionsQuery = useAdventureVersions(episodeId)
   const versions = versionsQuery.data ?? []
   const authoring = useAdventureAuthoring()
@@ -87,7 +95,9 @@ export default function VersionHistory({ episodeId }: Props) {
   const detail = detailQuery.data ?? null
   const revert = useRevertAdventureEpisode()
 
-  const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
+  const [previewVersionId, setPreviewVersionId] = useState<string | null>(
+    initialVersionId ?? null,
+  )
   const [revertTarget, setRevertTarget] = useState<VersionSummary | null>(null)
   const [revertNote, setRevertNote] = useState<{
     tone: 'success' | 'warning'
@@ -322,7 +332,10 @@ export default function VersionHistory({ episodeId }: Props) {
       <VersionContentModal
         episodeId={episodeId}
         versionId={previewVersionId}
-        onClose={() => setPreviewVersionId(null)}
+        onClose={() => {
+          setPreviewVersionId(null)
+          onPreviewClosed?.()
+        }}
       />
 
       {revertTarget && detail && (

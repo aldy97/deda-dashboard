@@ -413,9 +413,25 @@ export interface MessageListResponse {
   items: MessageListItem[]
 }
 
+/** 消息对应的冒险故事。versionId/version 为空表示该轮没有版本记录，不做时间推断 */
+export interface MessageAdventureEpisode {
+  episodeId: string
+  /** {characterKey}/{season}/{episodeNumber}，与冒险内容工作台同一口径 */
+  businessKey: string
+  characterKey: string
+  season: number
+  episodeNumber: number
+  /** 有版本时是播放当时的标题，否则是集的当前标题 */
+  title: string
+  versionId: string | null
+  version: number | null
+}
+
 /** 整行详情，rawPayload 原样返回 */
 export interface MessageDetailResponse extends MessageListItem {
   rawPayload: unknown
+  /** 仅 mode=adventure_story 时可能非空；旧服务端没有该字段时为 undefined */
+  adventureEpisode?: MessageAdventureEpisode | null
 }
 
 /**

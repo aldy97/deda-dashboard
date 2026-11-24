@@ -41,6 +41,7 @@ export default function AdventureStudio() {
   const requested = searchParams.get('tab')
   const activeKey: TabKey = isTabKey(requested) ? requested : 'episodes'
   const selectedEpisodeId = searchParams.get('episodeId') || null
+  const selectedVersionId = searchParams.get('versionId') || null
   const [newDraft, setNewDraft] = useState<{
     seed: ScriptConvertResult | null
     nonce: number
@@ -70,7 +71,7 @@ export default function AdventureStudio() {
                   <>
                     <EpisodeTable
                       onOpen={(episodeId) =>
-                        setQuery({ episodeId }, { replace: false })
+                        setQuery({ episodeId, versionId: null }, { replace: false })
                       }
                       onCreate={
                         authoring
@@ -101,8 +102,12 @@ export default function AdventureStudio() {
       </Card>
 
       <EpisodeDetailDrawer
+        key={`${selectedEpisodeId ?? 'none'}:${selectedVersionId ?? 'none'}`}
         episodeId={selectedEpisodeId}
-        onClose={() => setQuery({ episodeId: null }, { replace: true })}
+        versionId={selectedVersionId}
+        onClose={() =>
+          setQuery({ episodeId: null, versionId: null }, { replace: true })
+        }
       />
 
       {/* 用 key 强制每次打开都是全新表单：集号、主角、内容都不沿用上一次 */}
@@ -115,7 +120,7 @@ export default function AdventureStudio() {
           onClose={() => setNewDraft(null)}
           onCreated={(episodeId) => {
             setNewDraft(null)
-            setQuery({ episodeId }, { replace: false })
+            setQuery({ episodeId, versionId: null }, { replace: false })
           }}
         />
       )}
