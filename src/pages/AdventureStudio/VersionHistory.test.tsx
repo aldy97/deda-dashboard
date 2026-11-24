@@ -160,6 +160,8 @@ function setup(options?: {
   version?: Record<string, unknown>
   diff?: Record<string, unknown>
   revert?: Record<string, unknown>
+  initialVersionId?: string | null
+  onPreviewClosed?: () => void
 }) {
   mockAuthoring.mockReturnValue(options?.authoring ?? true)
   mockVersions.mockReturnValue(options?.versions ?? versionsHook())
@@ -179,7 +181,13 @@ function setup(options?: {
     },
   )
   mockRevert.mockReturnValue(options?.revert ?? revertHook())
-  return render(<VersionHistory episodeId="ep1" />)
+  return render(
+    <VersionHistory
+      episodeId="ep1"
+      initialVersionId={options?.initialVersionId}
+      onPreviewClosed={options?.onPreviewClosed}
+    />,
+  )
 }
 
 function apiError(message: string, extra: Partial<ApiError> = {}): ApiError {
@@ -400,6 +408,72 @@ describe('VersionHistory 快照预览', () => {
 
     fireEvent.click(document.querySelector('.ant-modal-close') as HTMLElement)
     // jsdom 不跑动画，antd 关弹窗只留下离场类名；断言它已开始离开即可
+    await waitFor(() =>
+      expect(document.querySelector('.ant-modal')).toHaveClass('ant-zoom-leave'),
+    )
+  })
+
+  it('挂载时带 initialVersionId 直接打开该版快照', async () => {
+    setup({
+      initialVersionId: 'ver1',
+      version: {
+        data: {
+          meta: version({
+            id: 'ver1',
+            version: 1,
+            status: 'superseded',
+            isCurrent: false,
+          }),
+          content: {
+            title: '听风原野第一天',
+            recap: null,
+            segments: [
+              { order: 0, kind: 'narration', text: '深链进来的快照旁白' },
+            ],
+          },
+        },
+        isFetching: false,
+        error: null,
+      },
+    })
+
+    expect(
+      await screen.findByText('v1 快照内容 · 历史版本'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('深链进来的快照旁白')).toBeInTheDocument()
+    expect(mockVersion).toHaveBeenCalledWith('ep1', 'ver1')
+  })
+
+  it('关闭深链快照时通知外层一次，且不重复弹', async () => {
+    const onPreviewClosed = vi.fn()
+    setup({
+      initialVersionId: 'ver1',
+      onPreviewClosed,
+      version: {
+        data: {
+          meta: version({
+            id: 'ver1',
+            version: 1,
+            status: 'superseded',
+            isCurrent: false,
+          }),
+          content: {
+            title: '听风原野第一天',
+            recap: null,
+            segments: [],
+          },
+        },
+        isFetching: false,
+        error: null,
+      },
+    })
+
+    expect(
+      await screen.findByText('v1 快照内容 · 历史版本'),
+    ).toBeInTheDocument()
+    fireEvent.click(document.querySelector('.ant-modal-close') as HTMLElement)
+
+    expect(onPreviewClosed).toHaveBeenCalledTimes(1)
     await waitFor(() =>
       expect(document.querySelector('.ant-modal')).toHaveClass('ant-zoom-leave'),
     )
