@@ -186,7 +186,7 @@ query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm
    | `/llm` | `tab`=perf\|cost\|safety\|intent；`scene`（仅 perf tab 读） |
    | `/prompts` | `key`（抽屉）`scene`（预筛，可关闭 Tag） |
    | `/feedback` | `tab`=report\|user\|parentReport；`deviceId`（预筛，report 与 user 两个 tab 都吃） |
-   | `/adventure` | `tab`=episodes\|transfer\|audit\|recovery；`episodeId`（抽屉） |
+   | `/adventure` | `tab`=episodes\|transfer\|audit\|recovery；`episodeId`（抽屉）；`versionId`（版本快照，配合 `episodeId` 打开该集版本历史并自动展示快照） |
    | `/login` | `next`（登录意图，见下节） |
 
 4. 跨页下钻必须把上下文一起带过去：跳消息明细要带 `mode` + `startDate`/`endDate`，

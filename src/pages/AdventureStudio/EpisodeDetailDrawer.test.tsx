@@ -42,8 +42,18 @@ vi.mock('./EpisodeWorkspace', () => ({
 }))
 
 vi.mock('./VersionHistory', () => ({
-  default: (props: { episodeId: string }) => (
-    <div data-testid="versions-tab" data-episode={props.episodeId} />
+  default: (props: {
+    episodeId: string
+    initialVersionId?: string | null
+    onPreviewClosed?: () => void
+  }) => (
+    <div
+      data-testid="versions-tab"
+      data-episode={props.episodeId}
+      data-version={props.initialVersionId ?? ''}
+    >
+      <button onClick={() => props.onPreviewClosed?.()}>关闭快照</button>
+    </div>
   ),
 }))
 
@@ -150,6 +160,7 @@ function detail(overrides: Partial<EpisodeDetail> = {}): EpisodeDetail {
 
 function setup(options?: {
   episodeId?: string | null
+  versionId?: string | null
   episode?: Record<string, unknown>
   authoring?: boolean
 }) {
@@ -175,6 +186,7 @@ function setup(options?: {
       episodeId={
         options && 'episodeId' in options ? (options.episodeId ?? null) : 'ep1'
       }
+      versionId={options?.versionId}
       onClose={onClose}
     />,
   )
@@ -336,6 +348,30 @@ describe('EpisodeDetailDrawer 六个 tab 的懒挂载', () => {
     expect(screen.getByTestId('versions-tab')).toHaveAttribute(
       'data-episode',
       'ep1',
+    )
+  })
+
+  it('深链版本默认落版本历史，且关闭快照后切 tab 回来不再自动打开', async () => {
+    const user = userEvent.setup()
+    setup({ versionId: 'ver-1' })
+
+    expect(screen.queryByTestId('workspace-tab')).toBeNull()
+    expect(screen.getByTestId('versions-tab')).toHaveAttribute(
+      'data-version',
+      'ver-1',
+    )
+
+    await user.click(screen.getByRole('button', { name: '关闭快照' }))
+    expect(screen.getByTestId('versions-tab')).toHaveAttribute(
+      'data-version',
+      '',
+    )
+
+    await user.click(screen.getByRole('tab', { name: /内容与编辑/ }))
+    await user.click(screen.getByRole('tab', { name: '版本历史' }))
+    expect(screen.getByTestId('versions-tab')).toHaveAttribute(
+      'data-version',
+      '',
     )
   })
 
