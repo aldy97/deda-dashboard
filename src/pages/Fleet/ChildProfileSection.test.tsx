@@ -2,8 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { message } from 'antd'
 import { apiClient } from '../../api/client'
 import ChildProfileSection from './ChildProfileSection'
+
+// antd 静态 message 会另起一个 React root 渲染通知；测试结束它仍在 scheduler 里排队，
+// CI 环境下 teardown 后触发 window is not defined。这里把 message 打成 no-op 并断言调用。
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>()
+  return { ...actual, message: { success: vi.fn(), error: vi.fn() } }
+})
+
+const mockMessage = message as unknown as Record<
+  'success' | 'error',
+  ReturnType<typeof vi.fn>
+>
 
 vi.mock('../../api/client', () => ({
   apiClient: { get: vi.fn(), delete: vi.fn() },
@@ -136,6 +149,7 @@ describe('ChildProfileSection', () => {
 
     await waitFor(() => expect(mockDelete).toHaveBeenCalledWith(PROFILE_URL))
     expect(await screen.findByText('未设置孩子档案')).toBeTruthy()
+    expect(mockMessage.success).toHaveBeenCalledWith('孩子档案已清空')
   })
 
   it('DELETE 失败：提示清空失败且不改动展示', async () => {
@@ -150,7 +164,11 @@ describe('ChildProfileSection', () => {
       await screen.findByRole('button', { name: /确\s*认/ }),
     )
 
-    expect(await screen.findByText(/清空失败/)).toBeTruthy()
+    await waitFor(() =>
+      expect(mockMessage.error).toHaveBeenCalledWith(
+        '清空失败，请确认账号权限后重试',
+      ),
+    )
     expect(screen.getByText('二狗')).toBeTruthy()
   })
 })
