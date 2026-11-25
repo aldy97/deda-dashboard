@@ -170,7 +170,7 @@ function AssetRow({
 }
 
 /**
- * Elly 素材管理（仅 superadmin，路由层 OpsGate 已挡住普通 admin）。
+ * 图片素材管理（仅 superadmin，路由层 OpsGate 已挡住普通 admin）。
  *
  * 列表按展示位 key 分组；上传新版本走抽屉，发布 / 下架 / 回滚都在行内或
  * 版本历史抽屉里二次确认。注册表为空或只有内置诊断位时给空态说明，
@@ -309,7 +309,7 @@ export default function AppAssets() {
   return (
     <div>
       <PageHeader
-        title="Elly 素材"
+        title="图片素材"
         description="上传自有图片并绑定到固定展示位，发布后小程序通过公开 manifest 读取。仅超级管理员可操作。"
         actions={
           <Button

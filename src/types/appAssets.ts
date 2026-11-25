@@ -1,5 +1,5 @@
 /**
- * Elly 素材管理（/analytics/app-assets*）的契约类型。
+ * 图片素材管理（/analytics/app-assets*）的契约类型。
  *
  * 契约真相：deda-server 的 app-assets 控制器。展示位注册表由服务端维护，
  * 前端不自行发明 key；Asset 的 status 只有 draft / published / archived 三态。

@@ -100,7 +100,7 @@ describe('路由表', () => {
     expect(routes.map((route) => route.path)).not.toContain('test-devices')
   })
 
-  it('Elly 素材是受保护父路由的子路由，走运维组闸口', () => {
+  it('图片素材是受保护父路由的子路由，走运维组闸口', () => {
     expect(childPaths()).toContain('app-assets')
     expect(routes.map((route) => route.path)).not.toContain('app-assets')
   })

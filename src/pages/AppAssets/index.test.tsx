@@ -178,6 +178,10 @@ describe('AppAssets 列表渲染', () => {
     stubServer()
     renderPage()
 
+    // 页面标题与菜单 tab 同名，改名时两处要一起走
+    expect(
+      await screen.findByRole('heading', { name: '图片素材' }),
+    ).toBeInTheDocument()
     expect(await screen.findByText('首页 Banner')).toBeInTheDocument()
     expect(screen.getByText(BUSINESS_KEY)).toBeInTheDocument()
     expect(screen.getByText('home')).toBeInTheDocument()

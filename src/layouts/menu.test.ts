@@ -23,7 +23,7 @@ describe('运维组路径', () => {
     }
     expect(OPS_ROUTE_META['/voice'].title).toBe('语速与音色')
     expect(OPS_ROUTE_META['/test-devices'].title).toBe('测试设备白名单')
-    expect(OPS_ROUTE_META['/app-assets'].title).toBe('Elly 素材')
+    expect(OPS_ROUTE_META['/app-assets'].title).toBe('图片素材')
   })
 
   it('isOpsPath 只认精确一级路径', () => {
