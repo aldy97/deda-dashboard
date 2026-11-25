@@ -156,6 +156,9 @@ export default function AppAssets() {
     {
       title: '展示位',
       dataIndex: 'key',
+      // 不定宽列在窄屏会被压到一两个字宽（中文与 code 逐字断行、行高爆掉），
+      // 配合下方 scroll.x 让表格横向滚动而不是压缩列。
+      width: 240,
       render: (_, group) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{group.label}</Typography.Text>
@@ -332,6 +335,9 @@ export default function AppAssets() {
             dataSource={groups}
             loading={assetsQuery.isLoading}
             pagination={false}
+            // 9 列固定宽合计约 1.5k：容器更窄时横向滚动，而不是把列压向 min-content。
+            // 用 max-content 而不是写死像素，后续增删列不用同步改数字。
+            scroll={{ x: 'max-content' }}
           />
         </>
       )}

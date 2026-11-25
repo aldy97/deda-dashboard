@@ -178,6 +178,29 @@ describe('AppAssets 列表渲染', () => {
     expect(screen.getAllByText(/2026-11-25/).length).toBeGreaterThan(0)
   })
 
+  it('展示位列有显式宽度，表格横向滚动而不是把列压塌', async () => {
+    stubServer()
+    const { container } = renderPage()
+
+    await screen.findByText('首页 Banner')
+
+    const table = container.querySelector(
+      '.ant-table-content table',
+    ) as HTMLTableElement | null
+    expect(table).not.toBeNull()
+
+    // 展示位列是不定宽列：不写 width 时，窄屏会被压到一两个字宽，
+    // 中文与 code 逐字断行，行高从 91px 涨到 500px 以上。
+    const colWidths = Array.from(table!.querySelectorAll('col')).map(
+      (col) => col.style.width,
+    )
+    expect(colWidths[0]).toBe('240px')
+
+    // scroll.x 生效的标志：表格最小宽度 100%，不装 scroll 时没有这个内联样式，
+    // 浏览器会把所有列压向 min-content。
+    expect(table!.style.minWidth).toBe('100%')
+  })
+
   it('未发布且无草稿的展示位渲染「未发布」与占位', async () => {
     stubServer({ keys: [DIAGNOSTIC], assets: [DIAGNOSTIC_GROUP] })
     renderPage()
