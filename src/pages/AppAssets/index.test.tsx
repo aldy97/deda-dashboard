@@ -242,7 +242,7 @@ beforeEach(() => {
 })
 
 describe('AppAssets 列表渲染', () => {
-  it('按 key 分组渲染：label / key / page / 版本 / 缩略图 / 尺寸 / 大小 / 状态 / 时间 / 操作人', async () => {
+  it('按 key 分组渲染：label / key / 版本 / 缩略图 / 尺寸 / 大小 / 状态 / 时间 / 操作人', async () => {
     stubServer()
     renderPage()
 
@@ -251,7 +251,8 @@ describe('AppAssets 列表渲染', () => {
     ).toBeInTheDocument()
     expect(await screen.findByText('首页 Banner')).toBeInTheDocument()
     expect(screen.getByText(BUSINESS_KEY)).toBeInTheDocument()
-    expect(screen.getByText('home')).toBeInTheDocument()
+    // 展示位第三行原本展示注册表里的 page code，现已移除
+    expect(screen.queryByText('home')).toBeNull()
     expect(screen.getByText('v2')).toBeInTheDocument()
     expect(screen.getByAltText(`${BUSINESS_KEY} 缩略图`)).toBeInTheDocument()
     expect(screen.getByText('800 × 600')).toBeInTheDocument()

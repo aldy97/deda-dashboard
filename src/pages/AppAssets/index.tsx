@@ -288,9 +288,6 @@ export default function AppAssets() {
           <Typography.Text code style={{ fontSize: 12 }}>
             {group.key}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {group.page}
-          </Typography.Text>
         </Space>
       ),
     },
