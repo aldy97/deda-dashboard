@@ -154,4 +154,17 @@ describe('DeviceTable · 测试白名单标签', () => {
     expect(screen.queryByText('白名单')).toBeNull()
     expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
   })
+
+  it('设备 ID 与标签同格时允许换行，标签不会把 ID 挤成省略号', async () => {
+    renderTable(vi.fn(), [
+      makeDeviceItem('aabbccddeeff', {
+        testWhitelist: { note: '3 号样机-熊枫' },
+      }),
+    ])
+    const link = await screen.findByText('aabbccddeeff')
+    const cell = link.closest('div') as HTMLElement
+
+    expect(cell.style.flexWrap).toBe('wrap')
+    expect(link.getAttribute('style')).toContain('max-width: 100%')
+  })
 })
