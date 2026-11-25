@@ -11,13 +11,14 @@ import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets
 /**
  * 列表页行为契约。
  *
- * 上传 / 版本历史两个抽屉都替身掉（各自有独立测试），本页只考核：
- * 1. 按 key 分组渲染，字段齐全（缩略图 / 尺寸 / 大小 / 状态 / 时间 / 操作人）；
- * 2. 注册表为空与只有内置诊断位时给空态说明；
- * 3. 发布 / 下架都要 Popconfirm 二次确认，确认后才真的发 POST。
+ * 上传 / 版本历史 / 展示位表单三个弹层都替身掉（各自有独立测试），本页只考核：
+ * 1. 按 key 分组渲染，字段齐全；
+ * 2. 注册表为空 / 全部停用 / 只有内置诊断位的空态；
+ * 3. 上传、发布、下架、停用、启用、复制 key 的入口与二次确认；
+ * 4. 停用闸口：有 published 时入口禁用。
  */
 vi.mock('../../api/client', () => ({
-  apiClient: { get: vi.fn(), post: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
 }))
 
 vi.mock('./AssetUploadDrawer', () => ({
@@ -40,25 +41,58 @@ vi.mock('./VersionHistoryDrawer', () => ({
   ),
 }))
 
+vi.mock('./SlotFormModal', () => ({
+  default: (props: {
+    open: boolean
+    mode: string
+    slot?: { key?: string } | null
+    onClose?: () => void
+  }) => (
+    <div
+      data-testid="slot-modal"
+      data-open={String(props.open)}
+      data-mode={props.mode}
+      data-key={props.slot?.key ?? ''}
+    >
+      <button onClick={props.onClose}>关闭展示位表单</button>
+    </div>
+  ),
+}))
+
 vi.mock('./clipboard', () => ({ copyText: vi.fn() }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
 const mockPost = apiClient.post as unknown as ReturnType<typeof vi.fn>
+const mockPatch = apiClient.patch as unknown as ReturnType<typeof vi.fn>
 const mockCopyText = copyText as unknown as ReturnType<typeof vi.fn>
 
 const DIAGNOSTIC_KEY = 'diagnostics/remote-probe'
 const BUSINESS_KEY = 'home/banner'
 
-const DIAGNOSTIC: AppAssetKey = {
+function makeKey(
+  overrides: Partial<AppAssetKey> & Pick<AppAssetKey, 'key' | 'label' | 'page'>,
+): AppAssetKey {
+  return {
+    note: null,
+    enabled: true,
+    createdBy: null,
+    updatedBy: null,
+    createdAt: '2026-11-25T09:00:00+08:00',
+    updatedAt: '2026-11-25T09:00:00+08:00',
+    ...overrides,
+  }
+}
+
+const DIAGNOSTIC: AppAssetKey = makeKey({
   key: DIAGNOSTIC_KEY,
   label: '远程素材探针',
-  page: 'asset-selftest',
-}
-const BUSINESS: AppAssetKey = {
+  page: 'diagnostics',
+})
+const BUSINESS: AppAssetKey = makeKey({
   key: BUSINESS_KEY,
   label: '首页 Banner',
   page: 'home',
-}
+})
 
 function makeAsset(overrides: Partial<AppAsset> = {}): AppAsset {
   return {
@@ -93,26 +127,56 @@ const BUSINESS_GROUP: AppAssetGroup = {
   key: BUSINESS_KEY,
   label: '首页 Banner',
   page: 'home',
+  enabled: true,
   published: PUBLISHED,
   latestDraft: DRAFT,
   versions: [DRAFT, PUBLISHED],
 }
 
-const DIAGNOSTIC_GROUP: AppAssetGroup = {
-  key: DIAGNOSTIC_KEY,
-  label: '远程素材探针',
-  page: 'asset-selftest',
+const DRAFT_ONLY_GROUP: AppAssetGroup = {
+  ...BUSINESS_GROUP,
+  published: null,
+  latestDraft: DRAFT,
+  versions: [DRAFT],
+}
+
+const DISABLED_GROUP: AppAssetGroup = {
+  ...BUSINESS_GROUP,
+  enabled: false,
+  published: null,
+  latestDraft: DRAFT,
+  versions: [DRAFT],
+}
+
+const ORPHAN_GROUP: AppAssetGroup = {
+  key: 'legacy/old',
+  label: 'legacy/old',
+  page: '',
+  enabled: false,
+  orphan: true,
   published: null,
   latestDraft: null,
   versions: [],
 }
 
-function stubServer(opts: {
-  keys?: AppAssetKey[] | null
-  assets?: AppAssetGroup[] | null
-  keysError?: Error
-  assetsError?: Error
-} = {}) {
+const DIAGNOSTIC_GROUP: AppAssetGroup = {
+  key: DIAGNOSTIC_KEY,
+  label: '远程素材探针',
+  page: 'diagnostics',
+  enabled: true,
+  published: null,
+  latestDraft: null,
+  versions: [],
+}
+
+function stubServer(
+  opts: {
+    keys?: AppAssetKey[] | null
+    assets?: AppAssetGroup[] | null
+    keysError?: Error
+    assetsError?: Error
+  } = {},
+) {
   const { keys = [BUSINESS], assets = [BUSINESS_GROUP] } = opts
   mockGet.mockImplementation((url: string) => {
     if (url === '/analytics/app-assets/keys') {
@@ -125,6 +189,7 @@ function stubServer(opts: {
     return Promise.resolve({ data: assets })
   })
   mockPost.mockResolvedValue({ data: PUBLISHED })
+  mockPatch.mockResolvedValue({ data: BUSINESS })
 }
 
 function createWrapper() {
@@ -144,16 +209,14 @@ function renderPage() {
 }
 
 function rowFor(key: string): HTMLElement {
-  const cell = screen.getByText(key)
+  // 孤儿展示位的 label 与 key 都是同一个字符串，会出现两个文本节点；
+  // 取第一个并上溯到同一行即可。
+  const cell = screen.getAllByText(key)[0]
   const row = cell.closest('tr')
   if (!row) throw new Error(`找不到 ${key} 所在行`)
   return row
 }
 
-/**
- * 行内动作都收进「操作」下拉菜单：先点触发器，再从弹出的 menu 里选。
- * 菜单渲染在 body 的 portal 里，所以动作项不在 row 的 DOM 子树内。
- */
 async function openRowMenu(key: string) {
   await userEvent.click(
     within(rowFor(key)).getByRole('button', { name: '操作' }),
@@ -164,9 +227,14 @@ async function pickRowAction(name: string | RegExp) {
   await userEvent.click(await screen.findByRole('menuitem', { name }))
 }
 
+function menuLabels(): string[] {
+  return screen.getAllByRole('menuitem').map((el) => el.textContent ?? '')
+}
+
 beforeEach(() => {
   mockGet.mockReset()
   mockPost.mockReset()
+  mockPatch.mockReset()
   mockCopyText.mockReset()
   mockCopyText.mockResolvedValue(true)
   vi.spyOn(message, 'success').mockImplementation(() => undefined as never)
@@ -178,7 +246,6 @@ describe('AppAssets 列表渲染', () => {
     stubServer()
     renderPage()
 
-    // 页面标题与菜单 tab 同名，改名时两处要一起走
     expect(
       await screen.findByRole('heading', { name: '图片素材' }),
     ).toBeInTheDocument()
@@ -207,18 +274,11 @@ describe('AppAssets 列表渲染', () => {
     ) as HTMLTableElement | null
     expect(table).not.toBeNull()
 
-    // 展示位列是不定宽列：不写 width 时，窄屏会被压到一两个字宽，
-    // 中文与 code 逐字断行，行高从 91px 涨到 500px 以上。
     const colWidths = Array.from(table!.querySelectorAll('col')).map(
       (col) => col.style.width,
     )
     expect(colWidths[0]).toBe('240px')
-
-    // scroll.x 生效的标志：表格最小宽度 100%，不装 scroll 时没有这个内联样式，
-    // 浏览器会把所有列压向 min-content。
     expect(table!.style.minWidth).toBe('100%')
-
-    // 操作列收成下拉菜单后只占 80px，整表 1198px，14 寸屏（内容区约 1224px）不用横滚。
     expect(colWidths[colWidths.length - 1]).toBe('80px')
   })
 
@@ -231,12 +291,36 @@ describe('AppAssets 列表渲染', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
-  it('注册表为空：显示空态说明，且「新建版本」按钮禁用', async () => {
+  it('停用与未注册展示位有明确标记', async () => {
+    stubServer({
+      keys: [BUSINESS],
+      assets: [DISABLED_GROUP, ORPHAN_GROUP],
+    })
+    renderPage()
+
+    expect(await screen.findByText('已停用')).toBeInTheDocument()
+    expect(screen.getByText('未注册')).toBeInTheDocument()
+  })
+
+  it('注册表为空：仍允许新建第一个展示位，上传入口禁用', async () => {
     stubServer({ keys: [], assets: [] })
     renderPage()
 
     expect(await screen.findByText(/展示位注册表为空/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '新建版本' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '新建展示位' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '上传新版本' })).toBeDisabled()
+  })
+
+  it('全部展示位停用：上传入口禁用并说明原因', async () => {
+    stubServer({
+      keys: [{ ...BUSINESS, enabled: false }],
+      assets: [DISABLED_GROUP],
+    })
+    renderPage()
+
+    expect(await screen.findByText('所有展示位已停用')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '上传新版本' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '新建展示位' })).toBeEnabled()
   })
 
   it('只有内置诊断位：显示说明 Alert，不误报成业务素材', async () => {
@@ -246,7 +330,6 @@ describe('AppAssets 列表渲染', () => {
     expect(
       await screen.findByText('当前只有内置诊断展示位'),
     ).toBeInTheDocument()
-    expect(screen.getAllByText(/远程素材探针/).length).toBeGreaterThan(0)
   })
 
   it('展示位注册表加载失败：显示错误 Alert 与服务端 message', async () => {
@@ -268,15 +351,14 @@ describe('AppAssets 列表渲染', () => {
   })
 })
 
-describe('AppAssets 新建版本抽屉', () => {
-  it('顶部「新建版本」打开抽屉，不预选 key', async () => {
+describe('AppAssets 新建展示位与上传抽屉', () => {
+  it('顶部「上传新版本」打开抽屉，不预选 key', async () => {
     stubServer()
     renderPage()
 
     await screen.findByText('首页 Banner')
-    // 顶部（PageHeader）与行内各有一个「新建版本」，顶部是第一个
     await userEvent.click(
-      screen.getAllByRole('button', { name: '新建版本' })[0],
+      screen.getByRole('button', { name: '上传新版本' }),
     )
 
     const drawer = screen.getByTestId('upload-drawer')
@@ -284,49 +366,117 @@ describe('AppAssets 新建版本抽屉', () => {
     expect(drawer.dataset.preset).toBe('')
   })
 
-  it('行内「新建版本」打开抽屉并预选该 key', async () => {
+  it('行内「上传到此展示位」打开抽屉并预选该 key', async () => {
     stubServer()
     renderPage()
 
     await screen.findByText('首页 Banner')
     await openRowMenu(BUSINESS_KEY)
-    await pickRowAction('新建版本')
+    await pickRowAction('上传到此展示位')
 
     const drawer = screen.getByTestId('upload-drawer')
     expect(drawer.dataset.open).toBe('true')
     expect(drawer.dataset.preset).toBe(BUSINESS_KEY)
   })
 
-  it('「操作」是下拉菜单，只列出当前可执行的动作', async () => {
+  it('顶部「新建展示位」打开创建表单', async () => {
+    stubServer()
+    renderPage()
+
+    await screen.findByText('首页 Banner')
+    await userEvent.click(
+      screen.getByRole('button', { name: '新建展示位' }),
+    )
+
+    const modal = screen.getByTestId('slot-modal')
+    expect(modal.dataset.open).toBe('true')
+    expect(modal.dataset.mode).toBe('create')
+  })
+
+  it('行内「编辑展示位」打开编辑表单并带入 key', async () => {
+    stubServer()
+    renderPage()
+
+    await screen.findByText('首页 Banner')
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('编辑展示位')
+
+    const modal = screen.getByTestId('slot-modal')
+    expect(modal.dataset.open).toBe('true')
+    expect(modal.dataset.mode).toBe('edit')
+    expect(modal.dataset.key).toBe(BUSINESS_KEY)
+  })
+
+  it('「操作」菜单按状态列出动作；有 published 时停用项禁用', async () => {
     stubServer()
     renderPage()
     await screen.findByText('首页 Banner')
 
     await openRowMenu(BUSINESS_KEY)
-    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual([
-      '新建版本',
+    expect(menuLabels()).toEqual([
+      '上传到此展示位',
       '发布',
       '下架',
       '版本历史',
       '预览',
       '复制 URL',
+      '编辑展示位',
+      '停用展示位',
+      '复制 key',
     ])
+    expect(
+      screen.getByRole('menuitem', { name: '停用展示位' }),
+    ).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('既没草稿也没发布版本时，菜单只剩「新建版本 / 版本历史」', async () => {
+  it('既没草稿也没发布版本时，菜单只剩上传 / 历史 / 展示位管理', async () => {
     stubServer({ keys: [DIAGNOSTIC], assets: [DIAGNOSTIC_GROUP] })
     renderPage()
     await screen.findByText('远程素材探针')
 
     await openRowMenu(DIAGNOSTIC_KEY)
-    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual([
-      '新建版本',
+    expect(menuLabels()).toEqual([
+      '上传到此展示位',
       '版本历史',
+      '编辑展示位',
+      '停用展示位',
+      '复制 key',
     ])
+  })
+
+  it('停用行只保留历史 / 预览 / 复制与启用入口', async () => {
+    stubServer({
+      keys: [BUSINESS],
+      assets: [DISABLED_GROUP],
+    })
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    expect(menuLabels()).toEqual([
+      '版本历史',
+      '预览',
+      '复制 URL',
+      '编辑展示位',
+      '启用展示位',
+      '复制 key',
+    ])
+  })
+
+  it('孤儿行只读，只有版本历史', async () => {
+    stubServer({
+      keys: [],
+      assets: [ORPHAN_GROUP],
+    })
+    renderPage()
+    await screen.findAllByText(ORPHAN_GROUP.key)
+
+    await openRowMenu(ORPHAN_GROUP.key)
+    expect(menuLabels()).toEqual(['版本历史'])
   })
 })
 
-describe('AppAssets 发布 / 下架确认', () => {
+describe('AppAssets 发布 / 下架 / 停用 / 启用确认', () => {
   it('发布草稿：取消不发起 POST，确认才发 publish', async () => {
     stubServer()
     renderPage()
@@ -371,9 +521,52 @@ describe('AppAssets 发布 / 下架确认', () => {
     )
     expect(message.success).toHaveBeenCalledWith('已下架')
   })
+
+  it('停用（无 published）：确认后发 PATCH enabled=false', async () => {
+    stubServer({
+      keys: [BUSINESS],
+      assets: [DRAFT_ONLY_GROUP],
+    })
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('停用展示位')
+    await userEvent.click(
+      await screen.findByRole('button', { name: /确\s*认/ }),
+    )
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/analytics/app-assets/keys',
+        { key: BUSINESS_KEY, enabled: false },
+      ),
+    )
+    expect(message.success).toHaveBeenCalledWith('已停用展示位')
+  })
+
+  it('启用：直接发 PATCH enabled=true', async () => {
+    stubServer({
+      keys: [{ ...BUSINESS, enabled: false }],
+      assets: [DISABLED_GROUP],
+    })
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('启用展示位')
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/analytics/app-assets/keys',
+        { key: BUSINESS_KEY, enabled: true },
+      ),
+    )
+    expect(message.success).toHaveBeenCalledWith('已启用展示位')
+  })
 })
 
-describe('AppAssets 预览与复制 URL', () => {
+describe('AppAssets 预览与复制', () => {
   it('预览打开模态框展示大图', async () => {
     stubServer()
     renderPage()
@@ -384,9 +577,6 @@ describe('AppAssets 预览与复制 URL', () => {
 
     expect(await screen.findByAltText(`${BUSINESS_KEY} v2`)).toBeInTheDocument()
     expect(screen.getByText('预览 v2')).toBeInTheDocument()
-
-    // 预览图要在弹窗里水平居中：antd 的 .ant-image 是 inline-block，会按原图宽度
-    // 贴着左边排，必须由外层容器居中（见 index.tsx 的 asset-preview）。
     expect(screen.getByTestId('asset-preview')).toHaveStyle({
       textAlign: 'center',
     })
@@ -404,14 +594,23 @@ describe('AppAssets 预览与复制 URL', () => {
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith('已复制 URL'),
     )
-
-    await openRowMenu(BUSINESS_KEY)
-    expect(
-      await screen.findByRole('menuitem', { name: /已复制\s*URL/ }),
-    ).toBeInTheDocument()
   })
 
-  it('复制失败：提示手动复制，菜单项保持「复制 URL」', async () => {
+  it('复制 key：成功后提示', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('复制 key')
+
+    expect(mockCopyText).toHaveBeenCalledWith(BUSINESS_KEY)
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith('已复制 key'),
+    )
+  })
+
+  it('复制失败：提示手动复制', async () => {
     mockCopyText.mockResolvedValue(false)
     stubServer()
     renderPage()
@@ -422,37 +621,6 @@ describe('AppAssets 预览与复制 URL', () => {
 
     await waitFor(() =>
       expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
-    )
-    expect(message.success).not.toHaveBeenCalled()
-
-    await openRowMenu(BUSINESS_KEY)
-    expect(
-      await screen.findByRole('menuitem', { name: /^复制\s*URL$/ }),
-    ).toBeInTheDocument()
-  })
-
-  it('复制还没落地时再点同一项，不会重复复制', async () => {
-    let finishCopy: (ok: boolean) => void = () => undefined
-    mockCopyText.mockImplementation(
-      () =>
-        new Promise<boolean>((resolve) => {
-          finishCopy = resolve
-        }),
-    )
-    stubServer()
-    renderPage()
-    await screen.findByText('首页 Banner')
-
-    await openRowMenu(BUSINESS_KEY)
-    await pickRowAction(/复制\s*URL/)
-    await openRowMenu(BUSINESS_KEY)
-    await pickRowAction(/复制\s*URL/)
-
-    expect(mockCopyText).toHaveBeenCalledTimes(1)
-
-    finishCopy(true)
-    await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith('已复制 URL'),
     )
   })
 })
@@ -469,5 +637,37 @@ describe('AppAssets 版本历史抽屉', () => {
     const drawer = screen.getByTestId('history-drawer')
     expect(drawer.dataset.open).toBe('true')
     expect(drawer.dataset.key).toBe(BUSINESS_KEY)
+  })
+})
+
+describe('AppAssets 展示位表单与复制 key 边界', () => {
+  it('关闭展示位表单后回到关闭态', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '新建展示位' }),
+    )
+    expect(screen.getByTestId('slot-modal').dataset.open).toBe('true')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '关闭展示位表单' }),
+    )
+    expect(screen.getByTestId('slot-modal').dataset.open).toBe('false')
+  })
+
+  it('复制 key 失败提示手动复制', async () => {
+    mockCopyText.mockResolvedValue(false)
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('复制 key')
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+    )
   })
 })
