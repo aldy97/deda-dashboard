@@ -150,6 +150,20 @@ function rowFor(key: string): HTMLElement {
   return row
 }
 
+/**
+ * 行内动作都收进「操作」下拉菜单：先点触发器，再从弹出的 menu 里选。
+ * 菜单渲染在 body 的 portal 里，所以动作项不在 row 的 DOM 子树内。
+ */
+async function openRowMenu(key: string) {
+  await userEvent.click(
+    within(rowFor(key)).getByRole('button', { name: '操作' }),
+  )
+}
+
+async function pickRowAction(name: string | RegExp) {
+  await userEvent.click(await screen.findByRole('menuitem', { name }))
+}
+
 beforeEach(() => {
   mockGet.mockReset()
   mockPost.mockReset()
@@ -164,6 +178,10 @@ describe('AppAssets 列表渲染', () => {
     stubServer()
     renderPage()
 
+    // 页面标题与菜单 tab 同名，改名时两处要一起走
+    expect(
+      await screen.findByRole('heading', { name: '图片素材' }),
+    ).toBeInTheDocument()
     expect(await screen.findByText('首页 Banner')).toBeInTheDocument()
     expect(screen.getByText(BUSINESS_KEY)).toBeInTheDocument()
     expect(screen.getByText('home')).toBeInTheDocument()
@@ -176,6 +194,32 @@ describe('AppAssets 列表渲染', () => {
     expect(screen.getByText('alice')).toBeInTheDocument()
     // 更新时间只断言日期部分，避免 CI（UTC）与本地时区钟点不一致
     expect(screen.getAllByText(/2026-11-25/).length).toBeGreaterThan(0)
+  })
+
+  it('展示位列有显式宽度，表格横向滚动而不是把列压塌', async () => {
+    stubServer()
+    const { container } = renderPage()
+
+    await screen.findByText('首页 Banner')
+
+    const table = container.querySelector(
+      '.ant-table-content table',
+    ) as HTMLTableElement | null
+    expect(table).not.toBeNull()
+
+    // 展示位列是不定宽列：不写 width 时，窄屏会被压到一两个字宽，
+    // 中文与 code 逐字断行，行高从 91px 涨到 500px 以上。
+    const colWidths = Array.from(table!.querySelectorAll('col')).map(
+      (col) => col.style.width,
+    )
+    expect(colWidths[0]).toBe('240px')
+
+    // scroll.x 生效的标志：表格最小宽度 100%，不装 scroll 时没有这个内联样式，
+    // 浏览器会把所有列压向 min-content。
+    expect(table!.style.minWidth).toBe('100%')
+
+    // 操作列收成下拉菜单后只占 80px，整表 1198px，14 寸屏（内容区约 1224px）不用横滚。
+    expect(colWidths[colWidths.length - 1]).toBe('80px')
   })
 
   it('未发布且无草稿的展示位渲染「未发布」与占位', async () => {
@@ -245,14 +289,40 @@ describe('AppAssets 新建版本抽屉', () => {
     renderPage()
 
     await screen.findByText('首页 Banner')
-    const row = rowFor(BUSINESS_KEY)
-    await userEvent.click(
-      within(row).getByRole('button', { name: '新建版本' }),
-    )
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('新建版本')
 
     const drawer = screen.getByTestId('upload-drawer')
     expect(drawer.dataset.open).toBe('true')
     expect(drawer.dataset.preset).toBe(BUSINESS_KEY)
+  })
+
+  it('「操作」是下拉菜单，只列出当前可执行的动作', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual([
+      '新建版本',
+      '发布',
+      '下架',
+      '版本历史',
+      '预览',
+      '复制 URL',
+    ])
+  })
+
+  it('既没草稿也没发布版本时，菜单只剩「新建版本 / 版本历史」', async () => {
+    stubServer({ keys: [DIAGNOSTIC], assets: [DIAGNOSTIC_GROUP] })
+    renderPage()
+    await screen.findByText('远程素材探针')
+
+    await openRowMenu(DIAGNOSTIC_KEY)
+    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual([
+      '新建版本',
+      '版本历史',
+    ])
   })
 })
 
@@ -262,14 +332,15 @@ describe('AppAssets 发布 / 下架确认', () => {
     renderPage()
     await screen.findByText('首页 Banner')
 
-    const row = rowFor(BUSINESS_KEY)
-    await userEvent.click(within(row).getByRole('button', { name: /发\s*布/ }))
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('发布')
     await userEvent.click(
       await screen.findByRole('button', { name: /取\s*消/ }),
     )
     expect(mockPost).not.toHaveBeenCalled()
 
-    await userEvent.click(within(row).getByRole('button', { name: /发\s*布/ }))
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('发布')
     await userEvent.click(
       await screen.findByRole('button', { name: /确\s*认/ }),
     )
@@ -287,8 +358,8 @@ describe('AppAssets 发布 / 下架确认', () => {
     renderPage()
     await screen.findByText('首页 Banner')
 
-    const row = rowFor(BUSINESS_KEY)
-    await userEvent.click(within(row).getByRole('button', { name: /下\s*架/ }))
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('下架')
     await userEvent.click(
       await screen.findByRole('button', { name: /确\s*认/ }),
     )
@@ -308,32 +379,81 @@ describe('AppAssets 预览与复制 URL', () => {
     renderPage()
     await screen.findByText('首页 Banner')
 
-    await userEvent.click(
-      within(rowFor(BUSINESS_KEY)).getByRole('button', { name: /预\s*览/ }),
-    )
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('预览')
 
     expect(await screen.findByAltText(`${BUSINESS_KEY} v2`)).toBeInTheDocument()
     expect(screen.getByText('预览 v2')).toBeInTheDocument()
+
+    // 预览图要在弹窗里水平居中：antd 的 .ant-image 是 inline-block，会按原图宽度
+    // 贴着左边排，必须由外层容器居中（见 index.tsx 的 asset-preview）。
+    expect(screen.getByTestId('asset-preview')).toHaveStyle({
+      textAlign: 'center',
+    })
   })
 
-  it('复制 URL：成功后提示并改变按钮文案', async () => {
+  it('复制 URL：成功后提示，菜单项改为「已复制 URL」', async () => {
     stubServer()
     renderPage()
     await screen.findByText('首页 Banner')
 
-    await userEvent.click(
-      within(rowFor(BUSINESS_KEY)).getByRole('button', {
-        name: /复制\s*URL/,
-      }),
-    )
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction(/复制\s*URL/)
 
     expect(mockCopyText).toHaveBeenCalledWith(PUBLISHED.url)
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith('已复制 URL'),
     )
+
+    await openRowMenu(BUSINESS_KEY)
     expect(
-      within(rowFor(BUSINESS_KEY)).getByRole('button', { name: '已复制' }),
+      await screen.findByRole('menuitem', { name: /已复制\s*URL/ }),
     ).toBeInTheDocument()
+  })
+
+  it('复制失败：提示手动复制，菜单项保持「复制 URL」', async () => {
+    mockCopyText.mockResolvedValue(false)
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction(/复制\s*URL/)
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+    )
+    expect(message.success).not.toHaveBeenCalled()
+
+    await openRowMenu(BUSINESS_KEY)
+    expect(
+      await screen.findByRole('menuitem', { name: /^复制\s*URL$/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('复制还没落地时再点同一项，不会重复复制', async () => {
+    let finishCopy: (ok: boolean) => void = () => undefined
+    mockCopyText.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishCopy = resolve
+        }),
+    )
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction(/复制\s*URL/)
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction(/复制\s*URL/)
+
+    expect(mockCopyText).toHaveBeenCalledTimes(1)
+
+    finishCopy(true)
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith('已复制 URL'),
+    )
   })
 })
 
@@ -343,11 +463,8 @@ describe('AppAssets 版本历史抽屉', () => {
     renderPage()
     await screen.findByText('首页 Banner')
 
-    await userEvent.click(
-      within(rowFor(BUSINESS_KEY)).getByRole('button', {
-        name: /版本历史/,
-      }),
-    )
+    await openRowMenu(BUSINESS_KEY)
+    await pickRowAction('版本历史')
 
     const drawer = screen.getByTestId('history-drawer')
     expect(drawer.dataset.open).toBe('true')

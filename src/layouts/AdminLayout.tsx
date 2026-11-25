@@ -89,7 +89,7 @@ function buildMenuItems(locked: boolean): MenuProps['items'] {
         },
         { key: '/prompts', label: '提示词管理', icon: <FileTextOutlined /> },
         { key: '/voice', label: '语速与音色', icon: <AudioOutlined /> },
-        { key: '/app-assets', label: 'Elly 素材', icon: <FileImageOutlined /> },
+        { key: '/app-assets', label: '图片素材', icon: <FileImageOutlined /> },
       ],
     },
   ]

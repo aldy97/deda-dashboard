@@ -232,5 +232,10 @@ describe('VersionHistoryDrawer 预览', () => {
 
     expect(await screen.findByText('首页 Banner v3')).toBeInTheDocument()
     expect(screen.getAllByAltText(`${KEY} v3`).length).toBeGreaterThan(0)
+
+    // 与列表页的预览弹窗同口径：外层容器负责居中，否则小图贴左。
+    expect(screen.getByTestId('version-preview')).toHaveStyle({
+      textAlign: 'center',
+    })
   })
 })

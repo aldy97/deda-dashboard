@@ -7,7 +7,7 @@ import type {
 } from '../types/appAssets'
 
 /**
- * Elly 素材管理接口层。
+ * 图片素材管理接口层。
  *
  * 展示位注册表与素材列表是纯读；写操作（上传 / 发布 / 下架）统一走 POST。
  * 上传用 multipart（FormData），其余两个动作只传资产 ID。

@@ -38,7 +38,7 @@ export const OPS_ROUTE_META: Record<OpsPath, { title: string }> = {
   '/test-devices': { title: '测试设备白名单' },
   '/prompts': { title: '提示词管理' },
   '/voice': { title: '语速与音色' },
-  '/app-assets': { title: 'Elly 素材' },
+  '/app-assets': { title: '图片素材' },
 }
 
 export function isOpsPath(pathname: string): boolean {
