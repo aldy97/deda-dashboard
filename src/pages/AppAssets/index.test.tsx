@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { message } from 'antd'
 import { apiClient } from '../../api/client'
-import { copyText } from './clipboard'
+import { copyText } from '../../utils/clipboard'
 import AppAssets from './index'
 import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets'
 
@@ -59,7 +59,7 @@ vi.mock('./SlotFormModal', () => ({
   ),
 }))
 
-vi.mock('./clipboard', () => ({ copyText: vi.fn() }))
+vi.mock('../../utils/clipboard', () => ({ copyText: vi.fn() }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
 const mockPost = apiClient.post as unknown as ReturnType<typeof vi.fn>
