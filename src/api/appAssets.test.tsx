@@ -27,7 +27,7 @@ import type { AppAsset, AppAssetGroup, AppAssetKey } from '../types/appAssets'
  * mutation 成功后必须同时作废「列表」与「该 key 的版本历史」两处缓存。
  */
 vi.mock('./client', () => ({
-  apiClient: { get: vi.fn(), post: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
 }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
@@ -37,7 +37,13 @@ const KEY = 'diagnostics/remote-probe'
 const KEY_ITEM: AppAssetKey = {
   key: KEY,
   label: '远程素材探针',
-  page: 'asset-selftest',
+  page: 'diagnostics',
+  note: null,
+  enabled: true,
+  createdBy: null,
+  updatedBy: null,
+  createdAt: '2026-11-25T10:00:00+08:00',
+  updatedAt: '2026-11-25T10:00:00+08:00',
 }
 
 const ASSET: AppAsset = {
@@ -60,7 +66,8 @@ const ASSET: AppAsset = {
 const GROUP: AppAssetGroup = {
   key: KEY,
   label: '远程素材探针',
-  page: 'asset-selftest',
+  page: 'diagnostics',
+  enabled: true,
   published: ASSET,
   latestDraft: null,
   versions: [ASSET],

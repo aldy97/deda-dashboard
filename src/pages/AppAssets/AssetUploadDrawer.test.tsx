@@ -39,7 +39,13 @@ const mockReadDims = readImageDimensions as unknown as ReturnType<typeof vi.fn>
 const KEY: AppAssetKey = {
   key: 'diagnostics/remote-probe',
   label: '远程素材探针',
-  page: 'asset-selftest',
+  page: 'diagnostics',
+  note: null,
+  enabled: true,
+  createdBy: null,
+  updatedBy: null,
+  createdAt: '2026-11-25T10:00:00+08:00',
+  updatedAt: '2026-11-25T10:00:00+08:00',
 }
 
 const ASSET: AppAsset = {

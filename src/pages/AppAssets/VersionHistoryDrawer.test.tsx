@@ -70,6 +70,7 @@ const GROUP: AppAssetGroup = {
   key: KEY,
   label: '首页 Banner',
   page: 'home',
+  enabled: true,
   published: PUBLISHED,
   latestDraft: DRAFT,
   versions: [DRAFT, PUBLISHED, ARCHIVED],

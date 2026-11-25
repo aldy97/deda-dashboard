@@ -9,12 +9,12 @@ import type {
 /**
  * 图片素材管理接口层。
  *
- * 展示位注册表与素材列表是纯读；写操作（上传 / 发布 / 下架）统一走 POST。
- * 上传用 multipart（FormData），其余两个动作只传资产 ID。
+ * 展示位注册表与素材列表是纯读；写操作（上传 / 发布 / 下架 / 展示位 CRUD）
+ * 统一走 POST / PATCH。上传用 multipart（FormData），其余只传业务字段。
  *
- * mutation 与它要失效的 queryKey 写在一起：上传 / 发布 / 下架成功后必须
- * 同时作废「列表」与「该 key 的版本历史」两处缓存，否则会出现
- * 「弹窗说发布成功、列表还标着草稿」的自相矛盾。
+ * mutation 与它要失效的 queryKey 写在一起：素材写操作要同时作废「列表」与
+ * 「该 key 的版本历史」；展示位写操作要同时作废「注册表」与「素材列表」，
+ * 否则会出现「弹窗说改成功、页面还是旧值」的自相矛盾。
  */
 
 export const APP_ASSET_KEYS_KEY = ['analytics', 'appAssetKeys'] as const
@@ -46,7 +46,7 @@ export async function fetchAppAssetVersions(
   return resp.data as AppAsset[]
 }
 
-// ---- 写 ----
+// ---- 写：素材 ----
 
 export interface UploadAppAssetPayload {
   key: string
@@ -91,6 +91,36 @@ export async function archiveAppAsset(id: string): Promise<AppAsset> {
   return resp.data as AppAsset
 }
 
+// ---- 写：展示位 ----
+
+export interface CreateAppAssetKeyInput {
+  page: string
+  suffix: string
+  label: string
+  note?: string | null
+}
+
+export interface UpdateAppAssetKeyInput {
+  key: string
+  label?: string
+  note?: string | null
+  enabled?: boolean
+}
+
+export async function createAppAssetKey(
+  input: CreateAppAssetKeyInput,
+): Promise<AppAssetKey> {
+  const resp = await apiClient.post('/analytics/app-assets/keys', input)
+  return resp.data as AppAssetKey
+}
+
+export async function updateAppAssetKey(
+  input: UpdateAppAssetKeyInput,
+): Promise<AppAssetKey> {
+  const resp = await apiClient.patch('/analytics/app-assets/keys', input)
+  return resp.data as AppAssetKey
+}
+
 // ---- hooks ----
 
 export function useAppAssetKeys() {
@@ -126,6 +156,17 @@ function useInvalidateAppAssets(key?: string | null) {
   }
 }
 
+/** 展示位写操作：注册表与素材列表都要重取。 */
+function useInvalidateCatalog() {
+  const queryClient = useQueryClient()
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: APP_ASSET_KEYS_KEY }),
+      queryClient.invalidateQueries({ queryKey: APP_ASSETS_KEY }),
+    ])
+  }
+}
+
 export function useUploadAppAsset() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -155,6 +196,22 @@ export function useArchiveAppAsset(key: string | null) {
   const invalidate = useInvalidateAppAssets(key)
   return useMutation({
     mutationFn: archiveAppAsset,
+    onSuccess: invalidate,
+  })
+}
+
+export function useCreateAppAssetKey() {
+  const invalidate = useInvalidateCatalog()
+  return useMutation({
+    mutationFn: createAppAssetKey,
+    onSuccess: invalidate,
+  })
+}
+
+export function useUpdateAppAssetKey() {
+  const invalidate = useInvalidateCatalog()
+  return useMutation({
+    mutationFn: updateAppAssetKey,
     onSuccess: invalidate,
   })
 }

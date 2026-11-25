@@ -21,52 +21,69 @@ import {
   useAppAssets,
   useArchiveAppAsset,
   usePublishAppAsset,
+  useUpdateAppAssetKey,
 } from '../../api/appAssets'
-import type { AppAsset, AppAssetGroup } from '../../types/appAssets'
+import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets'
 import { formatBytes, formatDims, formatTime } from './labels'
 import { copyText } from './clipboard'
 import AssetUploadDrawer from './AssetUploadDrawer'
 import VersionHistoryDrawer from './VersionHistoryDrawer'
+import SlotFormModal from './SlotFormModal'
 
 /** 诊断展示位是服务端内置兜底，不算「有业务素材可管理」 */
 const DIAGNOSTIC_KEY = 'diagnostics/remote-probe'
 
-type RowAction = 'upload' | 'publish' | 'archive' | 'history' | 'preview' | 'copy'
+type RowAction =
+  | 'upload'
+  | 'publish'
+  | 'archive'
+  | 'history'
+  | 'preview'
+  | 'copy'
+  | 'edit-slot'
+  | 'disable-slot'
+  | 'enable-slot'
+  | 'copy-key'
 
 /**
- * 单行动作收成一个「操作」下拉菜单：操作列从 360px 降到 80px，整表约 1198px，
- * 14 寸屏（内容区约 1224px）不必横向滚动。菜单项按当前状态裁剪——没有草稿
- * 就没有「发布」，没有版本就没有「预览 / 复制 URL」。
- *
- * 发布 / 下架仍要二次确认，但换成同一行的受控 Modal：下拉菜单里的 action item
- * 一旦点击就关浮层，没有可挂 Popconfirm 的锚点。
- *
- * 单行独立成组件：发布 / 下架两个 mutation 都要按 key 作废缓存，必须拿到当前行
- * 的 key，不能在一个父组件里用一个 hook 覆盖所有行。
+ * 单行动作收成一个「操作」下拉菜单，按当前状态裁剪：
+ * - 停用 / 孤儿展示位不提供上传与发布；
+ * - 有 published 时「停用展示位」禁用，必须先下架；
+ * - 孤儿 key 只保留版本历史与预览。
  */
 function AssetRow({
   group,
   onOpenUpload,
   onOpenHistory,
   onPreview,
+  onEditSlot,
 }: {
   group: AppAssetGroup
   onOpenUpload: () => void
   onOpenHistory: () => void
   onPreview: (asset: AppAsset) => void
+  onEditSlot: () => void
 }) {
   const publish = usePublishAppAsset(group.key)
   const archive = useArchiveAppAsset(group.key)
-  const [confirming, setConfirming] = useState<'publish' | 'archive' | null>(
-    null,
-  )
+  const update = useUpdateAppAssetKey()
+  const [confirming, setConfirming] = useState<
+    'publish' | 'archive' | 'disable' | null
+  >(null)
   const [copying, setCopying] = useState(false)
   const [copied, setCopied] = useState(false)
   const previewAsset = group.published ?? group.latestDraft
+  const isOrphan = group.orphan === true
+  const isEnabled = group.enabled !== false
+  const canManageSlot = !isOrphan
 
   const items: MenuProps['items'] = [
-    { key: 'upload', label: '新建版本' },
-    ...(group.latestDraft ? [{ key: 'publish', label: '发布' }] : []),
+    ...(isEnabled && !isOrphan
+      ? [{ key: 'upload', label: '上传到此展示位' }]
+      : []),
+    ...(isEnabled && !isOrphan && group.latestDraft
+      ? [{ key: 'publish', label: '发布' }]
+      : []),
     ...(group.published
       ? [{ key: 'archive', label: '下架', danger: true }]
       : []),
@@ -77,6 +94,20 @@ function AssetRow({
           { key: 'copy', label: copied ? '已复制 URL' : '复制 URL' },
         ]
       : []),
+    ...(canManageSlot ? [{ key: 'edit-slot', label: '编辑展示位' }] : []),
+    ...(canManageSlot
+      ? isEnabled
+        ? [
+            {
+              key: 'disable-slot',
+              label: '停用展示位',
+              danger: true,
+              disabled: Boolean(group.published),
+            },
+          ]
+        : [{ key: 'enable-slot', label: '启用展示位' }]
+      : []),
+    ...(canManageSlot ? [{ key: 'copy-key', label: '复制 key' }] : []),
   ]
 
   const handleAction = async (action: RowAction) => {
@@ -88,6 +119,24 @@ function AssetRow({
       case 'archive':
         setConfirming(action)
         return
+      case 'disable-slot':
+        setConfirming('disable')
+        return
+      case 'enable-slot':
+        update.mutate(
+          { key: group.key, enabled: true },
+          { onSuccess: () => message.success('已启用展示位') },
+        )
+        return
+      case 'edit-slot':
+        onEditSlot()
+        return
+      case 'copy-key': {
+        const ok = await copyText(group.key)
+        if (ok) message.success('已复制 key')
+        else message.error('复制失败，请手动复制')
+        return
+      }
       case 'history':
         onOpenHistory()
         return
@@ -119,11 +168,22 @@ function AssetRow({
           title: '发布这个草稿？',
           description: '发布后该草稿将立即成为小程序的展示素材。',
         }
-      : {
-          title: '下架当前发布版本？',
-          description: '下架后该展示位将没有已发布素材。',
-        }
-  const confirmingMutation = confirming === 'publish' ? publish : archive
+      : confirming === 'archive'
+        ? {
+            title: '下架当前发布版本？',
+            description: '下架后该展示位将没有已发布素材。',
+          }
+        : {
+            title: '停用这个展示位？',
+            description:
+              '停用后小程序将不再下发该位置的素材，回退包内图；需要重新启用后才能上传/发布。',
+          }
+  const confirmingMutation =
+    confirming === 'publish'
+      ? publish
+      : confirming === 'archive'
+        ? archive
+        : update
 
   const runConfirmed = () => {
     if (confirming === 'publish' && group.latestDraft) {
@@ -140,6 +200,16 @@ function AssetRow({
           message.success('已下架')
         },
       })
+    } else if (confirming === 'disable') {
+      update.mutate(
+        { key: group.key, enabled: false },
+        {
+          onSuccess: () => {
+            setConfirming(null)
+            message.success('已停用展示位')
+          },
+        },
+      )
     }
   }
 
@@ -172,9 +242,8 @@ function AssetRow({
 /**
  * 图片素材管理（仅 superadmin，路由层 OpsGate 已挡住普通 admin）。
  *
- * 列表按展示位 key 分组；上传新版本走抽屉，发布 / 下架 / 回滚都在行内或
- * 版本历史抽屉里二次确认。注册表为空或只有内置诊断位时给空态说明，
- * 而不是让管理员对着一个「未发布」的占位行猜。
+ * 列表按展示位 key 分组；新建/编辑/停用展示位与上传版本都在本页完成。
+ * 一个展示位同一时刻只有一条线上素材；上传先存草稿，发布才替换线上。
  */
 export default function AppAssets() {
   const keysQuery = useAppAssetKeys()
@@ -184,25 +253,34 @@ export default function AppAssets() {
   const [uploadPresetKey, setUploadPresetKey] = useState<string | null>(null)
   const [historyGroup, setHistoryGroup] = useState<AppAssetGroup | null>(null)
   const [previewAsset, setPreviewAsset] = useState<AppAsset | null>(null)
+  const [slotModal, setSlotModal] = useState<
+    { mode: 'create' } | { mode: 'edit'; slot: AppAssetKey } | null
+  >(null)
 
   const keys = keysQuery.data ?? []
   const groups = assetsQuery.data ?? []
+  const enabledKeys = keys.filter((item) => item.enabled !== false)
+  const keysByKey = new Map(keys.map((item) => [item.key, item]))
 
   const registryEmpty = keys.length === 0
+  const noEnabled = keys.length > 0 && enabledKeys.length === 0
   const onlyDiagnostic =
-    keys.length === 1 && keys[0].key === DIAGNOSTIC_KEY
+    enabledKeys.length === 1 && enabledKeys[0].key === DIAGNOSTIC_KEY
 
   const openUpload = (presetKey?: string) => {
     setUploadPresetKey(presetKey ?? null)
     setUploadOpen(true)
   }
 
+  const openEditSlot = (key: string) => {
+    const slot = keysByKey.get(key)
+    if (slot) setSlotModal({ mode: 'edit', slot })
+  }
+
   const columns: ColumnsType<AppAssetGroup> = [
     {
       title: '展示位',
       dataIndex: 'key',
-      // 不定宽列在窄屏会被压到一两个字宽（中文与 code 逐字断行、行高爆掉），
-      // 配合下方 scroll.x 让表格横向滚动而不是压缩列。
       width: 240,
       render: (_, group) => (
         <Space direction="vertical" size={0}>
@@ -266,7 +344,12 @@ export default function AppAssets() {
       title: '状态',
       width: 180,
       render: (_, group) => (
-        <Space size={4}>
+        <Space size={4} wrap>
+          {group.orphan ? (
+            <Tag color="default">未注册</Tag>
+          ) : (
+            !group.enabled && <Tag color="default">已停用</Tag>
+          )}
           {group.published ? (
             <Tag color="green">已发布 v{group.published.version}</Tag>
           ) : (
@@ -301,6 +384,7 @@ export default function AppAssets() {
           onOpenUpload={() => openUpload(group.key)}
           onOpenHistory={() => setHistoryGroup(group)}
           onPreview={setPreviewAsset}
+          onEditSlot={() => openEditSlot(group.key)}
         />
       ),
     },
@@ -310,15 +394,23 @@ export default function AppAssets() {
     <div>
       <PageHeader
         title="图片素材"
-        description="上传自有图片并绑定到固定展示位，发布后小程序通过公开 manifest 读取。仅超级管理员可操作。"
+        description="每个展示位对应小程序里的一个固定图片位置；上传先存草稿，发布才替换线上素材。仅超级管理员可操作。"
         actions={
-          <Button
-            type="primary"
-            disabled={registryEmpty || keysQuery.isLoading}
-            onClick={() => openUpload()}
-          >
-            新建版本
-          </Button>
+          <Space>
+            <Button
+              disabled={keysQuery.isLoading}
+              onClick={() => setSlotModal({ mode: 'create' })}
+            >
+              新建展示位
+            </Button>
+            <Button
+              type="primary"
+              disabled={enabledKeys.length === 0 || keysQuery.isLoading}
+              onClick={() => openUpload()}
+            >
+              上传新版本
+            </Button>
+          </Space>
         }
       />
 
@@ -336,28 +428,38 @@ export default function AppAssets() {
         />
       )}
 
-      {!keysQuery.isLoading && registryEmpty && (
+      {!keysQuery.isLoading && registryEmpty && groups.length === 0 && (
         <Empty
           style={{ margin: '48px 0' }}
           description={
             <Typography.Text type="secondary">
-              展示位注册表为空，无法管理素材。请先在服务端注册展示位 key。
+              展示位注册表为空，无法管理素材。请先新建展示位。
             </Typography.Text>
           }
         />
       )}
 
-      {!keysQuery.isLoading && !registryEmpty && onlyDiagnostic && (
+      {!keysQuery.isLoading && noEnabled && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="所有展示位已停用"
+          description="启用至少一个展示位后才能上传素材。"
+        />
+      )}
+
+      {!keysQuery.isLoading && !registryEmpty && !noEnabled && onlyDiagnostic && (
         <Alert
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
           message="当前只有内置诊断展示位"
-          description="注册表里只有「远程素材探针」这一个诊断位，还没有业务展示位。可在后端注册新展示位后，在这里上传并发布素材。"
+          description="注册表里只有「远程素材探针」这一个诊断位。可在本页「新建展示位」创建业务展示位后再上传素材。"
         />
       )}
 
-      {!keysQuery.isLoading && !registryEmpty && (
+      {!keysQuery.isLoading && (keys.length > 0 || groups.length > 0) && (
         <>
           {assetsQuery.isError && (
             <Alert
@@ -380,8 +482,6 @@ export default function AppAssets() {
             dataSource={groups}
             loading={assetsQuery.isLoading}
             pagination={false}
-            // 9 列固定宽合计约 1.5k：容器更窄时横向滚动，而不是把列压向 min-content。
-            // 用 max-content 而不是写死像素，后续增删列不用同步改数字。
             scroll={{ x: 'max-content' }}
           />
         </>
@@ -389,7 +489,7 @@ export default function AppAssets() {
 
       <AssetUploadDrawer
         open={uploadOpen}
-        keys={keys}
+        keys={enabledKeys}
         presetKey={uploadPresetKey}
         onClose={() => setUploadOpen(false)}
       />
@@ -399,20 +499,21 @@ export default function AppAssets() {
         onClose={() => setHistoryGroup(null)}
       />
 
+      <SlotFormModal
+        open={slotModal !== null}
+        mode={slotModal?.mode ?? 'create'}
+        slot={slotModal && slotModal.mode === 'edit' ? slotModal.slot : null}
+        onClose={() => setSlotModal(null)}
+      />
+
       <Modal
         open={previewAsset !== null}
         footer={null}
         onCancel={() => setPreviewAsset(null)}
         mask={{ closable: true }}
-        title={
-          previewAsset
-            ? `预览 v${previewAsset.version}`
-            : undefined
-        }
+        title={previewAsset ? `预览 v${previewAsset.version}` : undefined}
       >
         {previewAsset && (
-          // antd 的 .ant-image 是 inline-block，img 的 width:100% 只会等于自身宽度，
-          // 于是小图贴着弹窗左边。居中交给外层容器；超宽图靠 maxWidth 收进来。
           <div data-testid="asset-preview" style={{ textAlign: 'center' }}>
             <Image
               src={previewAsset.url}
