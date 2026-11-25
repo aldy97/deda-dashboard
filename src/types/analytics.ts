@@ -1039,6 +1039,11 @@ export interface FleetDeviceItem {
   presenceDays7d: number
   lastPresenceDate: string | null
   turns7d: number
+  /**
+   * 测试设备白名单（服务端只对超管下发真实值）。
+   * null = 不在册（或当前账号无权查看）；note 可为 null（有资格但没写备注）。
+   */
+  testWhitelist: { note: string | null } | null
 }
 
 export interface FleetDevicesResponse {

@@ -53,11 +53,47 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       key: 'deviceId',
       width: 150,
       ellipsis: true,
-      render: (v: string, r: FleetDeviceItem) => (
-        <Link to={`/users/${r.deviceId}`} onClick={(e) => e.stopPropagation()}>
-          {v}
-        </Link>
-      ),
+      render: (v: string, r: FleetDeviceItem) => {
+        const note = r.testWhitelist?.note?.trim()
+        return (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              minWidth: 0,
+            }}
+          >
+            <Link
+              to={`/users/${r.deviceId}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {v}
+            </Link>
+            {r.testWhitelist ? (
+              <Tag
+                color="gold"
+                title={note || '白名单'}
+                style={{
+                  marginInlineEnd: 0,
+                  flexShrink: 0,
+                  maxWidth: 96,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {note || '白名单'}
+              </Tag>
+            ) : null}
+          </div>
+        )
+      },
     },
     {
       title: '角色',

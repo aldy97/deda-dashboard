@@ -37,11 +37,18 @@ function makeDeviceItem(deviceId: string, overrides: Record<string, unknown> = {
     presenceDays7d: 5,
     lastPresenceDate: '2026-11-10',
     turns7d: 20,
+    testWhitelist: null,
     ...overrides,
   }
 }
 
-function renderTable(onOpenDevice = vi.fn()) {
+function renderTable(
+  onOpenDevice = vi.fn(),
+  items: Record<string, unknown>[] = [
+    makeDeviceItem('dev-001'),
+    makeDeviceItem('dev-002'),
+  ],
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0, refetchOnWindowFocus: false },
@@ -52,11 +59,8 @@ function renderTable(onOpenDevice = vi.fn()) {
     data: {
       page: 1,
       pageSize: 20,
-      total: 2,
-      items: [
-        makeDeviceItem('dev-001'),
-        makeDeviceItem('dev-002'),
-      ],
+      total: items.length,
+      items,
     },
   })
 
@@ -112,5 +116,42 @@ describe('DeviceTable · 下钻链接', () => {
     fireEvent.click(link)
     // 设备 ID 链接不应触发 onOpenDevice（行点击被阻止冒泡了）
     expect(onOpenDevice).not.toHaveBeenCalled()
+  })
+})
+
+describe('DeviceTable · 测试白名单标签', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+  })
+
+  it('在白名单且有备注时，设备 ID 列显示备注 Tag（黄色）', async () => {
+    renderTable(vi.fn(), [
+      makeDeviceItem('dev-001', {
+        testWhitelist: { note: '3 号样机-熊枫' },
+      }),
+    ])
+    await screen.findByText('dev-001')
+
+    const tag = screen.getByText('3 号样机-熊枫')
+    expect(tag.className).toContain('ant-tag')
+    expect(tag.className).toContain('ant-tag-gold')
+  })
+
+  it('在白名单但备注为空时显示「白名单」', async () => {
+    renderTable(vi.fn(), [
+      makeDeviceItem('dev-001', { testWhitelist: { note: null } }),
+      makeDeviceItem('dev-002', { testWhitelist: { note: '   ' } }),
+    ])
+    await screen.findByText('dev-001')
+
+    expect(screen.getAllByText('白名单')).toHaveLength(2)
+  })
+
+  it('不在白名单（testWhitelist=null）时不显示任何 Tag', async () => {
+    renderTable()
+    await screen.findByText('dev-001')
+
+    expect(screen.queryByText('白名单')).toBeNull()
+    expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
   })
 })
