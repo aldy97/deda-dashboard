@@ -59,6 +59,7 @@ export default function DeviceTable({ onOpenDevice }: Props) {
           <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
               alignItems: 'center',
               gap: 4,
               minWidth: 0,
@@ -68,6 +69,7 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               to={`/users/${r.deviceId}`}
               onClick={(e) => e.stopPropagation()}
               style={{
+                maxWidth: '100%',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
