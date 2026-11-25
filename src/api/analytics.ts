@@ -8,6 +8,8 @@ import type {
   ContentAdventureResponse,
   ContentLearningResponse,
   ContentParentReportResponse,
+  DeleteDeviceChildProfileResponse,
+  DeviceChildProfileResponse,
   DurationDistributionResponse,
   EngagementSummaryResponse,
   FeatureAdoptionResponse,
@@ -570,6 +572,26 @@ export async function fetchFleetDeviceDetail(
     params: days !== undefined ? { days } : {},
   })
   return resp.data as FleetDeviceDetailResponse
+}
+
+/** 设备不存在 → 404；孩子档案未设置 → { profile: null }（合法空态，与 404 区分） */
+export async function fetchDeviceChildProfile(
+  deviceId: string,
+): Promise<DeviceChildProfileResponse> {
+  const resp = await apiClient.get(
+    `/analytics/fleet/devices/${deviceId}/child-profile`,
+  )
+  return resp.data as DeviceChildProfileResponse
+}
+
+/** 清空孩子档案：仅 superadmin；幂等，无档案返回 { deleted: false } */
+export async function deleteDeviceChildProfile(
+  deviceId: string,
+): Promise<DeleteDeviceChildProfileResponse> {
+  const resp = await apiClient.delete(
+    `/analytics/fleet/devices/${deviceId}/child-profile`,
+  )
+  return resp.data as DeleteDeviceChildProfileResponse
 }
 
 // ---- 记忆档案 ----

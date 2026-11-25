@@ -6,6 +6,8 @@ import {
   fetchContentLearning,
   fetchContentParentReport,
   fetchCurrentMemories,
+  deleteDeviceChildProfile,
+  fetchDeviceChildProfile,
   fetchDurationDistribution,
   fetchEngagementSummary,
   fetchFeatureAdoption,
@@ -569,6 +571,30 @@ export function useFleetDeviceDetail(deviceId: string | null, days: number) {
     queryKey: ['analytics', 'fleetDeviceDetail', deviceId, days],
     queryFn: () => fetchFleetDeviceDetail(deviceId!, days),
     enabled: deviceId !== null,
+  })
+}
+
+export function useDeviceChildProfile(deviceId: string | null) {
+  return useQuery({
+    queryKey: ['analytics', 'deviceChildProfile', deviceId],
+    queryFn: () => fetchDeviceChildProfile(deviceId!),
+    enabled: deviceId !== null,
+  })
+}
+
+/**
+ * 清空孩子档案（仅 superadmin 能过服务端闸口；普通 admin 会吃 403 → 提示失败）。
+ * 成功后作废该设备的档案缓存，section 自动回到「未设置」空态。
+ */
+export function useDeleteDeviceChildProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (deviceId: string) => deleteDeviceChildProfile(deviceId),
+    onSuccess: (_data, deviceId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['analytics', 'deviceChildProfile', deviceId],
+      })
+    },
   })
 }
 
