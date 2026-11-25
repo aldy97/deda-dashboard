@@ -99,6 +99,11 @@ describe('路由表', () => {
     expect(childPaths()).toContain('test-devices')
     expect(routes.map((route) => route.path)).not.toContain('test-devices')
   })
+
+  it('Elly 素材是受保护父路由的子路由，走运维组闸口', () => {
+    expect(childPaths()).toContain('app-assets')
+    expect(routes.map((route) => route.path)).not.toContain('app-assets')
+  })
 })
 
 describe('/prompts 的登录闸口', () => {
@@ -158,6 +163,25 @@ describe('运维组路由闸口', () => {
     )
   }
 
+  /** 用路由表里 app-assets 的真实 element（OpsGate + AppAssets），而不是测试替身 */
+  function renderRealAppAssets(entry = '/app-assets') {
+    const root = routes.find((route) => route.path === '/')
+    const appAssetsRoute = (root?.children ?? []).find(
+      (child) => child.path === 'app-assets',
+    )
+    return render(
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path="/login" element={<LoginProbe />} />
+          <Route path="/" element={root?.element}>
+            <Route path="app-assets" element={appAssetsRoute?.element} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+      { wrapper: createWrapper() },
+    )
+  }
+
   it('普通 admin 带 token 直达 /prompts：显示雾，不挂载页面也不发 prompts 请求', async () => {
     localStorage.setItem(TOKEN_KEY, 'a-token')
     stubMetaRole('admin')
@@ -177,6 +201,18 @@ describe('运维组路由闸口', () => {
     renderRealPrompts()
 
     await waitFor(() => expect(screen.queryByTestId('ops-fog')).toBeNull())
+  })
+
+  it('普通 admin 带 token 直达 /app-assets：显示雾，不挂载页面也不发 app-assets 请求', async () => {
+    localStorage.setItem(TOKEN_KEY, 'a-token')
+    stubMetaRole('admin')
+    renderRealAppAssets()
+
+    expect(await screen.findByTestId('ops-fog')).toBeInTheDocument()
+    expect(screen.getByText(/仅超级管理员可访问/)).toBeInTheDocument()
+    expect(
+      mockGet.mock.calls.some(([url]) => url === '/analytics/app-assets'),
+    ).toBe(false)
   })
 })
 

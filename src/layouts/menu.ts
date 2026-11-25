@@ -21,6 +21,7 @@ export const OPS_PATHS = [
   '/test-devices',
   '/prompts',
   '/voice',
+  '/app-assets',
 ] as const
 
 export type OpsPath = (typeof OPS_PATHS)[number]
@@ -37,6 +38,7 @@ export const OPS_ROUTE_META: Record<OpsPath, { title: string }> = {
   '/test-devices': { title: '测试设备白名单' },
   '/prompts': { title: '提示词管理' },
   '/voice': { title: '语速与音色' },
+  '/app-assets': { title: 'Elly 素材' },
 }
 
 export function isOpsPath(pathname: string): boolean {

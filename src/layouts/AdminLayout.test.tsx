@@ -242,7 +242,7 @@ describe('AdminLayout 菜单分组', () => {
     }
   })
 
-  it('14 个入口一个不少（分组不能顺手丢菜单项）', () => {
+  it('15 个入口一个不少（分组不能顺手丢菜单项）', () => {
     stubMeta({
       nodeEnv: 'development',
       promptWriteEnabled: true,
@@ -265,6 +265,7 @@ describe('AdminLayout 菜单分组', () => {
       '测试设备白名单',
       '提示词管理',
       '语速与音色',
+      'Elly 素材',
     ]
     const items = screen.getAllByRole('menuitem')
     expect(items).toHaveLength(expected.length)
