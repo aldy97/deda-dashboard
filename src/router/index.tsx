@@ -18,6 +18,7 @@ import Feedback from '../pages/Feedback'
 import Fleet from '../pages/Fleet'
 import Prompts from '../pages/Prompts'
 import Voice from '../pages/Voice'
+import AppAssets from '../pages/AppAssets'
 import OpsGate from '../components/access/OpsGate'
 import { OPS_ROUTE_META } from '../layouts/menu'
 import { getToken } from '../utils/auth-token'
@@ -109,6 +110,14 @@ export const router = createBrowserRouter(
           element: (
             <OpsGate {...OPS_ROUTE_META['/voice']}>
               <Voice />
+            </OpsGate>
+          ),
+        },
+        {
+          path: 'app-assets',
+          element: (
+            <OpsGate {...OPS_ROUTE_META['/app-assets']}>
+              <AppAssets />
             </OpsGate>
           ),
         },
