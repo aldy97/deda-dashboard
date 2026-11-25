@@ -12,7 +12,7 @@ export default function RetentionCurve({
   data: RetentionCurveResponse
 }) {
   if (data.points.every((p) => p.rate === null)) {
-    return <Empty description="暂无满足条件的留存数据（cohort 均未到期）" />
+    return <Empty description="暂无满足条件的留存数据（同期群均未到期）" />
   }
 
   const option = {

@@ -76,15 +76,15 @@ export default function Retention() {
     <div>
       <PageHeader
         title="留存与激活"
-        description="日期为闭区间，含今日时今日数据进行中；激活口径基于当前绑定记录，设备解绑后会从 cohort 消失（二期快照表冻结）"
+        description="日期为闭区间，含今日时今日数据进行中；激活口径基于当前绑定记录，设备解绑后会从同期群消失（二期快照表冻结）"
         actions={<RefreshButton loading={refreshing} onClick={refresh} />}
       />
 
       <Card
         title={
           <>
-            Cohort 留存热力表
-            <InfoTip title="Cohort = 同一周期内「激活/首用」的一批设备。单元格 = 这批设备在第 N 个周期仍有对话的比例（活跃 = 当天有 ≥1 条孩子发言）；颜色越深留存越高；格子显示 — 表示该周期尚未到期。设备解绑后会从激活口径 cohort 中消失。" />
+            同期群留存热力表
+            <InfoTip title="同期群 = 同一周期内「激活/首用」的一批设备。单元格 = 这批设备在第 N 个周期仍有对话的比例（活跃 = 当天有 ≥1 条孩子发言）；颜色越深留存越高；格子显示 — 表示该周期尚未到期。设备解绑后会从激活口径同期群中消失。" />
           </>
         }
         extra={
@@ -133,7 +133,7 @@ export default function Retention() {
           <Alert
             type="error"
             showIcon
-            message="Cohort 数据加载失败"
+            message="同期群数据加载失败"
             description={cohortsError}
             style={{ marginBottom: 12 }}
           />
@@ -156,7 +156,7 @@ export default function Retention() {
               <AnalyticsRangePicker
                 size="small"
                 allowClear
-                placeholder={['Cohort 起始', 'Cohort 截止']}
+                placeholder={['同期群起始', '同期群截止']}
                 value={curveRange}
                 onChange={(r) => setCurveRange(r)}
               />
@@ -164,7 +164,7 @@ export default function Retention() {
           >
             <Typography.Text type="secondary">
               样本设备 {curve?.cohortSize ?? '—'} 台（不选区间 = 全部激活
-              cohort）
+              同期群）
             </Typography.Text>
             {curveError && (
               <Alert

@@ -21,7 +21,7 @@ export default function CohortTable({
   data: RetentionCohortsResponse
 }) {
   if (data.cohorts.length === 0) {
-    return <Empty description="所选区间暂无 cohort 数据" />
+    return <Empty description="所选区间暂无同期群数据" />
   }
 
   const maxN = Math.max(
@@ -31,7 +31,7 @@ export default function CohortTable({
 
   const columns = [
     {
-      title: 'Cohort',
+      title: '同期群',
       dataIndex: 'cohort',
       key: 'cohort',
       fixed: 'left' as const,

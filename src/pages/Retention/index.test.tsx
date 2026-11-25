@@ -66,3 +66,21 @@ describe('留存与激活 · 页面刷新', () => {
     ).toContain('ant-btn-loading')
   })
 })
+
+describe('留存与激活 · 文案本地化', () => {
+  it('cohort 统一译为「同期群」：标题、区间占位符、说明都不再出现英文', () => {
+    renderPage()
+
+    expect(screen.getByText('同期群留存热力表')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('同期群起始')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('同期群截止')).toBeInTheDocument()
+    expect(screen.queryByText(/cohort/i)).toBeNull()
+  })
+
+  it('同期群请求失败时错误标题也使用中文', () => {
+    mockCohorts.mockReturnValue(idle({ error: new Error('boom') }))
+    renderPage()
+
+    expect(screen.getByText('同期群数据加载失败')).toBeInTheDocument()
+  })
+})
