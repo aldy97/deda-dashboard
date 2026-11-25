@@ -3,6 +3,7 @@ import { Alert, Drawer, InputNumber, Space, Spin, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import { useFleetDeviceDetail } from '../../api/queries'
 import DeviceProfile from '../../components/device/DeviceProfile'
+import ChildProfileSection from './ChildProfileSection'
 
 interface Props {
   deviceId: string | null
@@ -77,26 +78,31 @@ export default function DeviceDetailDrawer({ deviceId, onClose }: Props) {
       ) : (
         <Spin spinning={query.isLoading}>
           {data && (
-            <DeviceProfile
-              data={data}
-              days={days}
-              exitLinks={
-                <Space direction="vertical" size={4}>
-                  <Typography.Text type="secondary">
-                    这里是快速预览，完整设备 360 在用户详情页
-                  </Typography.Text>
-                  <Space wrap>
-                    <Link to={`/users/${data.deviceId}`}>用户详情 →</Link>
-                    <Link to={`/memories/${data.deviceId}`}>记忆档案 →</Link>
-                    <Link
-                      to={`/messages?deviceId=${encodeURIComponent(data.deviceId)}`}
-                    >
-                      消息明细 →
-                    </Link>
+            <>
+              <ChildProfileSection deviceId={data.deviceId} />
+              <DeviceProfile
+                data={data}
+                days={days}
+                exitLinks={
+                  <Space direction="vertical" size={4}>
+                    <Typography.Text type="secondary">
+                      这里是快速预览，完整设备 360 在用户详情页
+                    </Typography.Text>
+                    <Space wrap>
+                      <Link to={`/users/${data.deviceId}`}>用户详情 →</Link>
+                      <Link to={`/memories/${data.deviceId}`}>
+                        记忆档案 →
+                      </Link>
+                      <Link
+                        to={`/messages?deviceId=${encodeURIComponent(data.deviceId)}`}
+                      >
+                        消息明细 →
+                      </Link>
+                    </Space>
                   </Space>
-                </Space>
-              }
-            />
+                }
+              />
+            </>
           )}
         </Spin>
       )}

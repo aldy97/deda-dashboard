@@ -1094,6 +1094,23 @@ export interface FleetDeviceDetailResponse {
   totals: DeviceTotals
 }
 
+/** GET /analytics/fleet/devices/:deviceId/child-profile → data.profile；档案未设置为 null */
+export interface DeviceChildProfile {
+  name: string | null
+  birthday: string | null
+  englishName: string | null
+  gender: 'male' | 'female' | null
+}
+
+export interface DeviceChildProfileResponse {
+  profile: DeviceChildProfile | null
+}
+
+/** DELETE /analytics/fleet/devices/:deviceId/child-profile（仅 superadmin，幂等） */
+export interface DeleteDeviceChildProfileResponse {
+  deleted: boolean
+}
+
 // ---- Prompt 管理（/analytics/meta、/analytics/prompts*）----
 /**
  * 契约真相：deda-server `docs/analytics-api.md` →「Prompt 管理」。
