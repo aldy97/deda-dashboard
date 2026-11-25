@@ -2,16 +2,18 @@ import { useState } from 'react'
 import {
   Alert,
   Button,
+  Dropdown,
   Empty,
   Image,
   Modal,
-  Popconfirm,
   Space,
   Table,
   Tag,
   Typography,
   message,
 } from 'antd'
+import type { MenuProps } from 'antd'
+import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PageHeader from '../../components/PageHeader'
 import {
@@ -29,29 +31,18 @@ import VersionHistoryDrawer from './VersionHistoryDrawer'
 /** 诊断展示位是服务端内置兜底，不算「有业务素材可管理」 */
 const DIAGNOSTIC_KEY = 'diagnostics/remote-probe'
 
-function CopyUrlButton({ url }: { url: string }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <Button
-      size="small"
-      onClick={async () => {
-        const ok = await copyText(url)
-        if (ok) {
-          setCopied(true)
-          message.success('已复制 URL')
-        } else {
-          message.error('复制失败，请手动复制')
-        }
-      }}
-    >
-      {copied ? '已复制' : '复制 URL'}
-    </Button>
-  )
-}
+type RowAction = 'upload' | 'publish' | 'archive' | 'history' | 'preview' | 'copy'
 
 /**
- * 单行的破坏性操作独立成组件：发布 / 下架两个 mutation 都要按 key 作废缓存，
- * 必须拿到当前行的 key，不能在一个父组件里用一个 hook 覆盖所有行。
+ * 单行动作收成一个「操作」下拉菜单：操作列从 360px 降到 80px，整表约 1198px，
+ * 14 寸屏（内容区约 1224px）不必横向滚动。菜单项按当前状态裁剪——没有草稿
+ * 就没有「发布」，没有版本就没有「预览 / 复制 URL」。
+ *
+ * 发布 / 下架仍要二次确认，但换成同一行的受控 Modal：下拉菜单里的 action item
+ * 一旦点击就关浮层，没有可挂 Popconfirm 的锚点。
+ *
+ * 单行独立成组件：发布 / 下架两个 mutation 都要按 key 作废缓存，必须拿到当前行
+ * 的 key，不能在一个父组件里用一个 hook 覆盖所有行。
  */
 function AssetRow({
   group,
@@ -66,61 +57,115 @@ function AssetRow({
 }) {
   const publish = usePublishAppAsset(group.key)
   const archive = useArchiveAppAsset(group.key)
+  const [confirming, setConfirming] = useState<'publish' | 'archive' | null>(
+    null,
+  )
+  const [copying, setCopying] = useState(false)
+  const [copied, setCopied] = useState(false)
   const previewAsset = group.published ?? group.latestDraft
 
+  const items: MenuProps['items'] = [
+    { key: 'upload', label: '新建版本' },
+    ...(group.latestDraft ? [{ key: 'publish', label: '发布' }] : []),
+    ...(group.published
+      ? [{ key: 'archive', label: '下架', danger: true }]
+      : []),
+    { key: 'history', label: '版本历史' },
+    ...(previewAsset
+      ? [
+          { key: 'preview', label: '预览' },
+          { key: 'copy', label: copied ? '已复制 URL' : '复制 URL' },
+        ]
+      : []),
+  ]
+
+  const handleAction = async (action: RowAction) => {
+    switch (action) {
+      case 'upload':
+        onOpenUpload()
+        return
+      case 'publish':
+      case 'archive':
+        setConfirming(action)
+        return
+      case 'history':
+        onOpenHistory()
+        return
+      case 'preview':
+        if (previewAsset) onPreview(previewAsset)
+        return
+      case 'copy': {
+        if (!previewAsset || copying) return
+        setCopying(true)
+        try {
+          const ok = await copyText(previewAsset.url)
+          if (ok) {
+            setCopied(true)
+            message.success('已复制 URL')
+          } else {
+            message.error('复制失败，请手动复制')
+          }
+        } finally {
+          setCopying(false)
+        }
+        return
+      }
+    }
+  }
+
+  const confirmCopy =
+    confirming === 'publish'
+      ? {
+          title: '发布这个草稿？',
+          description: '发布后该草稿将立即成为小程序的展示素材。',
+        }
+      : {
+          title: '下架当前发布版本？',
+          description: '下架后该展示位将没有已发布素材。',
+        }
+  const confirmingMutation = confirming === 'publish' ? publish : archive
+
+  const runConfirmed = () => {
+    if (confirming === 'publish' && group.latestDraft) {
+      publish.mutate(group.latestDraft.id, {
+        onSuccess: () => {
+          setConfirming(null)
+          message.success('已发布')
+        },
+      })
+    } else if (confirming === 'archive' && group.published) {
+      archive.mutate(group.published.id, {
+        onSuccess: () => {
+          setConfirming(null)
+          message.success('已下架')
+        },
+      })
+    }
+  }
+
   return (
-    <Space size={4} wrap>
-      <Button size="small" onClick={onOpenUpload}>
-        新建版本
-      </Button>
-      {group.latestDraft && (
-        <Popconfirm
-          title="发布这个草稿？"
-          description="发布后该草稿将立即成为小程序的展示素材。"
-          okText="确认"
-          cancelText="取消"
-          onConfirm={() =>
-            publish.mutate(group.latestDraft!.id, {
-              onSuccess: () => message.success('已发布'),
-            })
-          }
-        >
-          <Button
-            size="small"
-            type="primary"
-            loading={publish.isPending}
-          >
-            发布
-          </Button>
-        </Popconfirm>
-      )}
-      {group.published && (
-        <Popconfirm
-          title="下架当前发布版本？"
-          description="下架后该展示位将没有已发布素材。"
-          okText="确认"
-          cancelText="取消"
-          onConfirm={() =>
-            archive.mutate(group.published!.id, {
-              onSuccess: () => message.success('已下架'),
-            })
-          }
-        >
-          <Button size="small" danger loading={archive.isPending}>
-            下架
-          </Button>
-        </Popconfirm>
-      )}
-      <Button size="small" onClick={onOpenHistory}>
-        版本历史
-      </Button>
-      {previewAsset && (
-        <Button size="small" onClick={() => onPreview(previewAsset)}>
-          预览
-        </Button>
-      )}
-      {previewAsset && <CopyUrlButton url={previewAsset.url} />}
-    </Space>
+    <>
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items,
+          onClick: ({ key }) => void handleAction(key as RowAction),
+        }}
+      >
+        <Button size="small" type="text" icon={<MoreOutlined />} aria-label="操作" />
+      </Dropdown>
+      <Modal
+        open={confirming !== null}
+        title={confirmCopy.title}
+        okText="确认"
+        cancelText="取消"
+        confirmLoading={confirmingMutation.isPending}
+        onOk={runConfirmed}
+        onCancel={() => setConfirming(null)}
+      >
+        {confirmCopy.description}
+      </Modal>
+    </>
   )
 }
 
@@ -249,7 +294,7 @@ export default function AppAssets() {
     },
     {
       title: '操作',
-      width: 360,
+      width: 80,
       render: (_, group) => (
         <AssetRow
           group={group}
