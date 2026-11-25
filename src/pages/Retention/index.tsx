@@ -9,6 +9,7 @@ import type { CohortBasis } from '../../types/analytics'
 import InfoTip from '../../components/InfoTip'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import CohortTable from './CohortTable'
@@ -63,11 +64,20 @@ export default function Retention() {
   const funnelLoading = funnelQuery.isLoading
   const funnelError = toErrorMessage(funnelQuery.error)
 
+  const refreshing =
+    cohortsQuery.isFetching || curveQuery.isFetching || funnelQuery.isFetching
+  const refresh = () => {
+    void cohortsQuery.refetch()
+    void curveQuery.refetch()
+    void funnelQuery.refetch()
+  }
+
   return (
     <div>
       <PageHeader
         title="留存与激活"
         description="日期为闭区间，含今日时今日数据进行中；激活口径基于当前绑定记录，设备解绑后会从 cohort 消失（二期快照表冻结）"
+        actions={<RefreshButton loading={refreshing} onClick={refresh} />}
       />
 
       <Card
