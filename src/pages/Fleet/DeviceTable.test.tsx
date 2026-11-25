@@ -155,16 +155,23 @@ describe('DeviceTable · 测试白名单标签', () => {
     expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
   })
 
-  it('设备 ID 与标签同格时允许换行，标签不会把 ID 挤成省略号', async () => {
+  it('备注标签与设备 ID 强制同一行，标签不换行', async () => {
     renderTable(vi.fn(), [
       makeDeviceItem('aabbccddeeff', {
         testWhitelist: { note: '3 号样机-熊枫' },
       }),
     ])
     const link = await screen.findByText('aabbccddeeff')
-    const cell = link.closest('div') as HTMLElement
+    const tag = screen.getByText('3 号样机-熊枫')
+    const cell = screen.getByTestId('device-id-cell')
 
-    expect(cell.style.flexWrap).toBe('wrap')
-    expect(link.getAttribute('style')).toContain('max-width: 100%')
+    // 容器不换行：标签与设备 ID 始终在同一行
+    expect(cell.style.flexWrap).toBe('nowrap')
+    expect(cell.contains(tag)).toBe(true)
+    // 标签保持自身宽度，被压缩的是设备 ID（省略号）
+    expect(tag.style.flexShrink).toBe('0')
+    expect(link.style.minWidth).toBe('0px')
+    expect(link.style.textOverflow).toBe('ellipsis')
+    expect(link.getAttribute('title')).toBe('aabbccddeeff')
   })
 })
