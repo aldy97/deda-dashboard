@@ -62,6 +62,19 @@ describe('copyText', () => {
 
     await expect(copyText('url')).resolves.toBe(false)
   })
+
+  it('execCommand 抛错时也返回 false', async () => {
+    stubClipboard(undefined)
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => {
+        throw new Error('not supported')
+      }),
+    })
+
+    await expect(copyText('url')).resolves.toBe(false)
+  })
 })
 
 /**
