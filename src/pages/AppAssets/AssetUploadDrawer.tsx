@@ -91,6 +91,8 @@ export default function AssetUploadDrawer({
       onError?: (err: Error) => void
     },
   ) {
+    // 上传入口在未选展示位时已禁用 key，此分支只防 antd 协议被绕过
+    /* v8 ignore next 3 */
     if (!key) {
       hooks?.onError?.(new Error('请先选择展示位'))
       return
@@ -141,6 +143,8 @@ export default function AssetUploadDrawer({
 
   const customRequest: UploadProps['customRequest'] = (options) => {
     const pending = pendingRef.current
+    // antd 只在 beforeUpload 通过后调 customRequest，pending 必存在且是同一文件
+    /* v8 ignore next 3 */
     if (!pending || pending.file !== options.file) {
       options.onError?.(new Error('请先选择图片'))
       return
@@ -159,6 +163,8 @@ export default function AssetUploadDrawer({
   }
 
   const publishDraft = () => {
+    // 「立即发布」只在 uploaded 存在时渲染
+    /* v8 ignore next */
     if (!uploaded) return
     publish.mutate(uploaded.id, {
       onSuccess: () => {

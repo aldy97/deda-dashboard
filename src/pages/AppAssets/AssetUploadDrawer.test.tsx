@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { message } from 'antd'
 import AssetUploadDrawer from './AssetUploadDrawer'
@@ -149,27 +149,97 @@ describe('AssetUploadDrawer 上传', () => {
     mockReadDims.mockResolvedValue({ width: 800, height: 600 })
     renderDrawer({ presetKey: KEY.key })
 
+    await userEvent.type(
+      screen.getByPlaceholderText('例如：新一版探针占位图'),
+      '新一版',
+    )
     await userEvent.upload(fileInput(), makeFile())
 
     await waitFor(() => expect(uploadMutate).toHaveBeenCalledTimes(1))
-    const [payload] = uploadMutate.mock.calls[0] as [
-      { key: string; file: File; width: number; height: number; note: string },
+    const [payload, options] = uploadMutate.mock.calls[0] as [
+      {
+        key: string
+        file: File
+        width: number
+        height: number
+        note: string
+      },
+      { onSuccess: (asset: AppAsset) => void },
     ]
     expect(payload.key).toBe(KEY.key)
     expect(payload.file.name).toBe('a.png')
     expect(payload.width).toBe(800)
     expect(payload.height).toBe(600)
+    expect(payload.note).toBe('新一版')
 
     // 模拟上传成功
-    const options = uploadMutate.mock.calls[0][1] as {
-      onSuccess: (asset: AppAsset) => void
-    }
     options.onSuccess(ASSET)
 
     expect(await screen.findByText('草稿已保存')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /立即发布/ }),
     ).toBeInTheDocument()
+  })
+
+  it('上传进度透传给 antd，并驱动进度条', async () => {
+    mockValidate.mockReturnValue(null)
+    mockReadDims.mockResolvedValue({ width: 800, height: 600 })
+    mockUpload.mockReturnValue({
+      ...mutationMock(),
+      mutate: uploadMutate,
+      isPending: true,
+    })
+    renderDrawer({ presetKey: KEY.key })
+
+    await userEvent.upload(fileInput(), makeFile())
+    await waitFor(() => expect(uploadMutate).toHaveBeenCalledTimes(1))
+
+    const [payload] = uploadMutate.mock.calls[0] as [
+      { onProgress: (percent: number) => void },
+    ]
+    act(() => {
+      payload.onProgress(42)
+    })
+
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '42',
+    )
+  })
+
+  it('上传失败的 error 透传给 antd，不误报草稿已保存', async () => {
+    mockValidate.mockReturnValue(null)
+    mockReadDims.mockResolvedValue({ width: 800, height: 600 })
+    renderDrawer({ presetKey: KEY.key })
+
+    await userEvent.upload(fileInput(), makeFile())
+    await waitFor(() => expect(uploadMutate).toHaveBeenCalledTimes(1))
+
+    const [, options] = uploadMutate.mock.calls[0] as [
+      unknown,
+      { onError: (err: Error) => void },
+    ]
+    act(() => {
+      options.onError(new Error('后端拒绝'))
+    })
+
+    expect(screen.queryByText('草稿已保存')).toBeNull()
+  })
+
+  it('没有待上传文件时点重试不发请求', async () => {
+    mockUpload.mockReturnValue({
+      ...mutationMock(),
+      mutate: uploadMutate,
+      isError: true,
+      error: new Error('上传失败：后端拒绝'),
+    })
+    renderDrawer({ presetKey: KEY.key })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: /重\s*试/ }),
+    )
+
+    expect(uploadMutate).not.toHaveBeenCalled()
   })
 
   it('文件不合法时提示错误，不发请求', async () => {
