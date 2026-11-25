@@ -161,3 +161,33 @@ describe('KpiCards 跨页出口', () => {
     expect(link).toBeTruthy()
   })
 })
+
+describe('KpiCards 卡片结构', () => {
+  function renderCards() {
+    render(
+      <MemoryRouter>
+        <KpiCards data={overview()} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('指标名在 Card header 左侧，与右侧入口同排', () => {
+    renderCards()
+    const card = screen.getByText('累计激活设备').closest('.ant-card')!
+    const head = card.querySelector('.ant-card-head')!
+
+    expect(head.textContent).toContain('累计激活设备')
+    expect(head.querySelector('a[href="/fleet"]')).toBeTruthy()
+    // 指标名不再留在卡片正文的 Statistic 里
+    expect(card.querySelector('.ant-statistic-title')).toBeNull()
+  })
+
+  it('卡片使用 small 尺寸，正文数值字号收敛', () => {
+    renderCards()
+    const card = screen.getByText('累计激活设备').closest('.ant-card')!
+
+    expect(card.classList.contains('ant-card-small')).toBe(true)
+    const content = card.querySelector('.ant-statistic-content') as HTMLElement
+    expect(content.style.fontSize).toBe('22px')
+  })
+})
