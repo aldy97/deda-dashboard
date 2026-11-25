@@ -78,28 +78,13 @@ describe('CapabilityBanner', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('可写环境展示阈值、IP、需孩子开口的交互原语与禁用词数量', () => {
+  it('可写环境不再渲染能力横幅：环境标签已移到页面 Header', () => {
     mockCaps.mockReturnValue(query({ data: capabilities }))
-    render(<CapabilityBanner />)
-
-    expect(screen.getByText('可写环境 · authoring')).toBeTruthy()
-    expect(screen.getByText('第 2 季')).toBeTruthy()
-    expect(screen.getByText('小象 Elly')).toBeTruthy()
-    expect(screen.getByText('小马 Polly')).toBeTruthy()
-    expect(
-      screen.getByText(
-        '交互原语：open_question（需孩子开口）、two_choice（需孩子开口）、repeat_after_me（需孩子开口）、reward',
-      ),
-    ).toBeTruthy()
-    expect(
-      screen.getByText(
-        /旁白 ≤ 220 字 · 互动引导词 ≤ 60 字 · 标题 ≤ 24 字 · 单集星光 ≤ 3 颗 · 开口次数 ≤ 12 次 · 预计时长 ≤ 15 分钟 · 禁用词 2 个/,
-      ),
-    ).toBeTruthy()
-    expect(screen.queryByText(/当前环境只读/)).toBeNull()
+    const { container } = render(<CapabilityBanner />)
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('只读环境显式标出 profile，并说明这是设计如此', () => {
+  it('只读环境只保留只读告警，环境标签由页面 Header 展示', () => {
     mockCaps.mockReturnValue(
       query({
         data: {
@@ -115,7 +100,7 @@ describe('CapabilityBanner', () => {
     expect(
       screen.getByText('当前环境只读（CONTENT_ADMIN_PROFILE=readonly），所有写操作会被服务端拒绝'),
     ).toBeTruthy()
-    expect(screen.getByText('只读环境 · readonly')).toBeTruthy()
+    expect(screen.queryByText('只读环境 · readonly')).toBeNull()
     expect(screen.queryByText(/禁用词/)).toBeNull()
   })
 })
