@@ -384,6 +384,12 @@ describe('AppAssets 预览与复制 URL', () => {
 
     expect(await screen.findByAltText(`${BUSINESS_KEY} v2`)).toBeInTheDocument()
     expect(screen.getByText('预览 v2')).toBeInTheDocument()
+
+    // 预览图要在弹窗里水平居中：antd 的 .ant-image 是 inline-block，会按原图宽度
+    // 贴着左边排，必须由外层容器居中（见 index.tsx 的 asset-preview）。
+    expect(screen.getByTestId('asset-preview')).toHaveStyle({
+      textAlign: 'center',
+    })
   })
 
   it('复制 URL：成功后提示，菜单项改为「已复制 URL」', async () => {

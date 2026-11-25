@@ -189,12 +189,15 @@ export default function VersionHistoryDrawer({ group, onClose }: Props) {
         title={preview ? `${group?.label ?? ''} v${preview.version}` : undefined}
       >
         {preview && (
-          <Image
-            src={preview.url}
-            alt={`${preview.key} v${preview.version}`}
-            style={{ width: '100%' }}
-            preview={false}
-          />
+          // 与列表页预览同口径：外层容器居中，超宽图用 maxWidth 收进来。
+          <div data-testid="version-preview" style={{ textAlign: 'center' }}>
+            <Image
+              src={preview.url}
+              alt={`${preview.key} v${preview.version}`}
+              preview={false}
+              styles={{ image: { maxWidth: '100%' } }}
+            />
+          </div>
         )}
       </Modal>
     </Drawer>

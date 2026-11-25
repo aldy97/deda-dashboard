@@ -411,12 +411,16 @@ export default function AppAssets() {
         }
       >
         {previewAsset && (
-          <Image
-            src={previewAsset.url}
-            alt={`${previewAsset.key} v${previewAsset.version}`}
-            style={{ width: '100%' }}
-            preview={false}
-          />
+          // antd 的 .ant-image 是 inline-block，img 的 width:100% 只会等于自身宽度，
+          // 于是小图贴着弹窗左边。居中交给外层容器；超宽图靠 maxWidth 收进来。
+          <div data-testid="asset-preview" style={{ textAlign: 'center' }}>
+            <Image
+              src={previewAsset.url}
+              alt={`${previewAsset.key} v${previewAsset.version}`}
+              preview={false}
+              styles={{ image: { maxWidth: '100%' } }}
+            />
+          </div>
         )}
       </Modal>
     </div>
