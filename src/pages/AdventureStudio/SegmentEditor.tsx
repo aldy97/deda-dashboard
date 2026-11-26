@@ -84,8 +84,9 @@ export default function SegmentEditor({
   }
 
   // 只交换完整的选项对象：key/text/reply 绑定在一起，避免出现「文案换了、接话没换」。
+  // 入口按钮自带 `disabled || choices.length !== 2`（见下方 aria-label="交换两个选项的顺序"），
+  // 这里不再重复判一次：disabled 按钮不会派发 click，重复的守卫是永远走不到的死分支。
   const swapChoices = () => {
-    if (disabled || choices.length !== 2) return
     patch({
       options: { ...segment.options, choices: [choices[1], choices[0]] },
     })
