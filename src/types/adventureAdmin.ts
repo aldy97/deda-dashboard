@@ -628,6 +628,8 @@ export interface TestClearResult {
 
 export interface DeviceTestAssignment {
   enabled: boolean
+  /** false = 设备不在测试白名单；此时下发会被服务端 403 拒绝 */
+  whitelisted?: boolean
   assignment: {
     device: { id: string; deviceId: string; deviceCode: string | null }
     episode: {
@@ -643,6 +645,34 @@ export interface DeviceTestAssignment {
       status: VersionStatus
     } | null
   } | null
+}
+
+/** 按 IP 列出的样机下发行：真相在 device 字段，审计只补 lastAssignedAt */
+export interface CharacterTestDevice {
+  deviceId: string
+  deviceCode: string | null
+  episode: {
+    id: string
+    businessKey: string
+    title: string
+    characterKey: string
+    season: number
+    episodeNumber: number
+    retiredAt: string | null
+  }
+  /** null = 未锁快照，播放跟随该集 currentVersionId */
+  version: { id: string; version: number; status: VersionStatus } | null
+  followsCurrent: boolean
+  /** 锁的快照已不是「现在重新下发会选的版本」 */
+  stale: boolean
+  lastAssignedAt: string | null
+}
+
+export interface CharacterTestDevicesResponse {
+  enabled: boolean
+  characterKey: string
+  total: number
+  devices: CharacterTestDevice[]
 }
 
 // ---- 请求参数 ----

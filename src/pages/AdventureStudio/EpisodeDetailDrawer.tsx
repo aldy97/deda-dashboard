@@ -35,6 +35,8 @@ import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
  */
 interface Props {
   episodeId: string | null
+  /** 从消息详情深链带来的版本快照 id：默认落在「版本历史」并直接打开该版内容 */
+  versionId?: string | null
   onClose: () => void
 }
 
@@ -48,7 +50,11 @@ const CONTENT_SOURCE_META: Record<string, { label: string; color: string }> = {
   empty: { label: '还没有内容', color: 'default' },
 }
 
-export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
+export default function EpisodeDetailDrawer({
+  episodeId,
+  versionId,
+  onClose,
+}: Props) {
   const authoring = useAdventureAuthoring()
   const capabilitiesQuery = useAdventureCapabilities()
   const capabilities = capabilitiesQuery.data ?? null
@@ -74,12 +80,25 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
 
   // tab 记在「哪一集的 tab」上：换一集自动回到「内容」。否则上一集停在「本集审计」，
   // 打开下一集就直接是审计，会让人以为看的是同一集的历史。派生值而非 effect，少一轮渲染。
+  // 深链带 versionId 时默认看版本历史；父组件用 key 保证每次深链都是全新状态。
+  const deepLinkVersionId = versionId ?? null
+  const defaultTab: TabKey = deepLinkVersionId ? 'versions' : 'content'
   const [tabState, setTabState] = useState<{
     episodeId: string | null
+    versionId: string | null
     tab: TabKey
-  }>({ episodeId: null, tab: 'content' })
-  const tab: TabKey = tabState.episodeId === episodeId ? tabState.tab : 'content'
-  const setTab = (next: TabKey) => setTabState({ episodeId, tab: next })
+  }>({ episodeId: null, versionId: null, tab: 'content' })
+  const tab: TabKey =
+    tabState.episodeId === episodeId &&
+    tabState.versionId === deepLinkVersionId
+      ? tabState.tab
+      : defaultTab
+  const setTab = (next: TabKey) =>
+    setTabState({ episodeId, versionId: deepLinkVersionId, tab: next })
+  // 只消费一次：快照弹窗关掉后，切 tab 再回来不再自动弹，但 URL 仍可刷新还原。
+  const [focusVersionId, setFocusVersionId] = useState<string | null>(
+    versionId ?? null,
+  )
 
   const sourceMeta = detail
     ? (CONTENT_SOURCE_META[detail.contentSource] ?? {
@@ -188,7 +207,12 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                   label: '版本历史',
                   children:
                     tab === 'versions' && episodeId ? (
-                      <VersionHistory key={episodeId} episodeId={episodeId} />
+                      <VersionHistory
+                        key={episodeId}
+                        episodeId={episodeId}
+                        initialVersionId={focusVersionId}
+                        onPreviewClosed={() => setFocusVersionId(null)}
+                      />
                     ) : null,
                 },
                 {
@@ -223,6 +247,7 @@ export default function EpisodeDetailDrawer({ episodeId, onClose }: Props) {
                       <DeviceTestAssign
                         key={episodeId}
                         episodeId={episodeId}
+                        characterKey={summary?.characterKey ?? null}
                         authoring={authoring}
                         testStoryEnabled={capabilities?.testStoryEnabled ?? false}
                       />

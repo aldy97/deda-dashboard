@@ -5,18 +5,21 @@ import type { ReactNode } from 'react'
 import { apiClient } from './client'
 import {
   VOICE_SPEED_KEY,
+  applyVoiceSpeed,
   fetchVoiceSpeed,
   saveVoiceSpeed,
+  useApplyVoiceSpeed,
   useSaveVoiceSpeed,
   useVoiceSpeed,
 } from './voiceSpeed'
 
 vi.mock('./client', () => ({
-  apiClient: { get: vi.fn(), patch: vi.fn() },
+  apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }))
 
 const mockGet = apiClient.get as unknown as ReturnType<typeof vi.fn>
 const mockPatch = apiClient.patch as unknown as ReturnType<typeof vi.fn>
+const mockPost = apiClient.post as unknown as ReturnType<typeof vi.fn>
 
 const CONFIG = { normalSpd: 0.7, sleepSpd: 0.5 }
 
@@ -51,6 +54,60 @@ describe('voiceSpeed 写接口', () => {
     const payload = { normalSpd: 0.6, sleepSpd: 0.4 }
     await expect(saveVoiceSpeed(payload)).resolves.toEqual(CONFIG)
     expect(mockPatch).toHaveBeenCalledWith('/analytics/voice-speed', payload)
+  })
+})
+
+describe('voiceSpeed 立即下发', () => {
+  it('POST /analytics/voice-speed/apply 透传可选 mac 列表', async () => {
+    const result = {
+      targeted: 1,
+      live: 1,
+      deferred: 0,
+      skipped: 0,
+      results: [],
+    }
+    mockPost.mockResolvedValue({ data: result })
+
+    await expect(
+      applyVoiceSpeed({ macs: ['AA:BB:CC:DD:EE:FF'] }),
+    ).resolves.toEqual(result)
+    expect(mockPost).toHaveBeenCalledWith(
+      '/analytics/voice-speed/apply',
+      { macs: ['AA:BB:CC:DD:EE:FF'] },
+      { timeout: 30000 },
+    )
+  })
+
+  it('不传 mac 时发送空对象', async () => {
+    mockPost.mockResolvedValue({
+      data: { targeted: 0, live: 0, deferred: 0, skipped: 0, results: [] },
+    })
+
+    await applyVoiceSpeed()
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/analytics/voice-speed/apply',
+      {},
+      { timeout: 30000 },
+    )
+  })
+
+  it('useApplyVoiceSpeed 成功后返回汇总', async () => {
+    const summary = {
+      targeted: 2,
+      live: 1,
+      deferred: 1,
+      skipped: 0,
+      results: [],
+    }
+    mockPost.mockResolvedValue({ data: summary })
+    const wrapper = createWrapper()
+
+    const { result } = renderHook(() => useApplyVoiceSpeed(), { wrapper })
+    result.current.mutate({})
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(summary)
   })
 })
 

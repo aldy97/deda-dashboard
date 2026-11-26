@@ -5,13 +5,15 @@ import type { ContentAdventureResponse } from '../../types/analytics'
 import type { DayRange } from '../../utils/date-range'
 import { fmt } from '../../utils/date-range'
 import { useAdventureCapabilities } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { isSuperAdmin } from '../../components/access/role'
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
 
 /**
  * 冒险故事：区间汇总卡 + 最受欢迎剧集榜（按完集数排序，后端返回序）。
- * 剧集列提供下钻到冒险内容工作台的出口，受 adventure-content scope 权限门控。
+ * 剧集列提供下钻到冒险内容工作台的出口；工作台已归入运维组，只有 superadmin 能进。
  * 看冒险对话消息入口无需权限。
  */
 export default function AdventureSection({
@@ -21,24 +23,35 @@ export default function AdventureSection({
   data: ContentAdventureResponse
   range: DayRange
 }) {
+  const metaQuery = useAnalyticsMeta()
+  const superadmin = isSuperAdmin(metaQuery.data)
+
+  // 普通 admin 连 capabilities 都不发：那一发必然 403，只是给监控添噪音。
+  // 权限来源只信 meta 的 admin.role，与 OpsGate 同一判据。
   const {
     data: capabilities,
     isPending: capsPending,
     error: capsError,
-  } = useAdventureCapabilities()
-  // 闸口是「有没有 adventure-content scope」而不是 authoring：服务端 capabilities 与
-  // episodes 同受 ContentAdminGuard 保护，能读到能力清单就说明能读剧集列表。
+  } = useAdventureCapabilities({ enabled: superadmin })
   // authoring=false 只表示当前环境只读（CONTENT_ADMIN_PROFILE），查看入口照常可用。
-  const hasScope = capabilities !== null && capabilities !== undefined
+  const hasScope = superadmin && capabilities !== null && capabilities !== undefined
 
   const is403 = (capsError as ApiError | null)?.status === 403
 
   let disabledReason: string | undefined
-  if (capsPending) {
+  if (metaQuery.isPending) {
+    disabledReason = '权限确认中，稍后自动可用'
+  } else if (metaQuery.isError) {
+    disabledReason =
+      '无法确认账号权限（/analytics/meta 不可用），已按无权限处理，请刷新或重新登录'
+  } else if (!superadmin) {
+    disabledReason =
+      '冒险内容工作台只对超级管理员（superadmin）开放，请联系超级管理员调整账号 role 后重新登录'
+  } else if (capsPending) {
     disabledReason = '权限确认中，稍后自动可用'
   } else if (is403) {
     disabledReason =
-      '需要 adventure-content scope，联系后端管理员在 ANALYTICS_ADMIN_USERS 里加上后重新登录'
+      '服务端拒绝了冒险内容的访问（需要超级管理员权限），请重新登录后再试'
   } else if (capsError) {
     disabledReason = '能力清单加载失败，请稍后重试'
   }

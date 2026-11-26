@@ -6,6 +6,7 @@ import { apiClient } from './client'
 import {
   applyImport,
   exportBundle,
+  fetchCharacterTestDevices,
   fetchEpisodeChoiceStats,
   retireEpisode,
   runRecoverySweep,
@@ -14,6 +15,7 @@ import {
 import {
   ADVENTURE_QUERY_ROOT,
   useAdventurePublishLint,
+  useCharacterTestDevices,
   useEpisodeChoiceStats,
   useSaveAdventureDraft,
 } from './queries'
@@ -301,5 +303,59 @@ describe('选项命中统计接口层', () => {
         params,
       ]),
     ).toEqual(choiceStats)
+  })
+
+  it('fetchCharacterTestDevices 把 characterKey 放进 query params，响应原样返回', async () => {
+    mockGet.mockClear()
+    const response = {
+      enabled: true,
+      characterKey: 'elly',
+      total: 0,
+      devices: [],
+    }
+    mockGet.mockResolvedValue({ data: response })
+
+    const got = await fetchCharacterTestDevices('elly')
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/adventure-admin/device-test/assignments',
+      { params: { characterKey: 'elly' } },
+    )
+    expect(got).toEqual(response)
+  })
+
+  it('useCharacterTestDevices 没有 characterKey 时一次请求都不发（enabled 门）', () => {
+    mockGet.mockClear()
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useCharacterTestDevices(null, true), {
+      wrapper: Wrapper,
+    })
+
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('useCharacterTestDevices 有 characterKey 时按 characterKey 发请求，data 交给组件', async () => {
+    mockGet.mockClear()
+    const response = {
+      enabled: true,
+      characterKey: 'elly',
+      total: 0,
+      devices: [],
+    }
+    mockGet.mockResolvedValue({ data: response })
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useCharacterTestDevices('elly', true), {
+      wrapper: Wrapper,
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/adventure-admin/device-test/assignments',
+      { params: { characterKey: 'elly' } },
+    )
+    expect(result.current.data).toEqual(response)
   })
 })

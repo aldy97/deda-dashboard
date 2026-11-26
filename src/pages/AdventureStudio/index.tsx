@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Tabs } from 'antd'
+import { Card, Tabs, Tag } from 'antd'
 import { useUrlQuery } from '../../utils/url-state'
 import { useAdventureAuthoring, useAdventureCapabilities } from '../../api/queries'
 import type { ScriptConvertResult } from '../../types/adventureAdmin'
@@ -41,6 +41,7 @@ export default function AdventureStudio() {
   const requested = searchParams.get('tab')
   const activeKey: TabKey = isTabKey(requested) ? requested : 'episodes'
   const selectedEpisodeId = searchParams.get('episodeId') || null
+  const selectedVersionId = searchParams.get('versionId') || null
   const [newDraft, setNewDraft] = useState<{
     seed: ScriptConvertResult | null
     nonce: number
@@ -53,6 +54,15 @@ export default function AdventureStudio() {
       <PageHeader
         title="冒险内容工作台"
         description="冒险故事每一集的草稿、校验、发布、回滚与下架。已发布的故事不会被原地修改：发布是生成一个新快照，正在玩的孩子锁在自己开始时的版本上，不会被中途换掉。内容也没有「删除」——只有下架成墓碑，历史版本、审计与进度都还能追溯。"
+        actions={
+          capabilities ? (
+            <Tag color={capabilities.authoring ? 'green' : 'orange'}>
+              {capabilities.authoring
+                ? '可写环境 · authoring'
+                : `只读环境 · ${capabilities.profile}`}
+            </Tag>
+          ) : undefined
+        }
       />
 
       <CapabilityBanner />
@@ -70,7 +80,7 @@ export default function AdventureStudio() {
                   <>
                     <EpisodeTable
                       onOpen={(episodeId) =>
-                        setQuery({ episodeId }, { replace: false })
+                        setQuery({ episodeId, versionId: null }, { replace: false })
                       }
                       onCreate={
                         authoring
@@ -101,8 +111,12 @@ export default function AdventureStudio() {
       </Card>
 
       <EpisodeDetailDrawer
+        key={`${selectedEpisodeId ?? 'none'}:${selectedVersionId ?? 'none'}`}
         episodeId={selectedEpisodeId}
-        onClose={() => setQuery({ episodeId: null }, { replace: true })}
+        versionId={selectedVersionId}
+        onClose={() =>
+          setQuery({ episodeId: null, versionId: null }, { replace: true })
+        }
       />
 
       {/* 用 key 强制每次打开都是全新表单：集号、主角、内容都不沿用上一次 */}
@@ -115,7 +129,7 @@ export default function AdventureStudio() {
           onClose={() => setNewDraft(null)}
           onCreated={(episodeId) => {
             setNewDraft(null)
-            setQuery({ episodeId }, { replace: false })
+            setQuery({ episodeId, versionId: null }, { replace: false })
           }}
         />
       )}

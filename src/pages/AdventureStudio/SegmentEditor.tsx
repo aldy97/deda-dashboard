@@ -14,6 +14,7 @@ import {
   ArrowUpOutlined,
   DeleteOutlined,
   PlusOutlined,
+  SwapOutlined,
 } from '@ant-design/icons'
 import type {
   CapabilitiesResponse,
@@ -80,6 +81,15 @@ export default function SegmentEditor({
       i === at ? { ...choice, ...next } : choice,
     )
     patch({ options: { ...segment.options, choices: updated } })
+  }
+
+  // 只交换完整的选项对象：key/text/reply 绑定在一起，避免出现「文案换了、接话没换」。
+  // 入口按钮自带 `disabled || choices.length !== 2`（见下方 aria-label="交换两个选项的顺序"），
+  // 这里不再重复判一次：disabled 按钮不会派发 click，重复的守卫是永远走不到的死分支。
+  const swapChoices = () => {
+    patch({
+      options: { ...segment.options, choices: [choices[1], choices[0]] },
+    })
   }
 
   return (
@@ -217,21 +227,43 @@ export default function SegmentEditor({
 
         {isInteraction && interactionType === 'two_choice' && (
           <div>
-            <Space size={6} style={{ marginBottom: 6 }}>
+            <Space size={6} wrap style={{ marginBottom: 6 }}>
               <Typography.Text strong style={{ fontSize: 13 }}>
                 两个选项（固定 2 个，不可增减）
               </Typography.Text>
               <Typography.Text type="danger" style={{ fontSize: 12 }}>
                 必须恰好 2 个选项才能发布；超过 2 个连草稿都存不下
               </Typography.Text>
+              <Button
+                size="small"
+                type="text"
+                icon={<SwapOutlined />}
+                aria-label="交换两个选项的顺序"
+                title="交换两个选项的顺序（孩子说的「第一个/第二个」按这个顺序对应）"
+                disabled={disabled || choices.length !== 2}
+                onClick={swapChoices}
+              />
             </Space>
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
               识别只看「选项」文案（孩子说的话里包含选项文案才算命中）；key 不参与识别，只作内部标识；
-              reply 是孩子选中后立刻听到的接话句
+              reply 是孩子选中后立刻听到的接话句。顺序参与判定：孩子说「第一个」对应第 1 条；
+              交换只改选项顺序，<strong>不会改写引导词里写死的「第一个/第二个」</strong>，请同步检查。
             </Typography.Text>
             <Space orientation="vertical" size={6} style={{ width: '100%' }}>
               {choices.map((choice, at) => (
                 <Space key={at} size={6} wrap>
+                  <Typography.Text
+                    aria-label={`第 ${at + 1} 个选项`}
+                    type="secondary"
+                    style={{
+                      width: 16,
+                      display: 'inline-block',
+                      textAlign: 'center',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {at + 1}
+                  </Typography.Text>
                   <Input
                     style={{ width: 220 }}
                     addonBefore="key"

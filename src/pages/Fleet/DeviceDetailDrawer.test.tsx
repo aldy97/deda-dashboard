@@ -140,3 +140,34 @@ describe('DeviceProfile · 绑定用户', () => {
     expect(await screen.findByText('暂无绑定用户')).toBeTruthy()
   })
 })
+
+/**
+ * 孩子信息 section 装配契约：设备存在时渲染并查询档案；
+ * 设备 404 时 section 不挂载（child-profile 查询零触发，404 由抽屉错误态兜）。
+ */
+describe('DeviceDetailDrawer · 孩子信息 section', () => {
+  it('设备存在时渲染孩子信息 section 并查询档案', async () => {
+    mockGet
+      .mockResolvedValueOnce({ data: makeFleetDetail() })
+      .mockResolvedValueOnce({ data: { profile: null } })
+    renderDrawer('dev-1')
+
+    expect(await screen.findByText('未设置孩子档案')).toBeTruthy()
+    expect(mockGet).toHaveBeenCalledWith('/analytics/fleet/devices/dev-1', {
+      params: { days: 30 },
+    })
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/fleet/devices/dev-1/child-profile',
+    )
+  })
+
+  it('设备 404 时不挂载 section，child-profile 查询零触发', async () => {
+    const err = Object.assign(new Error('not found'), { status: 404 })
+    mockGet.mockRejectedValueOnce(err)
+    renderDrawer('ghost-1')
+
+    expect(await screen.findByText('设备不存在')).toBeTruthy()
+    expect(screen.queryByText('孩子信息')).toBeNull()
+    expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+})

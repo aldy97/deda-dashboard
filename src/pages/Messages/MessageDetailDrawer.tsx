@@ -11,11 +11,23 @@ import {
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMessageDetail, useMessages } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { isSuperAdmin } from '../../components/access/role'
+import CopyableText from '../../components/CopyableText'
 import {
   isAssistantRawPayload,
   type MessageListItem,
 } from '../../types/analytics'
 import LlmTurnChain from './LlmTurnChain'
+import {
+  readMessageSafety,
+  safetyReplyLabel,
+  safetySourceLabelForMessage,
+} from './message-safety'
+import {
+  SAFETY_CATEGORY_META,
+  safetyCategoryLabel,
+} from '../Llm/decisions'
 import {
   modeLabel,
   roleTag,
@@ -59,8 +71,14 @@ export default function MessageDetailDrawer({
 
   const row = detail ?? message ?? null
 
+  // 冒险故事：集身份 + 该轮播放时锁定的版本；旧服务端没有该字段时按「未记录」处理
+  const adventureEpisode = detail?.adventureEpisode ?? null
+  const metaQuery = useAnalyticsMeta()
+  const superadmin = isSuperAdmin(metaQuery.data)
+
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
   const turnId = row?.turnId ?? null
+  const safety = readMessageSafety(detail?.rawPayload)
   const turnQuery = useMessages(
     {
       turnId: turnId ?? '',
@@ -95,14 +113,34 @@ export default function MessageDetailDrawer({
             column={1}
             size="small"
             bordered
+            // 值列的长 UUID 会把标签列压到一字一行，nowrap 让标签列按整段文字取宽
+            styles={{ label: { whiteSpace: 'nowrap' } }}
             items={[
-              { key: 'id', label: 'ID', children: row.id },
+              {
+                key: 'id',
+                label: 'ID',
+                children: (
+                  <CopyableText
+                    text={row.id}
+                    tip="复制 ID"
+                    style={{ fontFamily: 'monospace' }}
+                  >
+                    {row.id}
+                  </CopyableText>
+                ),
+              },
               {
                 key: 'turnId',
-                label: '轮次 ID（turnId）',
+                label: '轮次 ID',
                 children: (
-                  <span>
-                    {row.turnId}{' '}
+                  <Space size={4} wrap>
+                    <CopyableText
+                      text={row.turnId}
+                      tip="复制轮次 ID"
+                      style={{ fontFamily: 'monospace' }}
+                    >
+                      {row.turnId}
+                    </CopyableText>
                     <Button
                       size="small"
                       type="link"
@@ -110,7 +148,7 @@ export default function MessageDetailDrawer({
                     >
                       查看同一轮问答
                     </Button>
-                  </span>
+                  </Space>
                 ),
               },
               // 厂商对话 ID 暂不需要，需要时取消注释
@@ -130,6 +168,44 @@ export default function MessageDetailDrawer({
                 label: '模式',
                 children: modeLabel(row.mode),
               },
+              ...(row.mode === 'adventure_story'
+                ? [
+                    {
+                      key: 'adventureEpisode',
+                      label: '故事',
+                      children: adventureEpisode ? (
+                        <Space size={4} wrap>
+                          <Typography.Text style={{ fontFamily: 'monospace' }}>
+                            {adventureEpisode.businessKey}
+                          </Typography.Text>
+                          <Typography.Text italic>
+                            {adventureEpisode.title}
+                          </Typography.Text>
+                          {adventureEpisode.versionId === null && (
+                            <Tag>版本未记录</Tag>
+                          )}
+                          {!superadmin ? null : adventureEpisode.versionId ? (
+                            <Link
+                              to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}&versionId=${encodeURIComponent(adventureEpisode.versionId)}`}
+                            >
+                              查看当时版本 v{adventureEpisode.version}
+                            </Link>
+                          ) : (
+                            <Link
+                              to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}`}
+                            >
+                              查看该集版本历史
+                            </Link>
+                          )}
+                        </Space>
+                      ) : (
+                        <Typography.Text type="secondary">
+                          {loading ? '加载中…' : '—'}
+                        </Typography.Text>
+                      ),
+                    },
+                  ]
+                : []),
               // CEFR 等级暂不需要，需要时取消注释
               // {
               //   key: 'cefrLevel',
@@ -147,8 +223,9 @@ export default function MessageDetailDrawer({
                     >
                       {row.device.deviceId}
                     </Link>
-                    <Typography.Text
-                      copyable={{ text: row.device.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
+                    <CopyableText
+                      text={row.device.deviceId}
+                      tip="复制设备 ID"
                     />
                   </Space>
                 ),
@@ -255,6 +332,86 @@ export default function MessageDetailDrawer({
                 </Typography.Paragraph>
               )}
             </>
+          )}
+          <Typography.Title level={5} style={{ marginTop: 16 }}>
+            本轮安全判定
+          </Typography.Title>
+          {safety ? (
+            <Descriptions
+              column={1}
+              size="small"
+              bordered
+              styles={{ label: { whiteSpace: 'nowrap' } }}
+              items={[
+                {
+                  key: 'layer',
+                  label: '层级',
+                  children: safety.layer ?? '—',
+                },
+                {
+                  key: 'category',
+                  label: '类别',
+                  children: (
+                    <Tag
+                      color={
+                        safety.category === null
+                          ? 'default'
+                          : (SAFETY_CATEGORY_META[safety.category]?.color ??
+                            'default')
+                      }
+                    >
+                      {safetyCategoryLabel(safety.category)}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: 'blocked',
+                  label: '是否拦截',
+                  children: (
+                    <Tag color={safety.blocked ? 'red' : 'default'}>
+                      {safety.blocked ? '已拦截' : '未拦截'}
+                    </Tag>
+                  ),
+                },
+                {
+                  key: 'source',
+                  label: '判定来源',
+                  children: safetySourceLabelForMessage(safety.source),
+                },
+                {
+                  key: 'reply',
+                  label: '安全处置',
+                  children: safetyReplyLabel(safety.reply),
+                },
+                {
+                  key: 'matched',
+                  label: '命中关键词',
+                  children: safety.matched ?? '—',
+                },
+                ...(safety.inferred || safety.backfilledAt
+                  ? [
+                      {
+                        key: 'provenance',
+                        label: '回补标记',
+                        children: (
+                          <Space size={4} wrap>
+                            {safety.inferred && (
+                              <Tag color="warning">推断回补</Tag>
+                            )}
+                            {safety.backfilledAt && (
+                              <Tag>历史回补</Tag>
+                            )}
+                          </Space>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          ) : (
+            <Typography.Text type="secondary">
+              本轮未记录安全判定（早于埋点、未回补或非安全轮次）。
+            </Typography.Text>
           )}
           <Typography.Title level={5} style={{ marginTop: 16 }}>
             LLM 调用链路

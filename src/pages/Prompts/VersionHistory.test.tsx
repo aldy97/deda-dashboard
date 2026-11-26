@@ -130,6 +130,28 @@ describe('VersionHistory', () => {
     rollbackButtons().forEach((button) => expect(button).toBeDisabled())
   })
 
+  it('改动说明列有可读宽度，窄容器走横向滚动而不是压成一字一行', () => {
+    const { container } = render(
+      <VersionHistory
+        versions={VERSIONS}
+        canRollback
+        publishedRevision={3}
+        onRollback={vi.fn()}
+      />,
+    )
+
+    const colWidths = Array.from(
+      container.querySelectorAll<HTMLElement>('colgroup col'),
+    ).map((col) => col.style.width)
+    expect(colWidths).toContain('240px')
+
+    const scrollBody = container.querySelector<HTMLElement>('.ant-table-content')
+    expect(scrollBody).not.toBeNull()
+    expect(scrollBody?.style.overflowX).toBe('auto')
+    const table = scrollBody?.querySelector('table')
+    expect((table as HTMLElement).style.width).toBe('1068px')
+  })
+
   it('展开行显示该版本完整正文（审计链要能查证）', async () => {
     const { container } = render(
       <VersionHistory

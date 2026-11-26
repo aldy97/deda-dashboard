@@ -62,6 +62,15 @@ export const SCENE_META: Record<string, SceneMeta> = {
     streaming: false,
     failOpen: false,
   },
+  adventure_script_convert: {
+    label: '故事稿转换',
+    description:
+      '冒险内容工作台「从 docx 填充 / 生成草稿」时调用：主模型把带标注的中文故事稿转成结构化段落 JSON' +
+      '（温度 0.2、关闭思考、maxTokens 8000）。只在 authoring 环境生成预览，不落库、不面向孩子；' +
+      '失败会返回 SCRIPT_CONVERT_FAILED 让作者重试。',
+    streaming: false,
+    failOpen: false,
+  },
   memory_extract: {
     label: '记忆抽取',
     description:

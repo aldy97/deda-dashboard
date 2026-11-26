@@ -15,7 +15,7 @@ import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import { useAdventureAudit } from '../../api/queries'
 import type { AuditItem } from '../../types/adventureAdmin'
-import { AUDIT_ACTION_OPTIONS, auditActionMeta, fmtDateTime, shortHash } from './labels'
+import { AUDIT_ACTION_OPTIONS, auditActionMeta, fmtDateTime } from './labels'
 import type { DayRange } from '../../utils/date-range'
 
 /**
@@ -142,19 +142,6 @@ export default function AuditLog({ episodeId }: Props) {
       key: 'reason',
       render: (value: string | null) =>
         value ? value : <Typography.Text type="secondary">—</Typography.Text>,
-    },
-    {
-      title: '来源 bundle',
-      key: 'sourceBundleHash',
-      width: 140,
-      render: (_, row) =>
-        row.sourceBundleHash ? (
-          <Typography.Text code style={{ fontSize: 12 }}>
-            {shortHash(row.sourceBundleHash)}
-          </Typography.Text>
-        ) : (
-          <Typography.Text type="secondary">—</Typography.Text>
-        ),
     },
   ]
 

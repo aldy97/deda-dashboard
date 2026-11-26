@@ -63,6 +63,20 @@ describe('SceneSummaryTable 场景列链接', () => {
     expect(link.getAttribute('href')).toBe('/prompts?scene=intent_classify')
   })
 
+  it('adventure_script_convert 显示中文名并带场景 InfoTip', () => {
+    renderTable([sceneRow({ scene: 'adventure_script_convert' })])
+
+    const link = screen.getByRole('link', { name: /故事稿转换/ })
+    expect(link.getAttribute('href')).toBe(
+      '/prompts?scene=adventure_script_convert',
+    )
+    const sceneCell = link.closest('span')
+    expect(sceneCell).not.toBeNull()
+    expect(
+      sceneCell!.querySelector('[aria-label="question-circle"]'),
+    ).not.toBeNull()
+  })
+
   it('多场景表格每行都有链接', () => {
     renderTable([
       sceneRow({ scene: 'chat_main' }),

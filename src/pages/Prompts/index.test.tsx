@@ -203,38 +203,49 @@ describe('Prompts 列表渲染', () => {
 })
 
 describe('Prompts 环境识别与写闸口', () => {
-  it('staging：环境标签为「测试」，不出现生产警示', async () => {
+  it('页面标题为「提示词管理」', async () => {
+    stubServer()
+    renderPage()
+
+    expect(
+      await screen.findByRole('heading', { name: '提示词管理' }),
+    ).toBeInTheDocument()
+  })
+
+  it('页面不再渲染环境标签：环境标识只在左上角', async () => {
     stubServer({ meta: makeMeta({ nodeEnv: 'staging' }) })
     renderPage()
 
-    const tag = await screen.findByTestId('env-tag')
-    await waitFor(() => expect(tag.dataset.tone).toBe('staging'))
-    expect(tag).toHaveTextContent('测试')
+    await screen.findByText('小象 Elly 人设')
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
+  })
+
+  it('staging：不出现生产警示', async () => {
+    stubServer({ meta: makeMeta({ nodeEnv: 'staging' }) })
+    renderPage()
+
+    await screen.findByText('小象 Elly 人设')
     expect(screen.queryByText('当前为生产环境')).not.toBeInTheDocument()
   })
 
-  it('production：标签「生产」并额外挂出生产警示 Alert', async () => {
+  it('production：仍挂出生产警示 Alert，但页面不渲染环境标签', async () => {
     stubServer({ meta: makeMeta({ nodeEnv: 'production' }) })
     renderPage()
 
-    const tag = await screen.findByTestId('env-tag')
-    await waitFor(() => expect(tag.dataset.tone).toBe('production'))
-    expect(tag).toHaveTextContent('生产')
     expect(await screen.findByText('当前为生产环境')).toBeInTheDocument()
     expect(
       screen.getByText(/任何发布都会立即对所有线上设备生效/),
     ).toBeInTheDocument()
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 
-  it('meta 失败：标签落「未知环境」+ 错误 Alert（fail-closed）', async () => {
+  it('meta 失败：错误 Alert（fail-closed），页面不渲染环境标签', async () => {
     stubServer({ metaError: new Error('网络不通') })
     renderPage()
 
-    const tag = await screen.findByTestId('env-tag')
-    await waitFor(() => expect(tag.dataset.tone).toBe('unknown'))
-    expect(tag).toHaveTextContent('未知环境')
     expect(await screen.findByText('无法确认当前环境')).toBeInTheDocument()
     expect(screen.getByText(/已按 fail-closed 禁用全部写操作/)).toBeInTheDocument()
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 
   it('写开关关闭：只读提示，且不出现生产警示', async () => {
@@ -248,15 +259,14 @@ describe('Prompts 环境识别与写闸口', () => {
       screen.getByText(/PROMPT_WRITE_ENABLED=false/),
     ).toBeInTheDocument()
     expect(screen.queryByText('当前为生产环境')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 
-  it('meta 未返回时先渲染「环境识别中」，不抢答一个环境', () => {
+  it('meta 未返回：不渲染页面级环境标签，也不抢答环境', () => {
     stubServer({ meta: null })
     renderPage()
 
-    const tag = screen.getByTestId('env-tag')
-    expect(tag.dataset.tone).toBe('unknown')
-    expect(tag).toHaveTextContent('环境识别中')
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
   })
 })
 
@@ -274,7 +284,7 @@ describe('Prompts 抽屉与编辑器联动', () => {
     expect(editor.dataset.writable).toBe('true')
     expect(editor.dataset.tone).toBe('staging')
     expect(editor.dataset.confirmHint).toBe('DEDA2025')
-    expect(screen.getByText('Prompt 详情')).toBeInTheDocument()
+    expect(screen.getByText('提示词详情')).toBeInTheDocument()
   })
 
   it('meta 失败时抽屉里的编辑器同样是 writable=false 并带 fail-closed 理由', async () => {
@@ -388,7 +398,7 @@ describe('Prompts URL key 参数——抽屉联动', () => {
 
     const editor = await screen.findByTestId('prompt-editor')
     expect(editor.dataset.promptKey).toBe('persona_elly')
-    expect(screen.getByText('Prompt 详情')).toBeInTheDocument()
+    expect(screen.getByText('提示词详情')).toBeInTheDocument()
   })
 
   it('?key=不存在的 key → 抽屉打开并说明目录里没有，不挂编辑器', async () => {
@@ -396,7 +406,7 @@ describe('Prompts URL key 参数——抽屉联动', () => {
     renderPage('/prompts?key=nonexistent')
 
     // Drawer 打开了（selectedKey 不为 null），但 catalog 里没这个 key
-    expect(screen.getByText('Prompt 详情')).toBeInTheDocument()
+    expect(screen.getByText('提示词详情')).toBeInTheDocument()
     expect(screen.queryByTestId('prompt-editor')).not.toBeInTheDocument()
     // ?key= 可分享，就会有人拿着已下线 prompt 的旧链接进来：给一句人话而不是空抽屉
     expect(

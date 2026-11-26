@@ -144,6 +144,27 @@ describe('apiClient 拦截器', () => {
     expect(window.location.pathname).toBe('/')
   })
 
+  it.each([
+    '/analytics/prompts',
+    '/analytics/llm/summary',
+    '/analytics/voice-speed',
+    '/analytics/test-devices',
+    '/analytics/app-assets',
+  ])(
+    '运维组前缀 %s 的 403 是角色不足：不清 token、不跳登录',
+    async (url) => {
+      localStorage.setItem(TOKEN_KEY, 'tk')
+      rejectWith({ code: 403, message: '需要超级管理员权限', data: null }, 403)
+
+      const error = await catchError(apiClient.get(url))
+
+      expect(error.status).toBe(403)
+      // 角色漂移（例如 token 里的 role 被运维改掉）不能把人踢下线
+      expect(localStorage.getItem(TOKEN_KEY)).toBe('tk')
+      expect(window.location.pathname).toBe('/')
+    },
+  )
+
   it('其它路由的 403 仍按全站行为清 token 跳登录', async () => {
     localStorage.setItem(TOKEN_KEY, 'tk')
     // 已经在 /login 时不再跳一次，避免 jsdom 的未实现导航噪声

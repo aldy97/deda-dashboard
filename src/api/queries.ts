@@ -6,6 +6,8 @@ import {
   fetchContentLearning,
   fetchContentParentReport,
   fetchCurrentMemories,
+  deleteDeviceChildProfile,
+  fetchDeviceChildProfile,
   fetchDurationDistribution,
   fetchEngagementSummary,
   fetchFeatureAdoption,
@@ -64,6 +66,7 @@ import {
   exportBundle,
   fetchAudit,
   fetchCapabilities,
+  fetchCharacterTestDevices,
   fetchDeviceTestAssignment,
   fetchEpisode,
   fetchEpisodeImpact,
@@ -571,6 +574,30 @@ export function useFleetDeviceDetail(deviceId: string | null, days: number) {
   })
 }
 
+export function useDeviceChildProfile(deviceId: string | null) {
+  return useQuery({
+    queryKey: ['analytics', 'deviceChildProfile', deviceId],
+    queryFn: () => fetchDeviceChildProfile(deviceId!),
+    enabled: deviceId !== null,
+  })
+}
+
+/**
+ * 清空孩子档案（仅 superadmin 能过服务端闸口；普通 admin 会吃 403 → 提示失败）。
+ * 成功后作废该设备的档案缓存，section 自动回到「未设置」空态。
+ */
+export function useDeleteDeviceChildProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (deviceId: string) => deleteDeviceChildProfile(deviceId),
+    onSuccess: (_data, deviceId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['analytics', 'deviceChildProfile', deviceId],
+      })
+    },
+  })
+}
+
 // ---- 冒险内容管理（Adventure Studio）----
 //
 // queryKey 沿用 ['analytics', 资源, 参数] 规范，资源统一挂在 'adventure' 之下：
@@ -584,13 +611,14 @@ export const ADVENTURE_QUERY_ROOT = ['analytics', 'adventure'] as const
 /** 自愈面板需要接近实时，其余读接口沿用全局 staleTime 5min */
 const RECOVERY_REFETCH_INTERVAL_MS = 30_000
 
-export function useAdventureCapabilities() {
+export function useAdventureCapabilities(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...ADVENTURE_QUERY_ROOT, 'capabilities'],
     queryFn: fetchCapabilities,
     // 枚举与阈值来自服务端配置，一个会话内不会变；也不该因为一次写操作就去重拉
     staleTime: Infinity,
     gcTime: Infinity,
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -892,6 +920,22 @@ export function useDeviceTestAssignment(deviceId: string | null) {
     queryKey: [...ADVENTURE_QUERY_ROOT, 'device-test-assignment', deviceId],
     queryFn: () => fetchDeviceTestAssignment(deviceId!),
     enabled: deviceId !== null && deviceId.trim().length > 0,
+  })
+}
+
+/** 按 IP 读当前所有被下发的样机；characterKey 为空或环境未启用时不发请求 */
+export function useCharacterTestDevices(
+  characterKey: string | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [
+      ...ADVENTURE_QUERY_ROOT,
+      'character-test-devices',
+      characterKey,
+    ],
+    queryFn: () => fetchCharacterTestDevices(characterKey!),
+    enabled: enabled && characterKey !== null,
   })
 }
 

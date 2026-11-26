@@ -413,9 +413,40 @@ export interface MessageListResponse {
   items: MessageListItem[]
 }
 
+/** 消息对应的冒险故事。versionId/version 为空表示该轮没有版本记录，不做时间推断 */
+export interface MessageAdventureEpisode {
+  episodeId: string
+  /** {characterKey}/{season}/{episodeNumber}，与冒险内容工作台同一口径 */
+  businessKey: string
+  characterKey: string
+  season: number
+  episodeNumber: number
+  /** 有版本时是播放当时的标题，否则是集的当前标题 */
+  title: string
+  versionId: string | null
+  version: number | null
+}
+
 /** 整行详情，rawPayload 原样返回 */
 export interface MessageDetailResponse extends MessageListItem {
   rawPayload: unknown
+  /** 仅 mode=adventure_story 时可能非空；旧服务端没有该字段时为 undefined */
+  adventureEpisode?: MessageAdventureEpisode | null
+}
+
+/**
+ * 回补到 messages.rawPayload.safety 的本轮安全判定快照。
+ * inferred=true 表示没有判定行，只能从 AI 回复内容推断。
+ */
+export interface MessageSafetySnapshot {
+  layer: string | null
+  category: string | null
+  blocked: boolean
+  source: string
+  matched: string | null
+  reply: string
+  inferred?: boolean
+  backfilledAt?: string
 }
 
 /**
@@ -1008,6 +1039,11 @@ export interface FleetDeviceItem {
   presenceDays7d: number
   lastPresenceDate: string | null
   turns7d: number
+  /**
+   * 测试设备白名单（服务端只对超管下发真实值）。
+   * null = 不在册（或当前账号无权查看）；note 可为 null（有资格但没写备注）。
+   */
+  testWhitelist: { note: string | null } | null
 }
 
 export interface FleetDevicesResponse {
@@ -1063,6 +1099,23 @@ export interface FleetDeviceDetailResponse {
   totals: DeviceTotals
 }
 
+/** GET /analytics/fleet/devices/:deviceId/child-profile → data.profile；档案未设置为 null */
+export interface DeviceChildProfile {
+  name: string | null
+  birthday: string | null
+  englishName: string | null
+  gender: 'male' | 'female' | null
+}
+
+export interface DeviceChildProfileResponse {
+  profile: DeviceChildProfile | null
+}
+
+/** DELETE /analytics/fleet/devices/:deviceId/child-profile（仅 superadmin，幂等） */
+export interface DeleteDeviceChildProfileResponse {
+  deleted: boolean
+}
+
 // ---- Prompt 管理（/analytics/meta、/analytics/prompts*）----
 /**
  * 契约真相：deda-server `docs/analytics-api.md` →「Prompt 管理」。
@@ -1070,7 +1123,7 @@ export interface FleetDeviceDetailResponse {
  * 以及 AnalyticsMetaController.meta() 逐项对齐，不得自行增删。
  */
 
-/** GET /analytics/meta：环境标识 + prompt 写策略 */
+/** GET /analytics/meta：环境标识 + prompt 写策略 + 当前管理员 */
 export interface AnalyticsMeta {
   /** development / staging / production；左上角环境标签据此渲染 */
   nodeEnv: string
@@ -1078,12 +1131,25 @@ export interface AnalyticsMeta {
   promptWriteEnabled: boolean
   /** 仅用于提示文案；禁止预填确认码输入框，否则「手动输入」这道闸形同虚设 */
   publishConfirmCode: string
+  /**
+   * 当前登录管理员。老后端可能没有这个字段——按普通 admin 处理（fail-closed），
+   * 运维组页面在缺字段时一律显示雾。
+   */
+  admin?: {
+    username: string
+    displayName: string
+    /** superadmin = 可进运维组；admin = 只读报表 */
+    role: AdminRole
+  }
 }
+
+/** 管理员角色。与 deda-server `admin-role.ts` 的取值逐字对齐。 */
+export type AdminRole = 'superadmin' | 'admin'
 
 export type PromptCategory = 'small_model' | 'main_rules' | 'story' | 'persona'
 
-/** 生效正文来自 DB 已发布版本，还是回落到代码默认值 */
-export type PromptSource = 'db' | 'default'
+/** 生效正文来自 DB 已发布版本、代码默认值，或动态角色人设尚未发布 */
+export type PromptSource = 'db' | 'default' | 'none'
 
 /** 变量契约由服务端代码定义，DB 里的 renderSchema 仅供展示 */
 export interface PromptVariableSpec {
@@ -1102,11 +1168,17 @@ export interface PromptCatalogItem {
   description: string
   variables: PromptVariableSpec[]
   maxChars: number
-  /** 代码默认值 */
-  defaultContent: string
-  /** 运行时真正生效的正文（DB published，无则代码默认值） */
+  /** 代码默认值；动态角色人设没有默认值，为 null */
+  defaultContent: string | null
+  /** 运行时真正生效的正文（DB published，无则代码默认值；动态人设未发布为空串） */
   effectiveContent: string
   source: PromptSource
+  /** true = 由音色管理新增的角色派生的人设，不在代码常量内 */
+  isDynamic?: boolean
+  /** 动态人设关联的角色 key；内置 key 为 null */
+  characterKey?: string | null
+  /** 动态人设：角色是否仍在 character_timbre */
+  characterRegistered?: boolean | null
   publishedRevision: number | null
   draftRevision: number | null
   publishedAt: string | null

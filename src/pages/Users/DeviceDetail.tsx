@@ -14,6 +14,7 @@ import {
 } from 'antd'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import CopyableText from '../../components/CopyableText'
 import InfoTip from '../../components/InfoTip'
 import DeviceProfile from '../../components/device/DeviceProfile'
 import {
@@ -161,12 +162,13 @@ export default function UserDeviceDetail() {
               size="small"
             >
               <Descriptions.Item label="设备 ID">
-                <Typography.Text
-                  copyable={{ text: deviceId, tooltips: ['复制设备 ID', '已复制'] }}
+                <CopyableText
+                  text={deviceId}
+                  tip="复制设备 ID"
                   style={{ fontFamily: 'monospace' }}
                 >
                   {deviceId}
-                </Typography.Text>
+                </CopyableText>
               </Descriptions.Item>
               <Descriptions.Item label="产品">
                 {device ? <Tag color="blue">{device.characterKey}</Tag> : '—'}
