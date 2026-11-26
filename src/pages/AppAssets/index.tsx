@@ -13,8 +13,9 @@ import {
   message,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import { CopyOutlined, MoreOutlined } from '@ant-design/icons'
+import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import CopyableText from '../../components/CopyableText'
 import PageHeader from '../../components/PageHeader'
 import {
   useAppAssetKeys,
@@ -277,12 +278,6 @@ export default function AppAssets() {
     if (slot) setSlotModal({ mode: 'edit', slot })
   }
 
-  const copyKey = async (key: string) => {
-    const ok = await copyText(key)
-    if (ok) message.success('已复制 key')
-    else message.error('复制失败，请手动复制')
-  }
-
   const columns: ColumnsType<AppAssetGroup> = [
     {
       title: '展示位',
@@ -291,18 +286,11 @@ export default function AppAssets() {
       render: (_, group) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{group.label}</Typography.Text>
-          <Space size={2} align="center">
+          <Space size={4} align="center">
             <Typography.Text code style={{ fontSize: 12 }}>
               {group.key}
             </Typography.Text>
-            <Button
-              type="text"
-              size="small"
-              icon={<CopyOutlined />}
-              aria-label={`复制 key ${group.key}`}
-              title="复制 key"
-              onClick={() => void copyKey(group.key)}
-            />
+            <CopyableText text={group.key} tip="复制 key" />
           </Space>
         </Space>
       ),

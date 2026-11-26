@@ -8,6 +8,7 @@ import type {
   MessageListItem,
 } from '../../types/analytics'
 import MessageDetailDrawer from './MessageDetailDrawer'
+import { stubClipboard } from '../../test/clipboard'
 
 vi.mock('../../api/queries', () => ({
   useMessageDetail: vi.fn(),
@@ -86,6 +87,7 @@ describe('MessageDetailDrawer 复制入口', () => {
     expect(await screen.findByText('轮次 ID')).toBeInTheDocument()
     expect(screen.queryByText('轮次 ID（turnId）')).not.toBeInTheDocument()
 
+    const writeText = stubClipboard()
     const copyId = screen.getByRole('button', { name: '复制 ID' })
     const copyTurn = screen.getByRole('button', { name: '复制轮次 ID' })
     expect(copyId).toBeInTheDocument()
@@ -93,9 +95,16 @@ describe('MessageDetailDrawer 复制入口', () => {
     expect(copyTurn).toBeInTheDocument()
 
     fireEvent.click(copyId)
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('m-1'))
     await waitFor(() =>
       expect(screen.getByRole('button', { name: '已复制' })).toBeInTheDocument(),
     )
+
+    fireEvent.click(copyTurn)
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('t-1'))
+
+    fireEvent.click(screen.getByRole('button', { name: '复制设备 ID' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('dev-1'))
   })
 
   it('仅凭 URL 打开时，详情回来后可复制且查看同轮仍可用', async () => {

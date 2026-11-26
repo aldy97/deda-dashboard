@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import DeviceTestAssignList from './DeviceTestAssignList'
@@ -9,6 +9,7 @@ import {
   useClearTestStory,
 } from '../../api/queries'
 import type { CharacterTestDevicesResponse } from '../../types/adventureAdmin'
+import { stubClipboard } from '../../test/clipboard'
 
 vi.mock('../../api/queries', () => ({
   useCharacterTestDevices: vi.fn(),
@@ -164,11 +165,22 @@ describe('DeviceTestAssignList', () => {
     expect(rowOf('dev-1003').getByText('最新')).toBeTruthy()
   })
 
-  it('gives every device id a copy button that copies the device id', () => {
+  it('gives every device id a copy button that copies that row device id', async () => {
     setup()
+    const user = userEvent.setup()
+    const writeText = stubClipboard()
 
-    const buttons = screen.getAllByRole('button', { name: '复制设备 ID' })
-    expect(buttons).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: '复制设备 ID' })).toHaveLength(3)
+
+    await user.click(
+      rowOf('dev-1001').getByRole('button', { name: '复制设备 ID' }),
+    )
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('dev-1001'))
+
+    await user.click(
+      rowOf('dev-1003').getByRole('button', { name: '复制设备 ID' }),
+    )
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('dev-1003'))
   })
 
   it('reassigns the clicked row to the latest snapshot with that row episode id', async () => {

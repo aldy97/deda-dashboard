@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card, Descriptions, Empty, Table, Tag, Typography } from 'antd'
 import dayjs from 'dayjs'
+import CopyableText from '../CopyableText'
 import InfoTip from '../InfoTip'
 import type { BoundUser, FleetDeviceDetailResponse } from '../../types/analytics'
 import DailyTurnsChart from './DailyTurnsChart'
@@ -33,9 +34,9 @@ export default function DeviceProfile({ data, days, exitLinks }: Props) {
         <Descriptions column={2} size="small" colon={false}>
           <Descriptions.Item label="设备 ID">{data.deviceId}</Descriptions.Item>
           <Descriptions.Item label="UUID">
-            <Typography.Text copyable ellipsis style={{ maxWidth: 200 }}>
+            <CopyableText text={data.deviceUuid} ellipsis style={{ maxWidth: 200 }}>
               {data.deviceUuid}
-            </Typography.Text>
+            </CopyableText>
           </Descriptions.Item>
           <Descriptions.Item label="角色">
             {data.characterKey}

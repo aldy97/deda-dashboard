@@ -13,6 +13,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { MoreOutlined, ReloadOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
+import CopyableText from '../../components/CopyableText'
 import type { ApiError } from '../../api/client'
 import {
   useAssignTestStory,
@@ -149,9 +150,7 @@ export default function DeviceTestAssignList({
           >
             {row.deviceId}
           </Link>
-          <Typography.Text
-            copyable={{ text: row.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
-          />
+          <CopyableText text={row.deviceId} tip="复制设备 ID" />
         </Space>
       ),
     },

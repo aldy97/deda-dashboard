@@ -6,6 +6,7 @@ import { message } from 'antd'
 import { apiClient } from '../../api/client'
 import { copyText } from '../../utils/clipboard'
 import AppAssets from './index'
+import { stubClipboard } from '../../test/clipboard'
 import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets'
 
 /**
@@ -594,35 +595,60 @@ describe('AppAssets 预览与复制', () => {
     expect(screen.getByText('预览 v2')).toBeInTheDocument()
   })
 
-  it('展示位 key 旁的复制按钮直接复制 key，不展开操作菜单', async () => {
+  it('展示位 key 旁的复制图标把该行 key 写入剪贴板，点击后提示变为已复制', async () => {
     stubServer()
     renderPage()
     await screen.findByText('首页 Banner')
 
-    await userEvent.click(
-      screen.getByRole('button', { name: `复制 key ${BUSINESS_KEY}` }),
-    )
-
-    expect(mockCopyText).toHaveBeenCalledWith(BUSINESS_KEY)
-    await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith('已复制 key'),
-    )
+    const writeText = stubClipboard()
+    const copyBtn = within(rowFor(BUSINESS_KEY)).getByRole('button', {
+      name: '复制 key',
+    })
     expect(screen.queryByRole('menuitem')).toBeNull()
+
+    await userEvent.click(copyBtn)
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(BUSINESS_KEY))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '已复制' })).toBeInTheDocument(),
+    )
   })
 
-  it('展示位 key 行内复制失败时提示手动复制', async () => {
-    mockCopyText.mockResolvedValue(false)
-    stubServer()
+  it('不同展示位复制各自的 key，不共用同一个值', async () => {
+    const POPUP_KEY = 'home/popup'
+    stubServer({
+      keys: [
+        BUSINESS,
+        makeKey({ key: POPUP_KEY, label: '首页弹窗', page: 'home' }),
+      ],
+      assets: [
+        BUSINESS_GROUP,
+        {
+          ...BUSINESS_GROUP,
+          key: POPUP_KEY,
+          label: '首页弹窗',
+          published: makeAsset({ id: 'asset-popup', key: POPUP_KEY }),
+          latestDraft: null,
+          versions: [],
+        },
+      ],
+    })
     renderPage()
-    await screen.findByText('首页 Banner')
+    await screen.findByText('首页弹窗')
+
+    const writeText = stubClipboard()
 
     await userEvent.click(
-      screen.getByRole('button', { name: `复制 key ${BUSINESS_KEY}` }),
+      within(rowFor(BUSINESS_KEY)).getByRole('button', { name: '复制 key' }),
+    )
+    await waitFor(() =>
+      expect(writeText).toHaveBeenLastCalledWith(BUSINESS_KEY),
     )
 
-    await waitFor(() =>
-      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+    await userEvent.click(
+      within(rowFor(POPUP_KEY)).getByRole('button', { name: '复制 key' }),
     )
+    await waitFor(() => expect(writeText).toHaveBeenLastCalledWith(POPUP_KEY))
   })
 
   it('复制 URL：成功后提示，菜单项改为「已复制 URL」', async () => {
