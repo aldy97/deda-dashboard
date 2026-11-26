@@ -51,15 +51,16 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       title: '设备 ID',
       dataIndex: 'deviceId',
       key: 'deviceId',
-      width: 150,
+      width: 200,
       ellipsis: true,
       render: (v: string, r: FleetDeviceItem) => {
         const note = r.testWhitelist?.note?.trim()
         return (
           <div
+            data-testid="device-id-cell"
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
+              flexWrap: 'nowrap',
               alignItems: 'center',
               gap: 4,
               minWidth: 0,
@@ -68,8 +69,10 @@ export default function DeviceTable({ onOpenDevice }: Props) {
             <Link
               to={`/users/${r.deviceId}`}
               onClick={(e) => e.stopPropagation()}
+              title={v}
               style={{
-                maxWidth: '100%',
+                flex: '1 1 auto',
+                minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
