@@ -335,4 +335,27 @@ describe('选项命中统计接口层', () => {
     expect(result.current.fetchStatus).toBe('idle')
     expect(mockGet).not.toHaveBeenCalled()
   })
+
+  it('useCharacterTestDevices 有 characterKey 时按 characterKey 发请求，data 交给组件', async () => {
+    mockGet.mockClear()
+    const response = {
+      enabled: true,
+      characterKey: 'elly',
+      total: 0,
+      devices: [],
+    }
+    mockGet.mockResolvedValue({ data: response })
+    const { Wrapper } = createWrapper()
+
+    const { result } = renderHook(() => useCharacterTestDevices('elly', true), {
+      wrapper: Wrapper,
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/adventure-admin/device-test/assignments',
+      { params: { characterKey: 'elly' } },
+    )
+    expect(result.current.data).toEqual(response)
+  })
 })
