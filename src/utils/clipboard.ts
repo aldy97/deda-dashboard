@@ -1,9 +1,20 @@
 /**
- * 复制文本到剪贴板。
+ * 读取剪贴板文本。
  *
- * 优先用异步剪贴板 API；不可用（非 https / 权限被拒 / 老浏览器）时走
- * textarea + execCommand 的兜底。返回是否成功，由调用方决定提示文案。
+ * 浏览器没有同步读取的兜底方案（execCommand 只有 copy 没有 paste），
+ * 非 https / 权限被拒 / 老浏览器一律返回 null，由调用方提示手动粘贴。
  */
+export async function readText(): Promise<string | null> {
+  const clipboard =
+    typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+  if (!clipboard?.readText) return null
+  try {
+    return await clipboard.readText()
+  } catch {
+    return null
+  }
+}
+
 export async function copyText(text: string): Promise<boolean> {
   const clipboard =
     typeof navigator !== 'undefined' ? navigator.clipboard : undefined

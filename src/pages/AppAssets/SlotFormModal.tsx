@@ -14,7 +14,7 @@ import {
   useUpdateAppAssetKey,
 } from '../../api/appAssets'
 import type { AppAssetKey } from '../../types/appAssets'
-import { copyText } from './clipboard'
+import { copyText } from '../../utils/clipboard'
 
 interface Props {
   open: boolean

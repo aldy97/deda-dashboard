@@ -244,3 +244,29 @@ describe('冒险内容工作台：新建故事集', () => {
     expect(screen.getByTestId('location').textContent).toBe('?episodeId=ep9')
   })
 })
+
+describe('冒险内容工作台：Header 环境标签', () => {
+  it('可写环境在 Header 展示 authoring 标签', () => {
+    setup()
+
+    expect(screen.getByText('可写环境 · authoring')).toBeInTheDocument()
+  })
+
+  it('只读环境在 Header 展示 profile', () => {
+    setup({
+      caps: {
+        data: { ...capabilities, authoring: false, profile: 'readonly' },
+        isPending: false,
+        error: null,
+      },
+    })
+
+    expect(screen.getByText('只读环境 · readonly')).toBeInTheDocument()
+  })
+
+  it('能力清单未返回时不展示环境标签', () => {
+    setup({ caps: { data: null, isPending: true, error: null } })
+
+    expect(screen.queryByText(/可写环境|只读环境/)).toBeNull()
+  })
+})

@@ -7,7 +7,7 @@ import {
   useCreateAppAssetKey,
   useUpdateAppAssetKey,
 } from '../../api/appAssets'
-import { copyText } from './clipboard'
+import { copyText } from '../../utils/clipboard'
 import type { AppAssetKey } from '../../types/appAssets'
 
 vi.mock('../../api/appAssets', () => ({
@@ -15,7 +15,7 @@ vi.mock('../../api/appAssets', () => ({
   useUpdateAppAssetKey: vi.fn(),
 }))
 
-vi.mock('./clipboard', () => ({ copyText: vi.fn() }))
+vi.mock('../../utils/clipboard', () => ({ copyText: vi.fn() }))
 
 const mockCreate = useCreateAppAssetKey as unknown as ReturnType<typeof vi.fn>
 const mockUpdate = useUpdateAppAssetKey as unknown as ReturnType<typeof vi.fn>

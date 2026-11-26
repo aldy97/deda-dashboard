@@ -14,8 +14,10 @@ import {
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { CopyOutlined, SnippetsOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import PageHeader from '../../components/PageHeader'
+import { copyText, readText } from '../../utils/clipboard'
 import {
   useAddTestDevice,
   useRevokeTestDevice,
@@ -84,6 +86,21 @@ export default function TestDevices() {
     )
   }
 
+  async function copyDeviceId(deviceId: string) {
+    const ok = await copyText(deviceId)
+    if (ok) message.success('已复制设备 ID')
+    else message.error('复制失败，请手动复制')
+  }
+
+  async function pasteDeviceId() {
+    const text = await readText()
+    if (text === null) {
+      message.error('读取剪贴板失败，请手动粘贴')
+      return
+    }
+    addForm.setFieldValue('deviceId', text.trim())
+  }
+
   function openRevoke(row: TestDeviceWhitelistItem) {
     setRevokeTarget(row)
     revokeForm.resetFields()
@@ -122,12 +139,21 @@ export default function TestDevices() {
       key: 'device',
       width: 220,
       render: (_, row) => (
-        <Link
-          to={`/users/${encodeURIComponent(row.device.deviceId)}`}
-          style={{ fontFamily: 'monospace' }}
-        >
-          {row.device.deviceId}
-        </Link>
+        <Space size={4}>
+          <Link
+            to={`/users/${encodeURIComponent(row.device.deviceId)}`}
+            style={{ fontFamily: 'monospace' }}
+          >
+            {row.device.deviceId}
+          </Link>
+          <Button
+            type="text"
+            size="small"
+            icon={<CopyOutlined />}
+            aria-label="复制设备 ID"
+            onClick={() => void copyDeviceId(row.device.deviceId)}
+          />
+        </Space>
       ),
     },
     {
@@ -248,7 +274,19 @@ export default function TestDevices() {
               rules={[{ required: true, message: '请填写设备 ID' }]}
               style={{ width: 280 }}
             >
-              <Input placeholder="设备 ID / 设备编码 / MAC" />
+              <Input
+                placeholder="设备 ID / 设备编码 / MAC"
+                addonAfter={
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<SnippetsOutlined />}
+                    onClick={() => void pasteDeviceId()}
+                  >
+                    粘贴
+                  </Button>
+                }
+              />
             </Form.Item>
             <Form.Item name="note" label="备注" style={{ width: 220 }}>
               <Input placeholder="备注（可选）" />

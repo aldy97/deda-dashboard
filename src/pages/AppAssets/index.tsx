@@ -25,7 +25,7 @@ import {
 } from '../../api/appAssets'
 import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets'
 import { formatBytes, formatDims, formatTime } from './labels'
-import { copyText } from './clipboard'
+import { copyText } from '../../utils/clipboard'
 import AssetUploadDrawer from './AssetUploadDrawer'
 import VersionHistoryDrawer from './VersionHistoryDrawer'
 import SlotFormModal from './SlotFormModal'
@@ -287,9 +287,6 @@ export default function AppAssets() {
           <Typography.Text strong>{group.label}</Typography.Text>
           <Typography.Text code style={{ fontSize: 12 }}>
             {group.key}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {group.page}
           </Typography.Text>
         </Space>
       ),

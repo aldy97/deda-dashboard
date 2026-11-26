@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { message } from 'antd'
 import TestDevices from './index'
+import { copyText, readText } from '../../utils/clipboard'
 import {
   useAddTestDevice,
   useRevokeTestDevice,
@@ -16,6 +17,14 @@ vi.mock('../../api/testDevices', () => ({
   useAddTestDevice: vi.fn(),
   useRevokeTestDevice: vi.fn(),
 }))
+
+vi.mock('../../utils/clipboard', () => ({
+  copyText: vi.fn(),
+  readText: vi.fn(),
+}))
+
+const mockCopyText = copyText as unknown as ReturnType<typeof vi.fn>
+const mockReadText = readText as unknown as ReturnType<typeof vi.fn>
 
 const mockQuery = useTestDevices as unknown as ReturnType<typeof vi.fn>
 const mockAdd = useAddTestDevice as unknown as ReturnType<typeof vi.fn>
@@ -94,7 +103,10 @@ beforeEach(() => {
     error: null,
   })
   mockQuery.mockReturnValue(idle(response()))
+  mockCopyText.mockResolvedValue(true)
+  mockReadText.mockResolvedValue('')
   vi.spyOn(message, 'success').mockImplementation(() => undefined as never)
+  vi.spyOn(message, 'error').mockImplementation(() => undefined as never)
 })
 
 function renderPage() {
@@ -264,5 +276,62 @@ describe('测试设备白名单页面', () => {
 
     expect(screen.getByText('白名单加载失败')).toBeTruthy()
     expect(screen.getByText('boom')).toBeTruthy()
+  })
+})
+
+describe('测试设备白名单 · 剪贴板', () => {
+  it('设备 ID 旁的复制图标复制完整 ID 并提示', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: '复制设备 ID' }))
+
+    expect(mockCopyText).toHaveBeenCalledWith('aa:bb:cc:dd:ee:ff')
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith('已复制设备 ID'),
+    )
+  })
+
+  it('复制失败时提示手动复制', async () => {
+    const user = userEvent.setup()
+    mockCopyText.mockResolvedValue(false)
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: '复制设备 ID' }))
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+    )
+  })
+
+  it('添加区的粘贴按钮把剪贴板文本去掉首尾空白写入设备输入框', async () => {
+    const user = userEvent.setup()
+    mockReadText.mockResolvedValue(' CN-001 \n')
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: /粘\s*贴/ }))
+
+    await waitFor(() =>
+      expect(
+        screen.getByPlaceholderText('设备 ID / 设备编码 / MAC'),
+      ).toHaveValue('CN-001'),
+    )
+  })
+
+  it('剪贴板读取失败时提示手动粘贴，且不覆盖已输入内容', async () => {
+    const user = userEvent.setup()
+    mockReadText.mockResolvedValue(null)
+    renderPage()
+
+    const input = screen.getByPlaceholderText('设备 ID / 设备编码 / MAC')
+    await user.type(input, 'CN-9')
+    await user.click(screen.getByRole('button', { name: /粘\s*贴/ }))
+
+    expect(input).toHaveValue('CN-9')
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith(
+        '读取剪贴板失败，请手动粘贴',
+      ),
+    )
   })
 })

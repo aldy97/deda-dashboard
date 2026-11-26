@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { copyText } from './clipboard'
+import { copyText, readText } from './clipboard'
 
 /**
  * 复制文本：优先剪贴板 API，不可用或失败时落回 textarea + execCommand。
@@ -61,5 +61,58 @@ describe('copyText', () => {
     stubExecCommand(false)
 
     await expect(copyText('url')).resolves.toBe(false)
+  })
+
+  it('execCommand 抛错时也返回 false', async () => {
+    stubClipboard(undefined)
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => {
+        throw new Error('not supported')
+      }),
+    })
+
+    await expect(copyText('url')).resolves.toBe(false)
+  })
+})
+
+/**
+ * 读取剪贴板：浏览器没有同步兜底方案，API 不可用或被拒时返回 null，
+ * 由调用方给出「请手动粘贴」的提示。
+ */
+describe('readText', () => {
+  const realClipboard = navigator.clipboard
+
+  function stubClipboard(readText: (() => Promise<string>) | undefined) {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: readText ? { readText } : undefined,
+    })
+  }
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: realClipboard,
+    })
+  })
+
+  it('剪贴板 API 可用时原样返回文本', async () => {
+    stubClipboard(vi.fn().mockResolvedValue('aa:bb:cc:dd:ee:ff'))
+
+    await expect(readText()).resolves.toBe('aa:bb:cc:dd:ee:ff')
+  })
+
+  it('剪贴板 API 不可用时返回 null', async () => {
+    stubClipboard(undefined)
+
+    await expect(readText()).resolves.toBeNull()
+  })
+
+  it('剪贴板 API 拒绝时返回 null', async () => {
+    stubClipboard(vi.fn().mockRejectedValue(new Error('denied')))
+
+    await expect(readText()).resolves.toBeNull()
   })
 })
