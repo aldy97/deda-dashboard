@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { message } from 'antd'
 import TestDevices from './index'
-import { copyText, readText } from '../../utils/clipboard'
+import { stubClipboard } from '../../test/clipboard'
+import { readText } from '../../utils/clipboard'
 import {
   useAddTestDevice,
   useRevokeTestDevice,
@@ -19,11 +20,9 @@ vi.mock('../../api/testDevices', () => ({
 }))
 
 vi.mock('../../utils/clipboard', () => ({
-  copyText: vi.fn(),
   readText: vi.fn(),
 }))
 
-const mockCopyText = copyText as unknown as ReturnType<typeof vi.fn>
 const mockReadText = readText as unknown as ReturnType<typeof vi.fn>
 
 const mockQuery = useTestDevices as unknown as ReturnType<typeof vi.fn>
@@ -103,7 +102,6 @@ beforeEach(() => {
     error: null,
   })
   mockQuery.mockReturnValue(idle(response()))
-  mockCopyText.mockResolvedValue(true)
   mockReadText.mockResolvedValue('')
   vi.spyOn(message, 'success').mockImplementation(() => undefined as never)
   vi.spyOn(message, 'error').mockImplementation(() => undefined as never)
@@ -280,27 +278,36 @@ describe('测试设备白名单页面', () => {
 })
 
 describe('测试设备白名单 · 剪贴板', () => {
-  it('设备 ID 旁的复制图标复制完整 ID 并提示', async () => {
+  it('设备 ID 旁的复制图标把完整 deviceId 写入剪贴板，点击后提示变为已复制', async () => {
     const user = userEvent.setup()
+    const writeText = stubClipboard()
     renderPage()
 
     await user.click(screen.getByRole('button', { name: '复制设备 ID' }))
 
-    expect(mockCopyText).toHaveBeenCalledWith('aa:bb:cc:dd:ee:ff')
     await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith('已复制设备 ID'),
+      expect(writeText).toHaveBeenCalledWith('aa:bb:cc:dd:ee:ff'),
+    )
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '已复制' })).toBeInTheDocument(),
     )
   })
 
-  it('复制失败时提示手动复制', async () => {
+  it('多行时每行复制自己的 deviceId', async () => {
+    mockQuery.mockReturnValue(
+      idle(response({ items: [ITEM, REVOKED], total: 2 })),
+    )
     const user = userEvent.setup()
-    mockCopyText.mockResolvedValue(false)
+    const writeText = stubClipboard()
     renderPage()
 
-    await user.click(screen.getByRole('button', { name: '复制设备 ID' }))
+    const buttons = screen.getAllByRole('button', { name: '复制设备 ID' })
+    expect(buttons).toHaveLength(2)
+
+    await user.click(buttons[1])
 
     await waitFor(() =>
-      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+      expect(writeText).toHaveBeenCalledWith('11:22:33:44:55:66'),
     )
   })
 

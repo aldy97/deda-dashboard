@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import UserDeviceDetail from './DeviceDetail'
+import { stubClipboard } from '../../test/clipboard'
 
 /**
  * 用户详情页（设备 360）的扩展契约。
@@ -226,6 +227,20 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
       // 1.0.0 出现在固件版本和 realtime.version 两处
       expect(screen.getAllByText('1.0.0').length).toBeGreaterThanOrEqual(1)
     })
+  })
+
+  it('设备 ID 与 UUID 的复制图标把完整值写入剪贴板', async () => {
+    renderPage()
+    await screen.findByText('用户详情')
+    await screen.findByText('uuid-360')
+
+    const writeText = stubClipboard()
+
+    fireEvent.click(screen.getByRole('button', { name: '复制设备 ID' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('dev-360'))
+
+    fireEvent.click(screen.getByRole('button', { name: '复制' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('uuid-360'))
   })
 
   it('渲染实时状态', async () => {

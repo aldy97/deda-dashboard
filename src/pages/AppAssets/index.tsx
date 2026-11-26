@@ -15,6 +15,7 @@ import {
 import type { MenuProps } from 'antd'
 import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import CopyableText from '../../components/CopyableText'
 import PageHeader from '../../components/PageHeader'
 import {
   useAppAssetKeys,
@@ -285,9 +286,12 @@ export default function AppAssets() {
       render: (_, group) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{group.label}</Typography.Text>
-          <Typography.Text code style={{ fontSize: 12 }}>
-            {group.key}
-          </Typography.Text>
+          <Space size={4} align="center">
+            <Typography.Text code style={{ fontSize: 12 }}>
+              {group.key}
+            </Typography.Text>
+            <CopyableText text={group.key} tip="复制 key" />
+          </Space>
         </Space>
       ),
     },
@@ -308,14 +312,28 @@ export default function AppAssets() {
       render: (_, group) => {
         const asset = group.published ?? group.latestDraft
         return asset ? (
-          <Image
-            src={asset.url}
-            alt={`${group.key} 缩略图`}
-            width={56}
-            height={56}
-            preview={false}
-            style={{ objectFit: 'cover', borderRadius: 4 }}
-          />
+          <button
+            type="button"
+            aria-label={`预览 ${group.key} 缩略图`}
+            title="点击预览"
+            onClick={() => setPreviewAsset(asset)}
+            style={{
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              lineHeight: 0,
+            }}
+          >
+            <Image
+              src={asset.url}
+              alt={`${group.key} 缩略图`}
+              width={56}
+              height={56}
+              preview={false}
+              style={{ objectFit: 'cover', borderRadius: 4 }}
+            />
+          </button>
         ) : (
           <Typography.Text type="secondary">—</Typography.Text>
         )

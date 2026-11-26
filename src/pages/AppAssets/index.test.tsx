@@ -6,6 +6,7 @@ import { message } from 'antd'
 import { apiClient } from '../../api/client'
 import { copyText } from '../../utils/clipboard'
 import AppAssets from './index'
+import { stubClipboard } from '../../test/clipboard'
 import type { AppAsset, AppAssetGroup, AppAssetKey } from '../../types/appAssets'
 
 /**
@@ -581,6 +582,73 @@ describe('AppAssets 预览与复制', () => {
     expect(screen.getByTestId('asset-preview')).toHaveStyle({
       textAlign: 'center',
     })
+  })
+
+  it('点击缩略图直接打开预览模态框', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await userEvent.click(screen.getByAltText(`${BUSINESS_KEY} 缩略图`))
+
+    expect(await screen.findByAltText(`${BUSINESS_KEY} v2`)).toBeInTheDocument()
+    expect(screen.getByText('预览 v2')).toBeInTheDocument()
+  })
+
+  it('展示位 key 旁的复制图标把该行 key 写入剪贴板，点击后提示变为已复制', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    const writeText = stubClipboard()
+    const copyBtn = within(rowFor(BUSINESS_KEY)).getByRole('button', {
+      name: '复制 key',
+    })
+    expect(screen.queryByRole('menuitem')).toBeNull()
+
+    await userEvent.click(copyBtn)
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(BUSINESS_KEY))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '已复制' })).toBeInTheDocument(),
+    )
+  })
+
+  it('不同展示位复制各自的 key，不共用同一个值', async () => {
+    const POPUP_KEY = 'home/popup'
+    stubServer({
+      keys: [
+        BUSINESS,
+        makeKey({ key: POPUP_KEY, label: '首页弹窗', page: 'home' }),
+      ],
+      assets: [
+        BUSINESS_GROUP,
+        {
+          ...BUSINESS_GROUP,
+          key: POPUP_KEY,
+          label: '首页弹窗',
+          published: makeAsset({ id: 'asset-popup', key: POPUP_KEY }),
+          latestDraft: null,
+          versions: [],
+        },
+      ],
+    })
+    renderPage()
+    await screen.findByText('首页弹窗')
+
+    const writeText = stubClipboard()
+
+    await userEvent.click(
+      within(rowFor(BUSINESS_KEY)).getByRole('button', { name: '复制 key' }),
+    )
+    await waitFor(() =>
+      expect(writeText).toHaveBeenLastCalledWith(BUSINESS_KEY),
+    )
+
+    await userEvent.click(
+      within(rowFor(POPUP_KEY)).getByRole('button', { name: '复制 key' }),
+    )
+    await waitFor(() => expect(writeText).toHaveBeenLastCalledWith(POPUP_KEY))
   })
 
   it('复制 URL：成功后提示，菜单项改为「已复制 URL」', async () => {

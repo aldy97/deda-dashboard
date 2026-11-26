@@ -168,6 +168,9 @@ describe('DeviceTable · 测试白名单标签', () => {
     // 容器不换行：标签与设备 ID 始终在同一行
     expect(cell.style.flexWrap).toBe('nowrap')
     expect(cell.contains(tag)).toBe(true)
+    // 设备 ID 不撑满整列，备注 Tag 紧随其后；间距由容器 gap 留出
+    expect(link.style.flexGrow).toBe('0')
+    expect(cell.style.gap).toBe('4px')
     // 标签保持自身宽度，被压缩的是设备 ID（省略号）
     expect(tag.style.flexShrink).toBe('0')
     expect(link.style.minWidth).toBe('0px')

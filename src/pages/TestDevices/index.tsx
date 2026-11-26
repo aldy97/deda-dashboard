@@ -14,10 +14,11 @@ import {
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CopyOutlined, SnippetsOutlined } from '@ant-design/icons'
+import { SnippetsOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
+import CopyableText from '../../components/CopyableText'
 import PageHeader from '../../components/PageHeader'
-import { copyText, readText } from '../../utils/clipboard'
+import { readText } from '../../utils/clipboard'
 import {
   useAddTestDevice,
   useRevokeTestDevice,
@@ -86,12 +87,6 @@ export default function TestDevices() {
     )
   }
 
-  async function copyDeviceId(deviceId: string) {
-    const ok = await copyText(deviceId)
-    if (ok) message.success('已复制设备 ID')
-    else message.error('复制失败，请手动复制')
-  }
-
   async function pasteDeviceId() {
     const text = await readText()
     if (text === null) {
@@ -146,13 +141,7 @@ export default function TestDevices() {
           >
             {row.device.deviceId}
           </Link>
-          <Button
-            type="text"
-            size="small"
-            icon={<CopyOutlined />}
-            aria-label="复制设备 ID"
-            onClick={() => void copyDeviceId(row.device.deviceId)}
-          />
+          <CopyableText text={row.device.deviceId} tip="复制设备 ID" />
         </Space>
       ),
     },

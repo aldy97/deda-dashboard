@@ -13,6 +13,7 @@ import dayjs from 'dayjs'
 import { useMessageDetail, useMessages } from '../../api/queries'
 import { useAnalyticsMeta } from '../../api/meta'
 import { isSuperAdmin } from '../../components/access/role'
+import CopyableText from '../../components/CopyableText'
 import {
   isAssistantRawPayload,
   type MessageListItem,
@@ -119,12 +120,13 @@ export default function MessageDetailDrawer({
                 key: 'id',
                 label: 'ID',
                 children: (
-                  <Typography.Text
-                    copyable={{ text: row.id, tooltips: ['复制 ID', '已复制'] }}
+                  <CopyableText
+                    text={row.id}
+                    tip="复制 ID"
                     style={{ fontFamily: 'monospace' }}
                   >
                     {row.id}
-                  </Typography.Text>
+                  </CopyableText>
                 ),
               },
               {
@@ -132,15 +134,13 @@ export default function MessageDetailDrawer({
                 label: '轮次 ID',
                 children: (
                   <Space size={4} wrap>
-                    <Typography.Text
-                      copyable={{
-                        text: row.turnId,
-                        tooltips: ['复制轮次 ID', '已复制'],
-                      }}
+                    <CopyableText
+                      text={row.turnId}
+                      tip="复制轮次 ID"
                       style={{ fontFamily: 'monospace' }}
                     >
                       {row.turnId}
-                    </Typography.Text>
+                    </CopyableText>
                     <Button
                       size="small"
                       type="link"
@@ -223,8 +223,9 @@ export default function MessageDetailDrawer({
                     >
                       {row.device.deviceId}
                     </Link>
-                    <Typography.Text
-                      copyable={{ text: row.device.deviceId, tooltips: ['复制设备 ID', '已复制'] }}
+                    <CopyableText
+                      text={row.device.deviceId}
+                      tip="复制设备 ID"
                     />
                   </Space>
                 ),
