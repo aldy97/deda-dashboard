@@ -583,6 +583,48 @@ describe('AppAssets 预览与复制', () => {
     })
   })
 
+  it('点击缩略图直接打开预览模态框', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await userEvent.click(screen.getByAltText(`${BUSINESS_KEY} 缩略图`))
+
+    expect(await screen.findByAltText(`${BUSINESS_KEY} v2`)).toBeInTheDocument()
+    expect(screen.getByText('预览 v2')).toBeInTheDocument()
+  })
+
+  it('展示位 key 旁的复制按钮直接复制 key，不展开操作菜单', async () => {
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: `复制 key ${BUSINESS_KEY}` }),
+    )
+
+    expect(mockCopyText).toHaveBeenCalledWith(BUSINESS_KEY)
+    await waitFor(() =>
+      expect(message.success).toHaveBeenCalledWith('已复制 key'),
+    )
+    expect(screen.queryByRole('menuitem')).toBeNull()
+  })
+
+  it('展示位 key 行内复制失败时提示手动复制', async () => {
+    mockCopyText.mockResolvedValue(false)
+    stubServer()
+    renderPage()
+    await screen.findByText('首页 Banner')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: `复制 key ${BUSINESS_KEY}` }),
+    )
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith('复制失败，请手动复制'),
+    )
+  })
+
   it('复制 URL：成功后提示，菜单项改为「已复制 URL」', async () => {
     stubServer()
     renderPage()

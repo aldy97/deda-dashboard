@@ -13,7 +13,7 @@ import {
   message,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreOutlined } from '@ant-design/icons'
+import { CopyOutlined, MoreOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PageHeader from '../../components/PageHeader'
 import {
@@ -277,6 +277,12 @@ export default function AppAssets() {
     if (slot) setSlotModal({ mode: 'edit', slot })
   }
 
+  const copyKey = async (key: string) => {
+    const ok = await copyText(key)
+    if (ok) message.success('已复制 key')
+    else message.error('复制失败，请手动复制')
+  }
+
   const columns: ColumnsType<AppAssetGroup> = [
     {
       title: '展示位',
@@ -285,9 +291,19 @@ export default function AppAssets() {
       render: (_, group) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{group.label}</Typography.Text>
-          <Typography.Text code style={{ fontSize: 12 }}>
-            {group.key}
-          </Typography.Text>
+          <Space size={2} align="center">
+            <Typography.Text code style={{ fontSize: 12 }}>
+              {group.key}
+            </Typography.Text>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              aria-label={`复制 key ${group.key}`}
+              title="复制 key"
+              onClick={() => void copyKey(group.key)}
+            />
+          </Space>
         </Space>
       ),
     },
@@ -308,14 +324,28 @@ export default function AppAssets() {
       render: (_, group) => {
         const asset = group.published ?? group.latestDraft
         return asset ? (
-          <Image
-            src={asset.url}
-            alt={`${group.key} 缩略图`}
-            width={56}
-            height={56}
-            preview={false}
-            style={{ objectFit: 'cover', borderRadius: 4 }}
-          />
+          <button
+            type="button"
+            aria-label={`预览 ${group.key} 缩略图`}
+            title="点击预览"
+            onClick={() => setPreviewAsset(asset)}
+            style={{
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              lineHeight: 0,
+            }}
+          >
+            <Image
+              src={asset.url}
+              alt={`${group.key} 缩略图`}
+              width={56}
+              height={56}
+              preview={false}
+              style={{ objectFit: 'cover', borderRadius: 4 }}
+            />
+          </button>
         ) : (
           <Typography.Text type="secondary">—</Typography.Text>
         )

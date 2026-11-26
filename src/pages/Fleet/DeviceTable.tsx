@@ -71,7 +71,9 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               onClick={(e) => e.stopPropagation()}
               title={v}
               style={{
-                flex: '1 1 auto',
+                flexGrow: 0,
+                flexShrink: 1,
+                flexBasis: 'auto',
                 minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
