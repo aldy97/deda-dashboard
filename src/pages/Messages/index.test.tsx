@@ -445,32 +445,21 @@ describe('消息明细页 · 设备列白名单备注', () => {
     expect(callsTo('/analytics/test-devices').length).toBeGreaterThan(0)
   })
 
-  it('备注 Tag 与设备标识同一行，Tag 左侧按固定列宽对齐', async () => {
+  it('备注 Tag 与设备标识同一行，走共享单元格', async () => {
     mockWhitelistScenario(SUPERADMIN_META)
     renderPage()
 
     const tag = await screen.findByText('3 号样机-熊枫')
-    const cell = screen.getAllByTestId('message-device-cell')[0]
-    const label = screen.getAllByTestId('message-device-label')[0]
+    const cell = screen.getAllByTestId('device-id-cell')[0]
+    const label = screen.getAllByTestId('device-id-label')[0]
+    const tagSlot = screen.getAllByTestId('device-whitelist-tag')[0]
 
-    // 固定第一列宽度：设备 ID 长短不再影响 Tag 的左边缘
-    expect(cell.style.display).toBe('grid')
-    expect(cell.style.gridTemplateColumns).toBe('104px minmax(0px, 1fr)')
-    expect(cell.style.columnGap).toBe('4px')
-    const tagSlot = screen.getAllByTestId('message-device-tag')[0]
+    // 固定首列与垂直居中由共享组件负责，详细样式契约见 DeviceIdCell.test.tsx
     expect(cell.children[0]).toBe(label)
     expect(cell.children[1]).toBe(tagSlot)
     expect(tagSlot.contains(tag)).toBe(true)
-
-    // 只对齐左边缘：Tag 不随网格列拉伸，宽度由内容决定
-    expect(tagSlot.style.justifySelf).toBe('start')
-
-    // 超长设备 ID 在自己的第一列内省略，不推挤 Tag
-    expect(label.style.minWidth).toBe('0px')
-    expect(label.style.overflow).toBe('hidden')
-    expect(label.style.textOverflow).toBe('ellipsis')
-    expect(tag.style.flexShrink).toBe('0')
-    expect(tag.style.maxWidth).toBe('96px')
+    // 消息页的设备标识是纯文本（不跳转），与舰队页链接形态共用同一骨架
+    expect(label.tagName).toBe('SPAN')
   })
 
   it('普通 admin：不发白名单请求，也不显示任何金色 Tag', async () => {

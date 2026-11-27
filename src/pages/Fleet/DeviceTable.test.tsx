@@ -155,7 +155,7 @@ describe('DeviceTable · 测试白名单标签', () => {
     expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
   })
 
-  it('备注标签与设备 ID 同一行，左边缘固定对齐且 Tag 不被拉伸', async () => {
+  it('备注标签走共享单元格：与设备 ID 同一行、Tag 不被拉伸', async () => {
     renderTable(vi.fn(), [
       makeDeviceItem('aabbccddeeff', {
         testWhitelist: { note: '3 号样机-熊枫' },
@@ -166,21 +166,14 @@ describe('DeviceTable · 测试白名单标签', () => {
     const cell = screen.getByTestId('device-id-cell')
     const tagSlot = screen.getByTestId('device-whitelist-tag')
 
-    // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘
-    expect(cell.style.display).toBe('grid')
-    expect(cell.style.gridTemplateColumns).toBe('104px minmax(0px, 1fr)')
-    expect(cell.style.columnGap).toBe('4px')
+    // 固定首列与垂直居中由共享组件负责，详细样式契约见 DeviceIdCell.test.tsx
+    expect(link).toBe(screen.getByTestId('device-id-label'))
     expect(cell.contains(tag)).toBe(true)
     expect(cell.children[1]).toBe(tagSlot)
     expect(tagSlot.contains(tag)).toBe(true)
 
-    // 只对齐左边缘：Tag 宽度由备注内容决定，右侧不拉伸
-    expect(tagSlot.style.justifySelf).toBe('start')
-
     // 超长设备 ID 在自己的第一列内省略，不推挤 Tag
     expect(tag.style.flexShrink).toBe('0')
-    expect(link.style.minWidth).toBe('0px')
-    expect(link.style.textOverflow).toBe('ellipsis')
     expect(link.getAttribute('title')).toBe('aabbccddeeff')
   })
 })

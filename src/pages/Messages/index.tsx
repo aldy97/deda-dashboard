@@ -26,7 +26,7 @@ import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import PageHeader from '../../components/PageHeader'
 import RefreshButton from '../../components/RefreshButton'
-import TestWhitelistTag from '../../components/TestWhitelistTag'
+import DeviceIdCell from '../../components/device/DeviceIdCell'
 import { fmt } from '../../utils/date-range'
 import { readParam, useUrlQuery } from '../../utils/url-state'
 import MessageDetailDrawer from './MessageDetailDrawer'
@@ -294,41 +294,7 @@ export default function Messages() {
                 // Map.get 的 undefined 与白名单里的 null 备注是两回事：
                 // 前者=不在册（不显示），后者=在册但没写备注（显示「白名单」）。
                 const note = whitelistNotes.get(row.device.deviceId)
-                return (
-                  <div
-                    data-testid="message-device-cell"
-                    style={{
-                      // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
-                      display: 'grid',
-                      gridTemplateColumns: '104px minmax(0, 1fr)',
-                      alignItems: 'center',
-                      columnGap: 4,
-                      minWidth: 0,
-                    }}
-                  >
-                    <span
-                      data-testid="message-device-label"
-                      title={label}
-                      style={{
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {label}
-                    </span>
-                    {note !== undefined ? (
-                      <span
-                        data-testid="message-device-tag"
-                        // 只固定左边缘：不 stretch，Tag 宽度由备注内容决定
-                        style={{ justifySelf: 'start', minWidth: 0 }}
-                      >
-                        <TestWhitelistTag note={note} />
-                      </span>
-                    ) : null}
-                  </div>
-                )
+                return <DeviceIdCell label={label} whitelistNote={note} />
               },
             },
             {
