@@ -1100,6 +1100,11 @@ export interface BoundUser {
   userId: string
   isOwner: boolean
   boundAt: string
+  /**
+   * 绑定账号上报的手机品牌归一化后的厂商展示名（Apple / 华为 / 小米…）。
+   * 旧服务端没有该字段；未上报或无法识别为 null。
+   */
+  phoneMaker?: string | null
 }
 
 export interface PresenceDay {

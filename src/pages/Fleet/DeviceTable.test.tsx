@@ -155,7 +155,7 @@ describe('DeviceTable · 测试白名单标签', () => {
     expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
   })
 
-  it('备注标签与设备 ID 强制同一行，标签不换行', async () => {
+  it('备注标签与设备 ID 同一行，左边缘固定对齐且 Tag 不被拉伸', async () => {
     renderTable(vi.fn(), [
       makeDeviceItem('aabbccddeeff', {
         testWhitelist: { note: '3 号样机-熊枫' },
@@ -164,14 +164,20 @@ describe('DeviceTable · 测试白名单标签', () => {
     const link = await screen.findByText('aabbccddeeff')
     const tag = screen.getByText('3 号样机-熊枫')
     const cell = screen.getByTestId('device-id-cell')
+    const tagSlot = screen.getByTestId('device-whitelist-tag')
 
-    // 容器不换行：标签与设备 ID 始终在同一行
-    expect(cell.style.flexWrap).toBe('nowrap')
+    // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘
+    expect(cell.style.display).toBe('grid')
+    expect(cell.style.gridTemplateColumns).toBe('104px minmax(0px, 1fr)')
+    expect(cell.style.columnGap).toBe('4px')
     expect(cell.contains(tag)).toBe(true)
-    // 设备 ID 不撑满整列，备注 Tag 紧随其后；间距由容器 gap 留出
-    expect(link.style.flexGrow).toBe('0')
-    expect(cell.style.gap).toBe('4px')
-    // 标签保持自身宽度，被压缩的是设备 ID（省略号）
+    expect(cell.children[1]).toBe(tagSlot)
+    expect(tagSlot.contains(tag)).toBe(true)
+
+    // 只对齐左边缘：Tag 宽度由备注内容决定，右侧不拉伸
+    expect(tagSlot.style.justifySelf).toBe('start')
+
+    // 超长设备 ID 在自己的第一列内省略，不推挤 Tag
     expect(tag.style.flexShrink).toBe('0')
     expect(link.style.minWidth).toBe('0px')
     expect(link.style.textOverflow).toBe('ellipsis')

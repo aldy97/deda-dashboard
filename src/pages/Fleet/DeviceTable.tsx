@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import type { FleetDeviceItem } from '../../types/analytics'
 import { useFleetDevices } from '../../api/queries'
 import InfoTip from '../../components/InfoTip'
+import TestWhitelistTag from '../../components/TestWhitelistTag'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
@@ -51,18 +52,18 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       title: '设备 ID',
       dataIndex: 'deviceId',
       key: 'deviceId',
-      width: 200,
+      width: 220,
       ellipsis: true,
       render: (v: string, r: FleetDeviceItem) => {
-        const note = r.testWhitelist?.note?.trim()
         return (
           <div
             data-testid="device-id-cell"
             style={{
-              display: 'flex',
-              flexWrap: 'nowrap',
+              // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
+              display: 'grid',
+              gridTemplateColumns: '104px minmax(0, 1fr)',
               alignItems: 'center',
-              gap: 4,
+              columnGap: 4,
               minWidth: 0,
             }}
           >
@@ -71,9 +72,6 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               onClick={(e) => e.stopPropagation()}
               title={v}
               style={{
-                flexGrow: 0,
-                flexShrink: 1,
-                flexBasis: 'auto',
                 minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -83,20 +81,13 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               {v}
             </Link>
             {r.testWhitelist ? (
-              <Tag
-                color="gold"
-                title={note || '白名单'}
-                style={{
-                  marginInlineEnd: 0,
-                  flexShrink: 0,
-                  maxWidth: 96,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+              <span
+                data-testid="device-whitelist-tag"
+                // 只固定左边缘：不 stretch，Tag 宽度由备注内容决定
+                style={{ justifySelf: 'start', minWidth: 0 }}
               >
-                {note || '白名单'}
-              </Tag>
+                <TestWhitelistTag note={r.testWhitelist.note} />
+              </span>
             ) : null}
           </div>
         )
