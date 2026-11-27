@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Empty, Input, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import type { FleetDeviceItem } from '../../types/analytics'
 import { useFleetDevices } from '../../api/queries'
 import InfoTip from '../../components/InfoTip'
-import TestWhitelistTag from '../../components/TestWhitelistTag'
+import DeviceIdCell from '../../components/device/DeviceIdCell'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
@@ -54,44 +53,13 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       key: 'deviceId',
       width: 220,
       ellipsis: true,
-      render: (v: string, r: FleetDeviceItem) => {
-        return (
-          <div
-            data-testid="device-id-cell"
-            style={{
-              // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
-              display: 'grid',
-              gridTemplateColumns: '104px minmax(0, 1fr)',
-              alignItems: 'center',
-              columnGap: 4,
-              minWidth: 0,
-            }}
-          >
-            <Link
-              to={`/users/${r.deviceId}`}
-              onClick={(e) => e.stopPropagation()}
-              title={v}
-              style={{
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {v}
-            </Link>
-            {r.testWhitelist ? (
-              <span
-                data-testid="device-whitelist-tag"
-                // 只固定左边缘：不 stretch，Tag 宽度由备注内容决定
-                style={{ justifySelf: 'start', minWidth: 0 }}
-              >
-                <TestWhitelistTag note={r.testWhitelist.note} />
-              </span>
-            ) : null}
-          </div>
-        )
-      },
+      render: (v: string, r: FleetDeviceItem) => (
+        <DeviceIdCell
+          label={v}
+          href={`/users/${r.deviceId}`}
+          whitelistNote={r.testWhitelist?.note}
+        />
+      ),
     },
     {
       title: '角色',
