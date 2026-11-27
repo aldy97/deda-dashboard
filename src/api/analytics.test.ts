@@ -4,6 +4,7 @@ import {
   deleteDeviceChildProfile,
   fetchDeviceChildProfile,
   fetchNetworkUsage,
+  fetchParentDetail,
   fetchPhoneBrands,
 } from './analytics'
 
@@ -88,5 +89,25 @@ describe('terminal analytics api', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/analytics/users/phone-brands')
     expect(result).toBe(data)
+  })
+})
+
+describe('家长档案 api', () => {
+  it('fetchParentDetail 打 parents/:userId 并剥离信封', async () => {
+    const data = { user: { id: 'u1' }, summary: {}, devices: [] }
+    mockGet.mockResolvedValueOnce({ data })
+
+    const result = await fetchParentDetail('u1')
+
+    expect(mockGet).toHaveBeenCalledWith('/analytics/parents/u1')
+    expect(result).toBe(data)
+  })
+
+  it('userId 走 encodeURIComponent，不拼出额外路径段', async () => {
+    mockGet.mockResolvedValueOnce({ data: {} })
+
+    await fetchParentDetail('a/b?c')
+
+    expect(mockGet).toHaveBeenCalledWith('/analytics/parents/a%2Fb%3Fc')
   })
 })

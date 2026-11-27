@@ -42,6 +42,7 @@ import type {
   NetworkUsageResponse,
   OverviewResponse,
   OverviewTrendResponse,
+  ParentDetailResponse,
   ParentReportListResponse,
   PhoneBrandsResponse,
   QualityConversationResponse,
@@ -261,6 +262,16 @@ export async function fetchUsersSummary(params?: {
 }): Promise<UsersSummaryResponse> {
   const resp = await apiClient.get('/analytics/users/summary', { params })
   return resp.data as UsersSummaryResponse
+}
+
+/** 家长档案（一个家长可绑定多台设备）；家长不存在时服务端 404 */
+export async function fetchParentDetail(
+  userId: string,
+): Promise<ParentDetailResponse> {
+  const resp = await apiClient.get(
+    `/analytics/parents/${encodeURIComponent(userId)}`,
+  )
+  return resp.data as ParentDetailResponse
 }
 
 export async function fetchUsersDemographics(): Promise<UsersDemographicsResponse> {

@@ -9,6 +9,10 @@ import type { DayRange } from '../../utils/date-range'
 import Demographics from './Demographics'
 import PhoneBrandChart from './PhoneBrandChart'
 
+/** 家长 ID 是数据库 UUID；业务设备 ID 不是 UUID。搜索框按此分流两个详情页。 */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * 用户画像页（P5）：家长总量/新增/绑定概览 + 孩子画像分布。
  * 区间控件仅影响「区间新增家长」（后端约定：startDate+endDate 同传才返回）。
@@ -53,14 +57,19 @@ export default function Users() {
         }
       />
 
-      {/* 单设备详情入口：精确匹配业务设备 ID，跳 /users/:deviceId */}
+      {/* 两个锚点共用一条搜索框：UUID = 家长档案，业务设备 ID = 设备档案 */}
       <Input.Search
         allowClear
-        placeholder="输入设备 ID 查看单个用户详情（设备 ID 见记忆档案/反馈页）"
+        placeholder="输入设备 ID 或家长 ID 查看详情"
         style={{ maxWidth: 420, marginBottom: 16 }}
         onSearch={(v) => {
           const id = v.trim()
-          if (id) navigate(`/users/${encodeURIComponent(id)}`)
+          if (!id) return
+          if (UUID_RE.test(id)) {
+            navigate(`/parents/${encodeURIComponent(id)}`)
+          } else {
+            navigate(`/users/${encodeURIComponent(id)}`)
+          }
         }}
       />
 
@@ -112,6 +121,14 @@ export default function Users() {
                 <Statistic
                   title="多孩家庭"
                   value={summary.multiChildFamilies}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} md={8} lg={4}>
+              <Card size="small" style={{ height: '100%' }}>
+                <Statistic
+                  title="多设备家庭"
+                  value={summary.multiDeviceFamilies}
                 />
               </Card>
             </Col>

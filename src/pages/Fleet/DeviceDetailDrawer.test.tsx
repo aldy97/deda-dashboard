@@ -9,7 +9,7 @@ import DeviceDetailDrawer from './DeviceDetailDrawer'
  * 设备详情抽屉的出口链接契约。
  *
  * 抽屉打开时渲染「这里是快速预览」提示与三条出口链接：
- * 用户详情、记忆档案、消息明细。关闭时不渲染任何链接。
+ * 设备档案、记忆档案、消息明细。关闭时不渲染任何链接。
  */
 vi.mock('../../api/client', () => ({
   apiClient: { get: vi.fn() },
@@ -76,10 +76,10 @@ describe('DeviceDetailDrawer · 出口链接', () => {
     expect(screen.getByText(/完整设备 360/)).toBeTruthy()
   })
 
-  it('渲染用户详情链接', async () => {
+  it('渲染设备档案链接', async () => {
     mockGet.mockResolvedValueOnce({ data: makeFleetDetail() })
     renderDrawer('dev-1')
-    const link = await screen.findByRole('link', { name: /用户详情/ })
+    const link = await screen.findByRole('link', { name: /设备档案/ })
     expect(link).toBeTruthy()
     expect(link.getAttribute('href')).toBe('/users/dev-1')
   })
@@ -102,8 +102,8 @@ describe('DeviceDetailDrawer · 出口链接', () => {
 })
 
 /**
- * 抽屉正文与用户详情页共用 src/components/device/DeviceProfile.tsx，
- * 这里补 boundUsers 非空的分支（用户详情页的 fixture 走的是空数组分支）。
+ * 抽屉正文与设备档案页共用 src/components/device/DeviceProfile.tsx，
+ * 这里补 boundUsers 非空的分支（设备档案页的 fixture 走的是空数组分支）。
  */
 describe('DeviceProfile · 绑定用户', () => {
   it('boundUsers 非空时渲染 userId / 主账号标签，且不暴露 PII 字段', async () => {
@@ -132,6 +132,25 @@ describe('DeviceProfile · 绑定用户', () => {
     // 绑定时间按本地时区格式化：CI 跑 UTC、本地 Asia/Shanghai，只断言日期
     expect(screen.getAllByText(/2026-03-01/).length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText(/2026-04-02/).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('绑定用户表的 userId 点得进家长档案，文本仍是 userId 以便复制', async () => {
+    mockGet.mockResolvedValueOnce({
+      data: makeFleetDetail({
+        boundUsers: [
+          {
+            userId: 'user-owner',
+            isOwner: true,
+            boundAt: '2026-03-01T08:00:00.000Z',
+          },
+        ],
+      }),
+    })
+    renderDrawer('dev-1')
+
+    const link = await screen.findByRole('link', { name: 'user-owner' })
+    expect(link.textContent).toBe('user-owner')
+    expect(link.getAttribute('href')).toBe('/parents/user-owner')
   })
 
   it('boundUsers 为空时给空态而不是一张空表', async () => {

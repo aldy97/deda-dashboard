@@ -39,7 +39,7 @@ import type { Filters } from './filters'
  * 点行打开详情抽屉（含 rawPayload）；抽屉内可一键按 turnId 过滤同轮问答。
  *
  * 全部筛选条件、turnId 与打开的消息都在 URL 上（?deviceId=&mode=&startDate=…&messageId=），
- * 所以「记忆版本时间线 → 同轮问答」「用户详情 → 该设备全部消息」「安全复核队列 → 该轮链路」
+ * 所以「记忆版本时间线 → 同轮问答」「设备档案 → 该设备全部消息」「安全复核队列 → 该轮链路」
  * 这些跳转能把上下文一起带过来，链接也可以直接发给同事。
  */
 export default function Messages() {
