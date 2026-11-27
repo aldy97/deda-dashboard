@@ -10,6 +10,11 @@ import {
 } from '../../components/env'
 import { useAnalyticsMeta } from '../../api/meta'
 import { usePromptCatalog } from '../../api/prompts'
+import { modeLabel } from '../../components/message/labels'
+import {
+  MODE_PROMPT_REFS,
+  resolveModePrompts,
+} from '../../components/message/mode-prompts'
 import type { PromptCatalogItem, PromptCategory } from '../../types/analytics'
 import { useUrlQuery, readParam, readOptionalEnumParam } from '../../utils/url-state'
 import { SCENE_META } from '../Llm/scenes'
@@ -41,6 +46,13 @@ function fmtTime(iso: string | null): string {
 export default function Prompts() {
   const { searchParams, setQuery } = useUrlQuery()
   const selectedKey = readParam(searchParams, 'key')
+  // 对话模式下钻：mode 只认映射表里的现行 mode，legacy / 未知值当作没传
+  const mode = readOptionalEnumParam(
+    searchParams,
+    'mode',
+    Object.keys(MODE_PROMPT_REFS),
+  )
+  const characterKey = readParam(searchParams, 'characterKey')
   const sceneFilter = readOptionalEnumParam(
     searchParams,
     'scene',
@@ -63,9 +75,34 @@ export default function Prompts() {
 
   const items = catalogQuery.data ?? []
 
-  const filteredItems = sceneFilter
+  // catalog 未就绪时不解析，避免把「还没加载」误报成「人设/提示词不存在」
+  const modeResolved =
+    mode && catalogQuery.isSuccess
+      ? resolveModePrompts(
+          mode,
+          characterKey,
+          new Set(items.map((i) => i.key)),
+        )
+      : null
+  const modeOrder = modeResolved
+    ? new Map(modeResolved.refs.map((ref, index) => [ref.key, index]))
+    : null
+
+  let filteredItems = sceneFilter
     ? items.filter((i) => i.scene === sceneFilter)
     : items
+  if (modeOrder) {
+    filteredItems = filteredItems
+      .filter((i) => modeOrder.has(i.key))
+      .sort(
+        (a, b) => (modeOrder.get(a.key) ?? 0) - (modeOrder.get(b.key) ?? 0),
+      )
+  }
+
+  const sharedModeNotes =
+    modeResolved?.refs.filter((ref) => ref.shared).map((ref) => ref.note) ?? []
+  const missingModeKeys =
+    modeResolved?.refs.filter((ref) => ref.missing).map((ref) => ref.key) ?? []
 
   const columns: ColumnsType<PromptCatalogItem> = [
     {
@@ -210,6 +247,52 @@ export default function Prompts() {
         />
       )}
 
+      {mode && (
+        <Tag
+          closable
+          color="processing"
+          onClose={() =>
+            setQuery({ mode: null, characterKey: null }, { replace: true })
+          }
+          style={{ marginBottom: 12 }}
+        >
+          对话模式：{modeLabel(mode)}
+          {catalogQuery.isSuccess
+            ? `（${filteredItems.length} 段提示词）`
+            : '（加载中…）'}
+        </Tag>
+      )}
+
+      {modeResolved?.persona?.fallback && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="该角色未登记人设"
+          description={`角色 ${characterKey} 尚未在音色管理中创建人设，运行时回落 persona_elly；下表展示的是实际生效的人设。`}
+        />
+      )}
+
+      {sharedModeNotes.length > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="跨模式共享"
+          description={sharedModeNotes.join('；')}
+        />
+      )}
+
+      {missingModeKeys.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="该模式的部分提示词不在目录里"
+          description={`${missingModeKeys.join('、')}；可能是服务端已下线，或角色人设尚未创建。`}
+        />
+      )}
+
       {sceneFilter && (
         <Tag
           closable
@@ -268,8 +351,16 @@ export default function Prompts() {
             <Alert
               type="warning"
               showIcon
-              message="目录里没有这个 prompt"
-              description={`${selectedKey} 可能已下线，或链接来自旧版本。`}
+              message={
+                selectedKey.startsWith('persona_')
+                  ? '该角色尚未创建人设'
+                  : '目录里没有这个 prompt'
+              }
+              description={
+                selectedKey.startsWith('persona_')
+                  ? `${selectedKey} 尚未生成；在音色管理新增角色后会自动创建，或链接来自旧版本。`
+                  : `${selectedKey} 可能已下线，或链接来自旧版本。`
+              }
             />
           ))}
       </Drawer>

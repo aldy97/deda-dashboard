@@ -6,6 +6,7 @@ import {
   Space,
   Spin,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import { Link } from 'react-router-dom'
@@ -33,6 +34,10 @@ import {
   roleTag,
   statusTag,
 } from '../../components/message/labels'
+import {
+  promptsEditorLink,
+  promptsPersonaLink,
+} from '../../components/message/mode-prompts'
 
 const formatTime = (iso: string) => dayjs(iso).format('YYYY-MM-DD HH:mm:ss')
 
@@ -75,6 +80,13 @@ export default function MessageDetailDrawer({
   const adventureEpisode = detail?.adventureEpisode ?? null
   const metaQuery = useAnalyticsMeta()
   const superadmin = isSuperAdmin(metaQuery.data)
+  // /prompts 是 OpsGate 超管专属页：非超管与 meta 未就绪都不给入口，避免链到雾层
+  const modePromptLink = superadmin
+    ? promptsEditorLink(row?.mode, row?.device.characterKey)
+    : null
+  const personaPromptLink = superadmin
+    ? promptsPersonaLink(row?.device.characterKey)
+    : null
 
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
   const turnId = row?.turnId ?? null
@@ -166,7 +178,18 @@ export default function MessageDetailDrawer({
               {
                 key: 'mode',
                 label: '模式',
-                children: modeLabel(row.mode),
+                children: modePromptLink ? (
+                  <Tooltip title="查看该模式用到的提示词">
+                    <Link
+                      to={modePromptLink}
+                      aria-label={`查看「${modeLabel(row.mode)}」用到的提示词`}
+                    >
+                      {modeLabel(row.mode)}
+                    </Link>
+                  </Tooltip>
+                ) : (
+                  modeLabel(row.mode)
+                ),
               },
               ...(row.mode === 'adventure_story'
                 ? [
@@ -233,7 +256,18 @@ export default function MessageDetailDrawer({
               {
                 key: 'character',
                 label: '产品',
-                children: row.device.characterKey,
+                children: personaPromptLink ? (
+                  <Tooltip title="查看该角色人设提示词">
+                    <Link
+                      to={personaPromptLink}
+                      aria-label={`查看角色 ${row.device.characterKey} 的人设提示词`}
+                    >
+                      {row.device.characterKey}
+                    </Link>
+                  </Tooltip>
+                ) : (
+                  row.device.characterKey
+                ),
               },
               {
                 key: 'spokeAt',

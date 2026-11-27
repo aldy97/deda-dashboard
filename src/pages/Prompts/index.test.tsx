@@ -499,3 +499,144 @@ describe('Prompts key 与 scene 共存', () => {
     expect(screen.getByText(/调用场景：/)).toBeInTheDocument()
   })
 })
+
+describe('Prompts URL mode 参数——模式下钻', () => {
+  const MODE_CATALOG: PromptCatalogItem[] = [
+    makeItem({
+      key: 'persona_elly',
+      category: 'persona',
+      scene: null,
+      name: '小象 Elly 人设',
+    }),
+    makeItem({
+      key: 'main_free_chat_rules',
+      category: 'main_rules',
+      name: '自由对话规则',
+    }),
+    makeItem({
+      key: 'main_story_mode_rules',
+      category: 'main_rules',
+      name: '故事模式规则',
+    }),
+    makeItem({
+      key: 'story_prompt_english',
+      category: 'story',
+      name: '英语故事话术',
+    }),
+    makeItem({
+      key: 'story_favorite_type_suffix',
+      category: 'story',
+      name: '故事偏好后缀',
+    }),
+    makeItem({
+      key: 'intent_classify_system',
+      category: 'small_model',
+      scene: 'intent',
+      name: '意图分类',
+    }),
+  ]
+
+  it('?mode=free_chat&key=… → 直接开编辑器，同时只展示该模式的提示词', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage(
+      '/prompts?mode=free_chat&key=main_free_chat_rules&characterKey=elly',
+    )
+
+    const editor = await screen.findByTestId('prompt-editor')
+    expect(editor.dataset.promptKey).toBe('main_free_chat_rules')
+
+    expect(screen.getByText(/对话模式：自由对话/)).toBeInTheDocument()
+    expect(await screen.findByText('小象 Elly 人设')).toBeInTheDocument()
+    expect(screen.getByText('自由对话规则')).toBeInTheDocument()
+    expect(screen.queryByText('英语故事话术')).not.toBeInTheDocument()
+    expect(screen.queryByText('意图分类')).not.toBeInTheDocument()
+  })
+
+  it('故事模式按运行时顺序过滤，并标出跨模式共享项', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage('/prompts?mode=english_story&characterKey=elly')
+
+    await screen.findByText('小象 Elly 人设')
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('tr[data-row-key]'),
+    )
+    expect(rows.map((r) => r.dataset.rowKey)).toEqual([
+      'persona_elly',
+      'story_prompt_english',
+      'story_favorite_type_suffix',
+      'main_story_mode_rules',
+    ])
+    expect(screen.getByText('跨模式共享')).toBeInTheDocument()
+    expect(
+      screen.getByText(/故事模式通用规则段（改动影响所有故事模式）/),
+    ).toBeInTheDocument()
+  })
+
+  it('角色未登记人设时提示回落 elly，表格用人设实际生效的那一版', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage('/prompts?mode=free_chat&characterKey=momo')
+
+    expect(await screen.findByText('该角色未登记人设')).toBeInTheDocument()
+    expect(screen.getByText(/回落 persona_elly/)).toBeInTheDocument()
+    expect(screen.getByText('小象 Elly 人设')).toBeInTheDocument()
+    expect(screen.getByText('自由对话规则')).toBeInTheDocument()
+  })
+
+  it('角色人设未创建且 elly 也不在目录时，明确提示缺失而不是假装生效', async () => {
+    stubServer({
+      catalog: MODE_CATALOG.filter((item) => item.key !== 'persona_elly'),
+    })
+    renderPage('/prompts?mode=free_chat&characterKey=momo')
+
+    expect(
+      await screen.findByText('该模式的部分提示词不在目录里'),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/persona_momo/)).toBeInTheDocument()
+  })
+
+  it('legacy / 非法 mode 参数被忽略，不显示模式横幅', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage('/prompts?mode=music')
+
+    await screen.findByText('小象 Elly 人设')
+    expect(screen.queryByText(/对话模式：/)).not.toBeInTheDocument()
+  })
+
+  it('关闭模式 Tag 同时清掉 mode 与 characterKey', async () => {
+    const user = userEvent.setup()
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage('/prompts?mode=free_chat&characterKey=elly')
+
+    const tagText = await screen.findByText(/对话模式：自由对话/)
+    const close = tagText.closest('.ant-tag')?.querySelector('.anticon-close')
+    expect(close).not.toBeNull()
+    await user.click(close!)
+
+    expect(screen.getByTestId('location-search').textContent).toBe('')
+  })
+
+  it('关掉编辑器后保留模式过滤——落点是编辑器，返回后看到完整清单', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage(
+      '/prompts?mode=free_chat&key=main_free_chat_rules&characterKey=elly',
+    )
+    await screen.findByTestId('prompt-editor')
+
+    fireEvent.click(document.querySelector('.ant-drawer-close') as Element)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('prompt-editor')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByTestId('location-search').textContent).toBe(
+      '?mode=free_chat&characterKey=elly',
+    )
+    expect(screen.getByText(/对话模式：自由对话/)).toBeInTheDocument()
+  })
+
+  it('?key=persona_momo 且目录没有 → 提示该角色尚未创建人设', async () => {
+    stubServer({ catalog: MODE_CATALOG })
+    renderPage('/prompts?key=persona_momo')
+
+    expect(await screen.findByText('该角色尚未创建人设')).toBeInTheDocument()
+  })
+})
