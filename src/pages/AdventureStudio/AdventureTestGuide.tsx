@@ -13,15 +13,17 @@ import { isSuperAdmin } from '../../components/access/role'
  * 服务端代码为准，这里只做测试同学可执行的转述。统一退出话术刻意不内联——从
  * capabilities.fixedExitText 读，避免与 deda-server 的 ADVENTURE_EXIT_TEXT 漂移。
  *
- * 放在「样机下发」tab 里，而不是独立路由：测试同学是在下发前后读它，上下文就在
- * 下发按钮旁边；页面本身已由 OpsGate 限定 superadmin。
+ * 入口有两处：Adventure Studio「样机下发」tab（superadmin 现场用）与
+ * 「内容与质量 → 冒险故事」卡片（普通 admin 也可读）。capabilities 只在 superadmin
+ * 时请求；普通 admin 用占位符，不发这发必 403 的请求。
  */
 export default function AdventureTestGuide() {
   const [open, setOpen] = useState(false)
   // 普通 admin 也会从内容页打开这份指引；capabilities 是 superadmin 接口，
   // 非超管不发这发必 403 的请求，退出话术回落到占位符（纯文案，UI 不变）。
   const superadmin = isSuperAdmin(useAnalyticsMeta().data)
-  const capabilities = useAdventureCapabilities({ enabled: superadmin }).data ?? null
+  const capabilities =
+    useAdventureCapabilities({ enabled: superadmin }).data ?? null
   const fixedExitText = capabilities?.fixedExitText
 
   return (
