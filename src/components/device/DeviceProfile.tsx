@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card, Descriptions, Empty, Table, Tag, Typography } from 'antd'
 import dayjs from 'dayjs'
+import { Link } from 'react-router-dom'
 import CopyableText from '../CopyableText'
 import InfoTip from '../InfoTip'
 import type { BoundUser, FleetDeviceDetailResponse } from '../../types/analytics'
@@ -18,7 +19,7 @@ interface Props {
 /**
  * 设备 360 主体：静态信息 + realtime + 绑定用户 + 近 N 天汇总 + 开机日历 + 对话趋势。
  *
- * 设备舰队页的详情抽屉与用户详情页共用这一份。两处曾经各写一遍，后端加一个 realtime
+ * 设备舰队页的详情抽屉与设备档案页共用这一份。两处曾经各写一遍，后端加一个 realtime
  * 字段就只会出现在其中一侧；字段契约的唯一真相应该只有一份。
  * days 控件属于各自的容器（抽屉 extra / 页面标题行），不进这里。
  *
@@ -181,6 +182,9 @@ function BoundUsersTable({ users }: { users: BoundUser[] }) {
       key: 'userId',
       ellipsis: true,
       width: 280,
+      render: (v: string) => (
+        <Link to={`/parents/${encodeURIComponent(v)}`}>{v}</Link>
+      ),
     },
     {
       title: '角色',

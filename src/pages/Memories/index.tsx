@@ -156,7 +156,7 @@ export default function Memories() {
             {
               title: '设备 ID（业务 ID）',
               dataIndex: 'deviceId',
-              // 设备 ID 跳用户详情页；行其余区域保持跳记忆详情（stopPropagation 隔离）
+              // 设备 ID 跳设备档案页；行其余区域保持跳记忆详情（stopPropagation 隔离）
               render: (v: string) => (
                 <Space size={4}>
                   <Link

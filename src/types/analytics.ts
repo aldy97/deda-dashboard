@@ -174,7 +174,7 @@ export interface UserFeedbackListResponse {
   items: UserFeedbackItem[]
 }
 
-// ---- 家长日报（单设备，用户详情页用） ----
+// ---- 家长日报（单设备，设备档案页用） ----
 /** 日报的家长反馈（一条日报可被多个绑定账号分别评价） */
 export interface ParentReportFeedbackBrief {
   isUseful: boolean
@@ -304,6 +304,55 @@ export interface UsersSummaryResponse {
   usersWithBoundDevice: number
   avgDevicesPerUser: number
   multiChildFamilies: number
+  /** 绑定 ≥2 台设备的家长数（一个家长可绑定多台设备） */
+  multiDeviceFamilies: number
+}
+
+/** GET /analytics/parents/:userId：以家长为锚的档案（服务端永不返回 openid） */
+export interface ParentUser {
+  id: string
+  nickname: string | null
+  phone: string | null
+  /** ISO 8601 */
+  registeredAt: string
+  phoneMaker: string | null
+}
+
+export interface ParentSummary {
+  deviceCount: number
+  childCount: number
+  feedbackCount: number
+}
+
+/** 家长名下某台设备的孩子档案；未录入为 null */
+export interface ParentChildProfile {
+  name: string | null
+  englishName: string | null
+  gender: 'male' | 'female' | null
+  /** YYYY-MM-DD */
+  birthday: string | null
+}
+
+export interface ParentDevice {
+  deviceId: string
+  deviceCode: string | null
+  characterKey: string
+  firmwareVersion: string | null
+  networkType: string | null
+  isOwner: boolean
+  /** ISO 8601 */
+  boundAt: string
+  /** 该设备被多少个家长绑定 */
+  boundUserCount: number
+  /** YYYY-MM-DD，从未开机为 null */
+  lastPresenceDate: string | null
+  childProfile: ParentChildProfile | null
+}
+
+export interface ParentDetailResponse {
+  user: ParentUser
+  summary: ParentSummary
+  devices: ParentDevice[]
 }
 
 export interface UsersDemographicsResponse {

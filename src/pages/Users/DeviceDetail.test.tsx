@@ -7,7 +7,7 @@ import UserDeviceDetail from './DeviceDetail'
 import { stubClipboard } from '../../test/clipboard'
 
 /**
- * 用户详情页（设备 360）的扩展契约。
+ * 设备档案页（设备 360）的扩展契约。
  *
  * 1. 渲染设备舰队卡片（设备信息 / 实时状态 / 开机日历 / 对话趋势）
  * 2. Fleet 404 时显示轻提示，不炸页面
@@ -239,7 +239,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('渲染设备与在线状态卡片', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     // 等待舰队卡片出现
     await waitFor(() => {
@@ -249,7 +249,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('渲染设备信息（UUID / 角色 / 固件等）', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText('uuid-360')).toBeTruthy()
@@ -262,7 +262,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('设备 ID 与 UUID 的复制图标把完整值写入剪贴板', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     await screen.findByText('uuid-360')
 
     const writeText = stubClipboard()
@@ -276,7 +276,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('渲染实时状态', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getAllByText('在线').length).toBeGreaterThanOrEqual(1)
@@ -287,7 +287,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('渲染近 N 天汇总', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1) // presenceDays
@@ -297,7 +297,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('渲染开机日历和对话趋势', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText(/开机日历/)).toBeTruthy()
@@ -307,7 +307,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
 
   it('包含"在设备舰队中查看"出口链接', async () => {
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       const link = screen.getByText(/在设备舰队中查看/)
@@ -319,7 +319,7 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
     mockGet.mockReset()
     stubAllApi(true) // fleet404 = true，但 parent-reports 正常
     renderPage()
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText(/设备舰队中未找到该设备/)).toBeTruthy()
@@ -353,7 +353,7 @@ describe('Users/DeviceDetail · 消息详情抽屉', () => {
 
   it('近期消息表格行可点开消息详情抽屉', async () => {
     renderPage('/users/dev-360')
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText('今天想听什么故事')).toBeTruthy()
@@ -370,7 +370,7 @@ describe('Users/DeviceDetail · 消息详情抽屉', () => {
 
   it('关闭抽屉清掉 messageId（replace）', async () => {
     renderPage('/users/dev-360?messageId=msg-1')
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText('消息详情')).toBeTruthy()
@@ -387,7 +387,7 @@ describe('Users/DeviceDetail · 消息详情抽屉', () => {
 
   it('?messageId= 进入时直接打开抽屉（分享可还原）', async () => {
     renderPage('/users/dev-360?messageId=msg-2')
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText('消息详情')).toBeTruthy()
@@ -397,7 +397,7 @@ describe('Users/DeviceDetail · 消息详情抽屉', () => {
 
   it('onViewTurn 跳转到 /messages?turnId=&deviceId=', async () => {
     renderPage('/users/dev-360?messageId=msg-1')
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
 
     await waitFor(() => {
       expect(screen.getByText('消息详情')).toBeTruthy()
@@ -478,7 +478,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage()
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     const tag = await screen.findByText('3 号样机-熊枫')
     expect(tag.className).toContain('ant-tag-gold')
     expect(screen.getByText('Apple、华为')).toBeTruthy()
@@ -496,7 +496,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage()
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     expect(await screen.findByText('白名单')).toBeTruthy()
   })
 
@@ -507,7 +507,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage()
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     await waitFor(() =>
       expect(
         mockGet.mock.calls.some(
@@ -535,7 +535,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage()
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     expect(await screen.findByText('3 号样机-熊枫')).toBeTruthy()
     expect(screen.getByText('手机品牌')).toBeTruthy()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
@@ -548,7 +548,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage('/users/DEV-360')
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     expect(await screen.findByText('3 号样机-熊枫')).toBeTruthy()
   })
 
@@ -559,7 +559,7 @@ describe('Users/DeviceDetail · 白名单样机', () => {
     })
     renderPage()
 
-    await screen.findByText('用户详情')
+    await screen.findByText('设备档案')
     await waitFor(() => expect(screen.getByText('D-360')).toBeTruthy())
     expect(
       mockGet.mock.calls.some(

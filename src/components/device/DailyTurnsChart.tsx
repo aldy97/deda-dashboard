@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react'
 import type { DailyTurn } from '../../types/analytics'
 
 /**
- * 单设备对话趋势折线（设备舰队抽屉与用户详情页共用）。
+ * 单设备对话趋势折线（设备舰队抽屉与设备档案页共用）。
  *
  * 后端已按区间补 0，前端不再补点：无数据走 Empty，不画一张全 0 的假趋势
  * （那会读成「设备一直开着但孩子没说话」，与「没有数据」是两件事）。

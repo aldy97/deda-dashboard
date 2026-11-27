@@ -194,7 +194,7 @@ export default function ReviewQueueTable({
             title: (
               <>
                 设备
-                <InfoTip title="内部 UUID，不通用。点轮次进消息明细，再从消息详情的设备 ID 跳用户详情。" />
+                <InfoTip title="内部 UUID，不通用。点轮次进消息明细，再从消息详情的设备 ID 跳设备档案。" />
               </>
             ),
             dataIndex: 'deviceId',

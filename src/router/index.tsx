@@ -7,6 +7,7 @@ import Retention from '../pages/Retention'
 import Engagement from '../pages/Engagement'
 import Users from '../pages/Users'
 import UserDeviceDetail from '../pages/Users/DeviceDetail'
+import ParentDetail from '../pages/Parents/Detail'
 import Content from '../pages/Content'
 import AdventureStudio from '../pages/AdventureStudio'
 import TestDevices from '../pages/TestDevices'
@@ -70,6 +71,7 @@ export const router = createBrowserRouter(
         { path: 'fleet', element: <Fleet /> },
         { path: 'users', element: <Users /> },
         { path: 'users/:deviceId', element: <UserDeviceDetail /> },
+        { path: 'parents/:userId', element: <ParentDetail /> },
         { path: 'content', element: <Content /> },
         {
           path: 'adventure',
