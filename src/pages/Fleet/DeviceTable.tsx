@@ -52,17 +52,18 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       title: '设备 ID',
       dataIndex: 'deviceId',
       key: 'deviceId',
-      width: 200,
+      width: 220,
       ellipsis: true,
       render: (v: string, r: FleetDeviceItem) => {
         return (
           <div
             data-testid="device-id-cell"
             style={{
-              display: 'flex',
-              flexWrap: 'nowrap',
+              // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
+              display: 'grid',
+              gridTemplateColumns: '104px minmax(0, 1fr)',
               alignItems: 'center',
-              gap: 4,
+              columnGap: 4,
               minWidth: 0,
             }}
           >
@@ -71,9 +72,6 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               onClick={(e) => e.stopPropagation()}
               title={v}
               style={{
-                flexGrow: 0,
-                flexShrink: 1,
-                flexBasis: 'auto',
                 minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -83,7 +81,13 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               {v}
             </Link>
             {r.testWhitelist ? (
-              <TestWhitelistTag note={r.testWhitelist.note} />
+              <span
+                data-testid="device-whitelist-tag"
+                // 只固定左边缘：不 stretch，Tag 宽度由备注内容决定
+                style={{ justifySelf: 'start', minWidth: 0 }}
+              >
+                <TestWhitelistTag note={r.testWhitelist.note} />
+              </span>
             ) : null}
           </div>
         )

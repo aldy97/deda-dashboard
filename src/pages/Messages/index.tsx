@@ -288,7 +288,7 @@ export default function Messages() {
             {
               title: '设备',
               key: 'device',
-              width: 200,
+              width: 220,
               render: (_, row) => {
                 const label = row.device.deviceCode ?? row.device.deviceId
                 // Map.get 的 undefined 与白名单里的 null 备注是两回事：
@@ -298,19 +298,18 @@ export default function Messages() {
                   <div
                     data-testid="message-device-cell"
                     style={{
-                      display: 'flex',
-                      flexWrap: 'nowrap',
+                      // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
+                      display: 'grid',
+                      gridTemplateColumns: '104px minmax(0, 1fr)',
                       alignItems: 'center',
-                      gap: 4,
+                      columnGap: 4,
                       minWidth: 0,
                     }}
                   >
                     <span
+                      data-testid="message-device-label"
                       title={label}
                       style={{
-                        flexGrow: 0,
-                        flexShrink: 1,
-                        flexBasis: 'auto',
                         minWidth: 0,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -320,7 +319,13 @@ export default function Messages() {
                       {label}
                     </span>
                     {note !== undefined ? (
-                      <TestWhitelistTag note={note} />
+                      <span
+                        data-testid="message-device-tag"
+                        // 只固定左边缘：不 stretch，Tag 宽度由备注内容决定
+                        style={{ justifySelf: 'start', minWidth: 0 }}
+                      >
+                        <TestWhitelistTag note={note} />
+                      </span>
                     ) : null}
                   </div>
                 )

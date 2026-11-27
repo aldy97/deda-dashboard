@@ -445,16 +445,30 @@ describe('消息明细页 · 设备列白名单备注', () => {
     expect(callsTo('/analytics/test-devices').length).toBeGreaterThan(0)
   })
 
-  it('设备标识与备注 Tag 同一行不换行，被压缩的是设备标识', async () => {
+  it('备注 Tag 与设备标识同一行，Tag 左侧按固定列宽对齐', async () => {
     mockWhitelistScenario(SUPERADMIN_META)
     renderPage()
 
     const tag = await screen.findByText('3 号样机-熊枫')
     const cell = screen.getAllByTestId('message-device-cell')[0]
+    const label = screen.getAllByTestId('message-device-label')[0]
 
-    expect(cell.style.flexWrap).toBe('nowrap')
-    expect(cell.style.gap).toBe('4px')
-    expect(cell.contains(tag)).toBe(true)
+    // 固定第一列宽度：设备 ID 长短不再影响 Tag 的左边缘
+    expect(cell.style.display).toBe('grid')
+    expect(cell.style.gridTemplateColumns).toBe('104px minmax(0px, 1fr)')
+    expect(cell.style.columnGap).toBe('4px')
+    const tagSlot = screen.getAllByTestId('message-device-tag')[0]
+    expect(cell.children[0]).toBe(label)
+    expect(cell.children[1]).toBe(tagSlot)
+    expect(tagSlot.contains(tag)).toBe(true)
+
+    // 只对齐左边缘：Tag 不随网格列拉伸，宽度由内容决定
+    expect(tagSlot.style.justifySelf).toBe('start')
+
+    // 超长设备 ID 在自己的第一列内省略，不推挤 Tag
+    expect(label.style.minWidth).toBe('0px')
+    expect(label.style.overflow).toBe('hidden')
+    expect(label.style.textOverflow).toBe('ellipsis')
     expect(tag.style.flexShrink).toBe('0')
     expect(tag.style.maxWidth).toBe('96px')
   })
