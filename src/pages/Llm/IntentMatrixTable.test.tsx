@@ -116,7 +116,7 @@ describe('IntentMatrixTable 既有行为不变', () => {
     ])
 
     expect(
-      screen.getByRole('columnheader', { name: '小模型判定' }),
+      screen.getByRole('columnheader', { name: '模型判定' }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('columnheader', { name: '未知来源' }),

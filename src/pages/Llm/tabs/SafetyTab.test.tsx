@@ -137,7 +137,7 @@ describe('SafetyTab 概览', () => {
     mockTrend.mockReturnValue({ data: trend, isLoading: false, error: null })
     renderTab()
 
-    const alert = screen.getByText(/小模型安全分类存在静默降级/)
+    const alert = screen.getByText(/安全分类模型存在静默降级/)
     expect(alert).toBeInTheDocument()
     expect(alert.textContent).toContain('12')
     expect(alert.textContent).toContain('5')
@@ -193,7 +193,7 @@ describe('SafetyTab 分桶图表', () => {
 
     const option = optionOf(0)
     const axis = JSON.stringify(option.xAxis)
-    expect(axis).toContain('L2 小模型判定')
+    expect(axis).toContain('L2 模型判定')
     expect(axis).toContain('L1 正则命中')
     expect(axis).toContain('L2 调用异常放行')
     expect(axis).toContain('未做 L2（冒险接管）')

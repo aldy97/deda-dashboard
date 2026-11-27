@@ -29,9 +29,9 @@ const GRANULARITY_OPTIONS = [
 ]
 
 /**
- * 意图监控 tab：小模型意图路由的决策路径，数据源 turn_decision_logs。
+ * 意图监控 tab：意图分类模型的决策路径，数据源 turn_decision_logs。
  *
- * 7 条决策出口里有 4 条根本不调小模型（正则未命中、会话续接、会话粘滞、显式退出），
+ * 7 条决策出口里有 4 条根本不调分类模型（正则未命中、会话续接、会话粘滞、显式退出），
  * 所以「意图分布」本身几乎没有排查价值——必须连着「决策来源」一起看。
  * 这一页的主表是 intent × source 交叉表，主图是决策路径。
  */
@@ -73,7 +73,7 @@ export default function IntentTab() {
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           判定记录数 ≤ 对话轮次数：埋点在每个编排出口，未捕获异常中断的轮次没有记录，
           差值不是漏审。
-          <InfoTip title="有活跃会话时由规则接管（会话续接/粘滞/显式退出），所以小模型调用量远小于对话轮次，这是设计而非故障。真正要盯的是「正则未命中直接闲聊」和「关键词兜底」两项。" />
+          <InfoTip title="有活跃会话时由规则接管（会话续接/粘滞/显式退出），所以分类模型调用量远小于对话轮次，这是设计而非故障。真正要盯的是「正则未命中直接闲聊」和「关键词兜底」两项。" />
         </Typography.Text>
         <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
           <Select

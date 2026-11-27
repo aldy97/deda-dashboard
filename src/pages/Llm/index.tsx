@@ -39,7 +39,7 @@ export default function LlmMonitor() {
     <div>
       <PageHeader
         title="模型监控"
-        description="主模型（deepseek-flash）+ 小模型（qwen-flash）全量调用；首包时间仅流式场景有值。性能与价格看「调用健康度」，安全与意图看「判定可信度」，两者可按 turnId 互查。"
+        description="统一 qwen-flash（主对话 / 安全语义分类 / 意图分类 / 记忆抽取同一模型）；filler 首响过渡语已于 2026-11 下线，历史区间仍可查。首包时间仅流式场景有值。性能与价格看「调用健康度」，安全与意图看「判定可信度」，两者可按 turnId 互查。"
         actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
       />
       <Card>

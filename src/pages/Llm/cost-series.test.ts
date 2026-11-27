@@ -58,19 +58,19 @@ describe('dayTotalMissing 缺哪一块的说明', () => {
 
   it('只缺小模型账单', () => {
     expect(dayTotalMissing(point({ smallCny: null }))).toBe(
-      '合计不含小模型（当日账单未出）',
+      '合计不含qwen-flash（当日账单未出）',
     )
   })
 
   it('只缺主模型计价', () => {
     expect(
       dayTotalMissing(point({ mainCny: null, mainTokens: 88 })),
-    ).toBe('合计不含主模型（有 token 但未计价）')
+    ).toBe('合计不含历史主模型（有 token 但未计价）')
   })
 
   it('两块都缺时用顿号连接', () => {
     expect(
       dayTotalMissing(point({ smallCny: null, mainCny: null, mainTokens: 88 })),
-    ).toBe('合计不含小模型（当日账单未出）、主模型（有 token 但未计价）')
+    ).toBe('合计不含qwen-flash（当日账单未出）、历史主模型（有 token 但未计价）')
   })
 })

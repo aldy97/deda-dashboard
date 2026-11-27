@@ -3,9 +3,9 @@ import ReactECharts from 'echarts-for-react'
 import type { IntentTrendResponse } from '../../types/analytics'
 
 /**
- * 意图判定趋势：判定轮次（柱）+ 小模型判定数（线）+ 关键词兜底数（线）。
+ * 意图判定趋势：判定轮次（柱）+ 分类模型判定数（线）+ 关键词兜底数（线）。
  *
- * 兜底线贴着 0 是健康状态；抬起来说明小模型开始给出非法标签或调用失败，
+ * 兜底线贴着 0 是健康状态；抬起来说明分类模型开始给出非法标签或调用失败，
  * 这些轮次的意图是关键词猜的，不可信。可与「性能监控」tab 的 intent_classify
  * 成功率按时间轴对照定位成因。
  */
@@ -37,7 +37,7 @@ export default function IntentTrendChart({
         return [point.date, ...lines, `模型判定率：${modelRate}`].join('<br/>')
       },
     },
-    legend: { data: ['判定轮次', '小模型判定', '关键词兜底'], bottom: 0 },
+    legend: { data: ['判定轮次', '模型判定', '关键词兜底'], bottom: 0 },
     grid: { left: 56, right: 24, top: 24, bottom: 56 },
     xAxis: { type: 'category', data: data.series.map((p) => label(p.date)) },
     yAxis: { type: 'value', name: '轮次', minInterval: 1 },
@@ -50,7 +50,7 @@ export default function IntentTrendChart({
         data: data.series.map((p) => p.total),
       },
       {
-        name: '小模型判定',
+        name: '模型判定',
         type: 'line',
         smooth: true,
         itemStyle: { color: '#52c41a' },

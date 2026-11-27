@@ -13,15 +13,6 @@ vi.mock('../SceneSummaryTable', () => ({
 vi.mock('../LlmTrendChart', () => ({
   default: () => <div data-testid="llm-trend-chart" />,
 }))
-vi.mock('../TurnHandoffCard', () => ({
-  default: (props: { startDate: string; endDate: string }) => (
-    <div
-      data-testid="turn-handoff-card"
-      data-start={props.startDate}
-      data-end={props.endDate}
-    />
-  ),
-}))
 vi.mock('../RecentFailuresTable', () => ({
   default: (props: { scene?: string }) => (
     <div data-testid="recent-failures" data-scene={props.scene ?? ''} />
@@ -138,26 +129,23 @@ describe('PerfTab 成功率告警阈值', () => {
 })
 
 describe('PerfTab 结构与联动', () => {
-  it('渲染五块既有内容：分场景汇总 / 趋势 / 衔接健康度 / 失败明细 / 慢调用', () => {
+  it('渲染四块既有内容：分场景汇总 / 趋势 / 失败明细 / 慢调用', () => {
     renderTab([scene({ calls: 10, successRate: 1 })])
 
     expect(screen.getByTestId('scene-summary-table')).toBeInTheDocument()
     expect(screen.getByTestId('llm-trend-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('turn-handoff-card')).toBeInTheDocument()
     expect(screen.getByTestId('recent-failures')).toBeInTheDocument()
     expect(screen.getByTestId('slow-calls')).toBeInTheDocument()
-    expect(screen.getByText('轮次衔接健康度（防死空气）')).toBeInTheDocument()
+    expect(screen.getByText(/filler 已下线/)).toBeInTheDocument()
     expect(screen.getByText('慢调用长尾（成功但慢）')).toBeInTheDocument()
   })
 
   it('日期区间下传给按区间取数的子组件', () => {
     renderTab([scene({ calls: 10, successRate: 1 })])
 
-    const handoff = screen.getByTestId('turn-handoff-card')
     const slow = screen.getByTestId('slow-calls')
-    expect(handoff.dataset.start).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    expect(handoff.dataset.start).toBe(slow.dataset.start)
-    expect(handoff.dataset.end).toBe(slow.dataset.end)
+    expect(slow.dataset.start).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(slow.dataset.end).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
   it('场景筛选器提供全部已登记场景，默认不限场景', () => {

@@ -60,6 +60,6 @@ describe('safetySourceLabelForMessage', () => {
     expect(safetySourceLabelForMessage('inferred_from_reply')).toBe(
       '由 AI 回复推断',
     )
-    expect(safetySourceLabelForMessage('l2_model')).toBe('L2 小模型判定')
+    expect(safetySourceLabelForMessage('l2_model')).toBe('L2 模型判定')
   })
 })

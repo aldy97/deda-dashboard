@@ -47,6 +47,7 @@ describe('SceneSummaryTable 场景列链接', () => {
 
     const link = screen.getByRole('link', { name: /首响过渡语/ })
     expect(link.getAttribute('href')).toBe('/prompts?scene=filler')
+    expect(screen.getByText('历史')).toBeInTheDocument()
   })
 
   it('safety_l2 场景链接正确', () => {
@@ -129,14 +130,14 @@ describe('SceneSummaryTable 既有列行为不变', () => {
     expect(screen.queryByText('静默降级')).not.toBeInTheDocument()
   })
 
-  it('模型层级 Tag 展示小模型 / 主模型', () => {
+  it('模型层级 Tag 展示辅助链路 / 主链路', () => {
     renderTable([
       sceneRow({ scene: 'chat_main', tier: 'main' }),
       sceneRow({ scene: 'filler', tier: 'small' }),
     ])
 
-    expect(screen.getByText('主模型')).toBeInTheDocument()
-    expect(screen.getByText('小模型')).toBeInTheDocument()
+    expect(screen.getByText('主链路')).toBeInTheDocument()
+    expect(screen.getByText('辅助链路')).toBeInTheDocument()
   })
 
   it('失败 Top1 为空时渲染「—」', () => {

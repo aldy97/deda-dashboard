@@ -481,7 +481,7 @@ export interface LlmSceneSummary {
   successRate: number | null
   p50LatencyMs: number | null
   p90LatencyMs: number | null
-  /** 首包时间：仅流式场景（chat_main / filler）有值，否则 null */
+  /** 首包时间：仅流式场景（chat_main；filler 为历史值）有值，否则 null */
   p50FirstTokenMs: number | null
   p90FirstTokenMs: number | null
   totalTokens: number
@@ -506,26 +506,6 @@ export interface LlmTrendResponse {
     p90FirstTokenMs: number | null
     totalTokens: number
   }>
-}
-
-/** 轮次衔接健康度（GET /analytics/llm/turn-handoff，生成侧口径） */
-export interface LlmTurnHandoffResponse {
-  /** 区间内有 chat_main 的轮数 */
-  turnsWithChat: number
-  /** filler + chat_main 双样本齐全的轮数 */
-  turnsWithBoth: number
-  /** 有 chat_main 但无 filler（静默降级缺失）的轮数 */
-  turnsMissingFiller: number
-  /** chat_main.firstTokenMs 为 null 的轮数 */
-  turnsUnknown: number
-  gapThresholdMs: number
-  /** gapMs = chat_main 首包时刻 − filler 生成完成时刻；≤0 为覆盖良好 */
-  gapP50Ms: number | null
-  gapP90Ms: number | null
-  /** 空窗轮数 / 双样本轮数；无样本时 null */
-  gapRate: number | null
-  /** gapMs 倒序前 10 */
-  topGaps: Array<{ turnId: string; gapMs: number; createdAt: string }>
 }
 
 /** 慢调用长尾（GET /analytics/llm/slow-calls，仅成功调用） */

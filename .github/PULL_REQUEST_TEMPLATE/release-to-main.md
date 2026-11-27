@@ -35,6 +35,10 @@ about: staging 合入 main 的发布 PR（聚合各 feature 的人工验证项�
 > `mv /opt/deda/dashboard/prod.old /opt/deda/dashboard/prod`（每次部署保留上一版在 prod.old，
 > 更早版本已丢失）。静态资源无数据回滚问题，前端看板无需额外数据库操作。
 
+### 改动截图
+
+> 聚合本次发布涉及的 UI 改动截图（逐页/状态），标注路由与视口；无 UI 改动写「无」+ 理由。
+
 ### 已知待办（不阻塞发布）
 
 <!-- optional -->

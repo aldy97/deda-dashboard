@@ -36,14 +36,14 @@ const columns: ColumnsType<LlmCostSeriesItem> = [
     sorter: (a, b) => a.date.localeCompare(b.date),
   },
   {
-    title: '小模型 ¥',
+    title: 'qwen-flash ¥',
     dataIndex: 'smallCny',
     key: 'smallCny',
     sorter: (a, b) => (a.smallCny ?? 0) - (b.smallCny ?? 0),
     render: (v: number | null) => formatCny(v),
   },
   {
-    title: '主模型 ¥',
+    title: '历史主模型 ¥',
     dataIndex: 'mainCny',
     key: 'mainCny',
     sorter: (a, b) => (a.mainCny ?? 0) - (b.mainCny ?? 0),
@@ -107,7 +107,7 @@ function ReconciliationBar({ rec }: { rec: LlmCostReconciliation }) {
     return (
       <div style={{ marginBottom: 12 }}>
         <span style={{ marginRight: 16 }}>
-          小模型估算 {formatCny(rec.smallEstimatedCny)} vs 账单真值{' '}
+          qwen-flash 估算 {formatCny(rec.smallEstimatedCny)} vs 账单真值{' '}
           {formatCny(rec.smallBilledCny)}
         </span>
         <span style={{ color: '#999' }}>账单真值为 0，无法计算偏差</span>
@@ -118,7 +118,7 @@ function ReconciliationBar({ rec }: { rec: LlmCostReconciliation }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <span style={{ marginRight: 16 }}>
-        小模型估算 {formatCny(rec.smallEstimatedCny)} vs 账单真值{' '}
+        qwen-flash 估算 {formatCny(rec.smallEstimatedCny)} vs 账单真值{' '}
         {formatCny(rec.smallBilledCny)}
       </span>
       <Tag color={Math.abs(rec.deltaPct) > 15 ? 'warning' : 'default'}>
@@ -130,7 +130,7 @@ function ReconciliationBar({ rec }: { rec: LlmCostReconciliation }) {
           type="warning"
           showIcon
           style={{ marginTop: 8 }}
-          message="小模型估算与账单真值偏差超过 ±15%，建议排查 bill-fetch 日志、aliyun 外部扣款或未建模的优惠/调价。"
+          message="qwen-flash 估算与账单真值偏差超过 ±15%，建议排查 bill-fetch 日志、aliyun 外部扣款或未建模的优惠/调价。"
         />
       )}
     </div>

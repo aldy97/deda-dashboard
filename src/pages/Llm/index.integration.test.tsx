@@ -12,7 +12,6 @@ import {
   useLlmSlowCalls,
   useLlmSummary,
   useLlmTrend,
-  useLlmTurnHandoff,
   useReviewQueue,
   useSafetySummary,
   useSafetyTrend,
@@ -31,7 +30,6 @@ vi.mock('../../api/queries', () => ({
   useLlmTrend: vi.fn(),
   useLlmRecentFailures: vi.fn(),
   useLlmSlowCalls: vi.fn(),
-  useLlmTurnHandoff: vi.fn(),
   useLlmCost: vi.fn(),
   useSafetySummary: vi.fn(),
   useSafetyTrend: vi.fn(),
@@ -88,9 +86,6 @@ function mockApi() {
   )
   ;(useLlmSlowCalls as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
     ok({ items: [] }),
-  )
-  ;(useLlmTurnHandoff as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-    ok(null),
   )
   ;(useLlmCost as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
     ok(null),

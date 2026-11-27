@@ -122,7 +122,7 @@ describe('IntentDistributionChart 分桶与着色', () => {
       '未走到路由',
     ])
     expect(optionAt(1).xAxis.data).toEqual([
-      '小模型判定',
+      '模型判定',
       '兜底·调用异常',
       '未路由·被安全拦截',
     ])

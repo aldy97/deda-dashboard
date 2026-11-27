@@ -27,7 +27,6 @@ import {
   fetchLlmCostDaily,
   fetchLlmSummary,
   fetchLlmTrend,
-  fetchLlmTurnHandoff,
   fetchMemoriesOverview,
   fetchMemoryDevices,
   fetchMemoryHistory,
@@ -431,17 +430,6 @@ export function useLlmCallsByTurn(turnId: string | null) {
     queryKey: ['analytics', 'llmCallsByTurn', turnId],
     queryFn: () => fetchLlmCallsByTurn(turnId!),
     enabled: turnId !== null,
-  })
-}
-
-export function useLlmTurnHandoff(params: {
-  startDate: string
-  endDate: string
-  gapThresholdMs?: number
-}) {
-  return useQuery({
-    queryKey: ['analytics', 'llmTurnHandoff', params],
-    queryFn: () => fetchLlmTurnHandoff(params),
   })
 }
 
