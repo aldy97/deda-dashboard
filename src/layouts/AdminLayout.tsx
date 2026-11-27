@@ -1,4 +1,5 @@
-import { Button, Layout, Menu, Tooltip, Typography } from 'antd'
+import { useState } from 'react'
+import { Button, Layout, Menu, Modal, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   ApiOutlined,
@@ -106,7 +107,11 @@ export default function AdminLayout() {
   const roleKnown = Boolean(meta?.admin)
   const opsLocked = roleKnown && !isSuperAdmin(meta)
 
-  const logout = () => {
+  const [logoutOpen, setLogoutOpen] = useState(false)
+
+  // 触发只负责开弹窗；清 token 放到确认之后，避免误点一下就被踢下线
+  const confirmLogout = () => {
+    setLogoutOpen(false)
     clearToken()
     navigate('/login', { replace: true })
   }
@@ -186,7 +191,7 @@ export default function AdminLayout() {
           <Typography.Text type="secondary">
             儿童 AI 毛绒玩具 · 产品使用分析（内部）
           </Typography.Text>
-          <Button size="small" onClick={logout}>
+          <Button size="small" onClick={() => setLogoutOpen(true)}>
             退出登录
           </Button>
         </Header>
@@ -194,6 +199,20 @@ export default function AdminLayout() {
           <Outlet />
         </Content>
       </Layout>
+      {logoutOpen && (
+        <Modal
+          open
+          title="退出登录？"
+          okText="确认退出"
+          cancelText="取消"
+          centered
+          width={420}
+          onOk={confirmLogout}
+          onCancel={() => setLogoutOpen(false)}
+        >
+          退出后需要重新输入管理员账号密码才能继续访问数据看板。
+        </Modal>
+      )}
     </Layout>
   )
 }
