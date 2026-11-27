@@ -278,6 +278,20 @@ describe('CostCards 降级与缺源', () => {
     expect(screen.getByText('未计价')).toBeInTheDocument()
   })
 
+  it('partial 但没有可归因缺源时仍给出合计不完整提示', () => {
+    render(
+      <CostCards
+        data={costData({
+          totals: { partial: true },
+          aliyun: { status: 'ok', modelSplit: true, latestBillDate: '2026-11-20' },
+          deepseek: { rows: 5, pricedRows: 5, cacheHitRows: 0 },
+        })}
+      />,
+    )
+
+    expect(screen.getByText('合计不完整')).toBeInTheDocument()
+  })
+
   it('账单未接入时标「未接入账单」，message 为空也不崩', () => {
     render(
       <CostCards
