@@ -316,3 +316,92 @@ describe('MessageDetailDrawer 冒险故事', () => {
     expect(screen.queryByText('elly/1/1')).not.toBeInTheDocument()
   })
 })
+
+describe('MessageDetailDrawer 提示词入口', () => {
+  it('超管：模式值链到该模式的主提示词编辑器，产品值链到角色人设', () => {
+    renderDrawer({ message: makeMessage() })
+
+    expect(
+      screen.getByRole('link', { name: /查看「自由对话」用到的提示词/ }),
+    ).toHaveAttribute(
+      'href',
+      '/prompts?mode=free_chat&key=main_free_chat_rules&characterKey=elly',
+    )
+    expect(
+      screen.getByRole('link', { name: /查看角色 elly 的人设提示词/ }),
+    ).toHaveAttribute('href', '/prompts?key=persona_elly')
+  })
+
+  it('故事模式的落点是故事话术，不是通用规则段', () => {
+    renderDrawer({ message: makeMessage({ mode: 'idiom_story' }) })
+
+    expect(
+      screen.getByRole('link', { name: /查看「成语故事」用到的提示词/ }),
+    ).toHaveAttribute(
+      'href',
+      '/prompts?mode=idiom_story&key=story_prompt_idiom&characterKey=elly',
+    )
+  })
+
+  it('普通 admin 两处都是纯文本（/prompts 是雾层，不给死链）', () => {
+    mockMeta.mockReturnValue({
+      data: { admin: { role: 'admin' } },
+    } as never)
+    renderDrawer({ message: makeMessage() })
+
+    expect(
+      screen.queryByRole('link', { name: /用到的提示词/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /人设提示词/ }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('自由对话')).toBeInTheDocument()
+    expect(screen.getByText('elly')).toBeInTheDocument()
+  })
+
+  it('legacy 模式不可点，但产品人设入口照常可用', () => {
+    renderDrawer({ message: makeMessage({ mode: 'music' }) })
+
+    expect(screen.getByText('音乐')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /用到的提示词/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /查看角色 elly 的人设提示词/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('mode 为空时不渲染模式链接', () => {
+    renderDrawer({ message: makeMessage({ mode: null }) })
+
+    expect(
+      screen.queryByRole('link', { name: /用到的提示词/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('动态角色按 characterKey 生成人设链接', () => {
+    renderDrawer({
+      message: makeMessage({
+        device: { deviceId: 'dev-1', deviceCode: 'D001', characterKey: 'polly' },
+      }),
+    })
+
+    expect(
+      screen.getByRole('link', { name: /查看角色 polly 的人设提示词/ }),
+    ).toHaveAttribute('href', '/prompts?key=persona_polly')
+  })
+
+  it('仅凭 URL 打开时，详情回来后链接才出现', async () => {
+    mockDetail.mockReturnValue({
+      data: { ...makeMessage({ role: 'assistant' }) },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ messageId: 'm-1' })
+
+    expect(
+      await screen.findByRole('link', { name: /查看「自由对话」用到的提示词/ }),
+    ).toBeInTheDocument()
+  })
+})
