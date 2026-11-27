@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { Alert, Button, Drawer, Space, Tag, Typography } from 'antd'
 import { ReadOutlined } from '@ant-design/icons'
 import { useAdventureCapabilities } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { isSuperAdmin } from '../../components/access/role'
 
 /**
  * 冒险故事测试指引（仅 staging 白名单样机）。
@@ -16,7 +18,10 @@ import { useAdventureCapabilities } from '../../api/queries'
  */
 export default function AdventureTestGuide() {
   const [open, setOpen] = useState(false)
-  const capabilities = useAdventureCapabilities().data ?? null
+  // 普通 admin 也会从内容页打开这份指引；capabilities 是 superadmin 接口，
+  // 非超管不发这发必 403 的请求，退出话术回落到占位符（纯文案，UI 不变）。
+  const superadmin = isSuperAdmin(useAnalyticsMeta().data)
+  const capabilities = useAdventureCapabilities({ enabled: superadmin }).data ?? null
   const fixedExitText = capabilities?.fixedExitText
 
   return (

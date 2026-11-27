@@ -113,13 +113,13 @@ describe('LlmMonitor 四个 tab', () => {
     expect(screen.getByText(/首包时间仅流式场景有值/)).toBeInTheDocument()
   })
 
-  it('页头说明统一 qwen-flash，并标注 filler 已下线', () => {
+  it('页头说明统一 qwen-flash，不再标注 filler 下线', () => {
     renderAt()
 
     expect(screen.getByText(/统一 qwen-flash/)).toBeInTheDocument()
     expect(
-      screen.getByText(/filler 首响过渡语已于 2026-11 下线/),
-    ).toBeInTheDocument()
+      screen.queryByText(/filler 首响过渡语已于 2026-11 下线/),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/deepseek-flash/)).not.toBeInTheDocument()
   })
 

@@ -136,7 +136,7 @@ describe('PerfTab 结构与联动', () => {
     expect(screen.getByTestId('llm-trend-chart')).toBeInTheDocument()
     expect(screen.getByTestId('recent-failures')).toBeInTheDocument()
     expect(screen.getByTestId('slow-calls')).toBeInTheDocument()
-    expect(screen.getByText(/filler 已下线/)).toBeInTheDocument()
+    expect(screen.queryByText(/filler 已下线/)).toBeNull()
     expect(screen.getByText('慢调用长尾（成功但慢）')).toBeInTheDocument()
   })
 
