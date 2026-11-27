@@ -10,6 +10,7 @@ import {
 import { useAllTestDevices } from '../../api/testDevices'
 import ReasonDialog from './ReasonDialog'
 import DeviceTestAssignList from './DeviceTestAssignList'
+import AdventureTestGuide from './AdventureTestGuide'
 import { characterLabel } from './labels'
 
 /**
@@ -150,6 +151,7 @@ export default function DeviceTestAssign({
           测试冒险故事未启用：当前环境没有打开 ADVENTURE_TEST_MODE_ENABLED（prod
           永远不可用），孩子说「测试冒险故事」不会进入测试播放。
         </Typography.Text>
+        <AdventureTestGuide />
       </Space>
     )
   }
@@ -160,6 +162,7 @@ export default function DeviceTestAssign({
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           本环境只读，不能下发或清除测试冒险故事（这两个动作都会写审计）。
         </Typography.Text>
+        <AdventureTestGuide />
         {list}
       </Space>
     )
@@ -232,6 +235,7 @@ export default function DeviceTestAssign({
         >
           清除下发
         </Button>
+        <AdventureTestGuide />
       </Space>
 
       {result && (

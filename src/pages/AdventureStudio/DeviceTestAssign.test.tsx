@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import DeviceTestAssign from './DeviceTestAssign'
 import {
+  useAdventureCapabilities,
   useAssignTestStory,
   useCharacterTestDevices,
   useClearTestStory,
@@ -18,6 +19,7 @@ vi.mock('../../api/queries', () => ({
   useAssignTestStory: vi.fn(),
   useClearTestStory: vi.fn(),
   useCharacterTestDevices: vi.fn(),
+  useAdventureCapabilities: vi.fn(),
 }))
 
 vi.mock('../../api/testDevices', () => ({
@@ -31,6 +33,9 @@ const mockAssign = useAssignTestStory as unknown as ReturnType<typeof vi.fn>
 const mockClear = useClearTestStory as unknown as ReturnType<typeof vi.fn>
 const mockList = useCharacterTestDevices as unknown as ReturnType<typeof vi.fn>
 const mockDevices = useAllTestDevices as unknown as ReturnType<typeof vi.fn>
+const mockCapabilities = useAdventureCapabilities as unknown as ReturnType<
+  typeof vi.fn
+>
 
 function queryResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -140,6 +145,9 @@ function setup(
       refetch: devicesRefetch,
     }),
   )
+  mockCapabilities.mockReturnValue({
+    data: { fixedExitText: '好的，那么我们之后再一起继续冒险吧' },
+  })
 
   render(
     <MemoryRouter>
@@ -190,6 +198,13 @@ describe('DeviceTestAssign', () => {
     expect(screen.getByText(/测试冒险故事未启用/)).toBeTruthy()
     expect(screen.queryByText('当前已下发的样机')).toBeNull()
     expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.getByRole('button', { name: '测试指引' })).toBeTruthy()
+  })
+
+  it('keeps the test guide reachable in a read-only environment', () => {
+    setup({ authoring: false })
+
+    expect(screen.getByRole('button', { name: '测试指引' })).toBeTruthy()
   })
 
   it('keeps the list visible but hides write entry points in a read-only environment', () => {
