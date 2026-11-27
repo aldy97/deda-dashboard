@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Alert, Card, Col, Input, Row, Spin, Statistic } from 'antd'
 import { useNavigate } from 'react-router-dom'
-import { useUsersDemographics, useUsersSummary } from '../../api/queries'
+import { usePhoneBrands, useUsersDemographics, useUsersSummary } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import PageHeader from '../../components/PageHeader'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import Demographics from './Demographics'
+import PhoneBrandChart from './PhoneBrandChart'
 
 /**
  * 用户画像页（P5）：家长总量/新增/绑定概览 + 孩子画像分布。
@@ -20,13 +21,20 @@ export default function Users() {
     endDate: fmt(range[1]),
   })
   const demographicsQuery = useUsersDemographics()
+  const brandsQuery = usePhoneBrands()
   const summary = summaryQuery.data ?? null
   const demographics = demographicsQuery.data ?? null
+  const phoneBrands = brandsQuery.data ?? null
   const loading = summaryQuery.isLoading || demographicsQuery.isLoading
   const queryError = summaryQuery.error ?? demographicsQuery.error
   const error = queryError
     ? queryError instanceof Error
       ? queryError.message
+      : '加载失败'
+    : null
+  const brandsError = brandsQuery.error
+    ? brandsQuery.error instanceof Error
+      ? brandsQuery.error.message
       : '加载失败'
     : null
 
@@ -112,6 +120,21 @@ export default function Users() {
 
         <Card title="画像分布" style={{ marginTop: 16 }}>
           {demographics && <Demographics data={demographics} />}
+        </Card>
+
+        <Card title="家长手机品牌分布（当前快照）" style={{ marginTop: 16 }}>
+          {brandsError && (
+            <Alert
+              type="error"
+              showIcon
+              message="手机品牌数据加载失败"
+              description={brandsError}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+          <Spin spinning={brandsQuery.isLoading}>
+            {phoneBrands && <PhoneBrandChart data={phoneBrands} />}
+          </Spin>
         </Card>
       </Spin>
     </div>

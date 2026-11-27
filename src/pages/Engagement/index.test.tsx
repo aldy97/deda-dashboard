@@ -7,6 +7,7 @@ import Engagement from './index'
 import type {
   EngagementSummaryResponse,
   ModeUsageResponse,
+  NetworkUsageResponse,
   HourlyHeatmapResponse,
   DurationDistributionResponse,
   FeatureAdoptionResponse,
@@ -185,6 +186,101 @@ describe('使用行为页 · 跨页下钻出口', () => {
       expect(link?.getAttribute('href')).toBe(
         `/messages?mode=english_chat&startDate=${startDate}&endDate=${endDate}`,
       )
+    })
+  })
+
+  describe('对话网络分布卡', () => {
+    const NETWORK_USAGE: NetworkUsageResponse = {
+      startDate,
+      endDate,
+      totalTurns: 5,
+      knownTurns: 3,
+      unknownTurns: 2,
+      coverage: 0.6,
+      deviceCount: 2,
+      firstTrackedDate: startDate,
+      wifi: {
+        turns: 2,
+        devices: 1,
+        shareOfKnown: 0.6667,
+        shareOfTotal: 0.4,
+      },
+      fourG: {
+        turns: 1,
+        devices: 1,
+        shareOfKnown: 0.3333,
+        shareOfTotal: 0.2,
+      },
+      unknown: { turns: 2, devices: 2, shareOfTotal: 0.4 },
+      series: [
+        {
+          date: startDate,
+          wifiTurns: 2,
+          fourGTurns: 1,
+          unknownTurns: 2,
+          wifiShareOfKnown: 0.6667,
+          fourGShareOfKnown: 0.3333,
+        },
+      ],
+    }
+
+    const MODE_USAGE: ModeUsageResponse = {
+      series: [
+        {
+          date: startDate,
+          modes: [{ mode: 'free_chat', turns: 10, devices: 2 }],
+        },
+      ],
+    }
+
+    beforeEach(() => {
+      mockGet.mockImplementation((url: string) => {
+        if (url === '/analytics/engagement/summary')
+          return Promise.resolve({ data: ENGAGEMENT_SUMMARY })
+        if (url === '/analytics/engagement/mode-usage')
+          return Promise.resolve({ data: MODE_USAGE })
+        if (url === '/analytics/engagement/hourly-heatmap')
+          return Promise.resolve({ data: HEATMAP })
+        if (url === '/analytics/engagement/duration-distribution')
+          return Promise.resolve({ data: DISTRIBUTION })
+        if (url === '/analytics/engagement/feature-adoption')
+          return Promise.resolve({ data: { date: endDate, features: [] } })
+        if (url === '/analytics/engagement/network-usage')
+          return Promise.resolve({ data: NETWORK_USAGE })
+        return Promise.resolve({ data: null })
+      })
+    })
+
+    it('渲染 WiFi/4G 占比、覆盖率与设备数', async () => {
+      renderPage()
+
+      expect(await screen.findByText('WiFi 占比')).toBeTruthy()
+      expect(screen.getByText('66.7%')).toBeTruthy()
+      expect(screen.getByText(/已归因 3 \/ 5 轮/)).toBeTruthy()
+      expect(screen.getByText(/涉及 2 台设备/)).toBeTruthy()
+    })
+
+    it('网络接口失败只影响本卡，模式分布仍渲染', async () => {
+      mockGet.mockImplementation((url: string) => {
+        if (url === '/analytics/engagement/network-usage')
+          return Promise.reject(new Error('network down'))
+        if (url === '/analytics/engagement/summary')
+          return Promise.resolve({ data: ENGAGEMENT_SUMMARY })
+        if (url === '/analytics/engagement/mode-usage')
+          return Promise.resolve({ data: MODE_USAGE })
+        if (url === '/analytics/engagement/hourly-heatmap')
+          return Promise.resolve({ data: HEATMAP })
+        if (url === '/analytics/engagement/duration-distribution')
+          return Promise.resolve({ data: DISTRIBUTION })
+        if (url === '/analytics/engagement/feature-adoption')
+          return Promise.resolve({ data: { date: endDate, features: [] } })
+        return Promise.resolve({ data: null })
+      })
+
+      renderPage()
+
+      expect(await screen.findByText('网络数据加载失败')).toBeTruthy()
+      expect(await screen.findByText('自由对话')).toBeTruthy()
     })
   })
 })

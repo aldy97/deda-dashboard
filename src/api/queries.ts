@@ -34,11 +34,13 @@ import {
   fetchMessageModes,
   fetchMessages,
   fetchModeUsage,
+  fetchNetworkUsage,
   fetchOverview,
   fetchOverviewTrend,
   fetchQualityConversation,
   fetchReportFeedbacks,
   fetchParentReports,
+  fetchPhoneBrands,
   fetchRetentionCohorts,
   fetchRetentionCurve,
   fetchReviewQueue,
@@ -231,6 +233,16 @@ export function useModeUsage(params: { startDate: string; endDate: string }) {
   })
 }
 
+export function useNetworkUsage(params: {
+  startDate: string
+  endDate: string
+}) {
+  return useQuery({
+    queryKey: ['analytics', 'networkUsage', params],
+    queryFn: () => fetchNetworkUsage(params),
+  })
+}
+
 export function useFeatureAdoption(date: string) {
   return useQuery({
     queryKey: ['analytics', 'featureAdoption', date],
@@ -254,6 +266,13 @@ export function useUsersDemographics() {
   return useQuery({
     queryKey: ['analytics', 'usersDemographics'],
     queryFn: fetchUsersDemographics,
+  })
+}
+
+export function usePhoneBrands() {
+  return useQuery({
+    queryKey: ['analytics', 'phoneBrands'],
+    queryFn: fetchPhoneBrands,
   })
 }
 
