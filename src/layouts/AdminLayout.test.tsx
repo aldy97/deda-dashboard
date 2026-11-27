@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { apiClient } from '../api/client'
-import { TOKEN_KEY } from '../utils/auth-token'
+import { ISSUED_AT_KEY, TOKEN_KEY } from '../utils/auth-token'
 import AdminLayout from './AdminLayout'
 import { selectedMenuKey } from './menu'
 
@@ -101,6 +101,24 @@ describe('AdminLayout 标题与环境标签', () => {
     await waitFor(() => expect(tag.dataset.tone).toBe('staging'))
     expect(header).toContainElement(tag)
     expect(tag).toHaveTextContent('测试')
+  })
+
+  it('品牌头钉在侧栏顶端：菜单滚动时不跟着走', () => {
+    stubMeta({
+      nodeEnv: 'staging',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    const header = screen.getByTestId('brand-header')
+    // sticky 必须在滚动容器（Sider）内部；不透明底色与层级防止菜单从底下透出
+    expect(header).toHaveStyle({
+      position: 'sticky',
+      top: '0px',
+      zIndex: '1',
+      backgroundColor: 'rgb(0, 21, 41)',
+    })
   })
 
   it.each([
@@ -332,18 +350,68 @@ describe('AdminLayout 菜单分组', () => {
 })
 
 describe('AdminLayout 退出登录', () => {
-  it('清掉 localStorage 的 token 并跳到 /login', async () => {
-    stubMeta({
-      nodeEnv: 'staging',
-      promptWriteEnabled: true,
-      publishConfirmCode: 'DEDA2025',
-    })
+  const META = {
+    nodeEnv: 'staging',
+    promptWriteEnabled: true,
+    publishConfirmCode: 'DEDA2025',
+  }
+
+  function seedLogin() {
     localStorage.setItem(TOKEN_KEY, 'a-token')
+    localStorage.setItem(ISSUED_AT_KEY, String(Date.now()))
+  }
+
+  async function openLogoutDialog() {
+    await userEvent.click(screen.getByRole('button', { name: '退出登录' }))
+    return screen.findByRole('dialog')
+  }
+
+  it('点「退出登录」只弹确认框，不立刻清 token', async () => {
+    stubMeta(META)
+    seedLogin()
     renderLayout()
 
-    await userEvent.click(screen.getByRole('button', { name: '退出登录' }))
+    const dialog = await openLogoutDialog()
+
+    expect(
+      within(dialog).getByText(
+        '退出后需要重新输入管理员账号密码才能继续访问数据看板。',
+      ),
+    ).toBeInTheDocument()
+    expect(localStorage.getItem(TOKEN_KEY)).toBe('a-token')
+    expect(screen.getByTestId('location-pathname')).toHaveTextContent('/overview')
+  })
+
+  it('取消后保持登录，并停留在原页面', async () => {
+    stubMeta(META)
+    seedLogin()
+    renderLayout()
+
+    const dialog = await openLogoutDialog()
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: /取\s*消/ }),
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    expect(localStorage.getItem(TOKEN_KEY)).toBe('a-token')
+    expect(localStorage.getItem(ISSUED_AT_KEY)).not.toBeNull()
+    expect(screen.getByTestId('location-pathname')).toHaveTextContent('/overview')
+  })
+
+  it('确认退出：token 与签发时间一并清掉，并跳到 /login', async () => {
+    stubMeta(META)
+    seedLogin()
+    renderLayout()
+
+    const dialog = await openLogoutDialog()
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: '确认退出' }),
+    )
 
     expect(localStorage.getItem(TOKEN_KEY)).toBeNull()
+    expect(localStorage.getItem(ISSUED_AT_KEY)).toBeNull()
     await waitFor(() =>
       expect(screen.getByTestId('location-pathname')).toHaveTextContent(
         '/login',

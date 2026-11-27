@@ -198,6 +198,57 @@ describe('登录失败', () => {
   })
 })
 
+describe('登录页品牌区与表单外观', () => {
+  it('渲染品牌区：logo、产品名与中文 slogan', () => {
+    renderAt('/login')
+
+    expect(screen.getByTestId('login-brand-logo')).toBeInTheDocument()
+    // 桌面品牌区与移动端顶部条各一份，两处都必须有产品名
+    expect(screen.getAllByText('Deda Dashboard').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('儿童 AI 毛绒玩具')).toBeInTheDocument()
+    expect(screen.getByText('产品使用分析平台')).toBeInTheDocument()
+  })
+
+  it('表单区用 h1「欢迎回来」并给出内部访问提示', () => {
+    renderAt('/login')
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: '欢迎回来' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('登录以继续访问 Deda Dashboard'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('遇到登录问题请联系系统管理员'),
+    ).toBeInTheDocument()
+  })
+
+  it('输入框保留密码管理器契约', () => {
+    renderAt('/login')
+
+    expect(screen.getByLabelText('用户名')).toHaveAttribute(
+      'autocomplete',
+      'username',
+    )
+    expect(screen.getByLabelText('密码')).toHaveAttribute(
+      'autocomplete',
+      'current-password',
+    )
+  })
+
+  it('登录失败的错误以 alert 角色播报', async () => {
+    const user = userEvent.setup()
+    mockLogin.mockRejectedValue(Object.assign(new Error('nope'), { status: 401 }))
+    renderAt('/login')
+
+    await submit(user)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '用户名或密码错误',
+    )
+  })
+})
+
 describe('已登录访问 /login 的守卫', () => {
   it('带着有效 next 时直接送回原页面，不再要求登录一次', () => {
     setToken('tk-existing')
