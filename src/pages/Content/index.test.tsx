@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { apiClient } from '../../api/client'
@@ -117,6 +118,16 @@ describe('内容与质量页 · 归位', () => {
     expect(screen.queryByText('生成报告数')).toBeNull()
     expect(screen.queryByText('生成失败数')).toBeNull()
     expect(screen.queryByText('收到反馈数')).toBeNull()
+  })
+
+  it('冒险故事卡片提供测试指引入口，点击打开指引抽屉', async () => {
+    mockGet.mockImplementation(() => Promise.resolve({ data: null }))
+
+    renderPage()
+
+    expect(await screen.findByText('冒险故事')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: '测试指引' }))
+    expect(await screen.findByText('冒险故事测试指引')).toBeTruthy()
   })
 
   it('对话质量趋势卡片有口径说明（InfoTip）', async () => {

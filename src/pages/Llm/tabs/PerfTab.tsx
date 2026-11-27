@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Card, Select, Spin, Typography } from 'antd'
+import { Alert, Card, Select, Spin } from 'antd'
 import { useLlmSummary, useLlmTrend } from '../../../api/queries'
 import AnalyticsRangePicker from '../../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../../utils/date-range'
@@ -50,10 +50,6 @@ export default function PerfTab() {
           }}
         />
       </div>
-
-      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
-        filler 已下线，轮次衔接 gap 指标不再适用；首包体验看下表「首包 P50/P90」。
-      </Typography.Text>
 
       {error && (
         <Alert

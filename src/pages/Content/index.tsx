@@ -14,6 +14,7 @@ import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
 import AdventureChoicesSection from './AdventureChoicesSection'
 import QualityTrend from './QualityTrend'
+import AdventureTestGuide from '../AdventureStudio/AdventureTestGuide'
 
 const formatPct = (rate: number | null) =>
   rate === null ? '—' : `${(rate * 100).toFixed(1)}%`
@@ -75,7 +76,7 @@ export default function Content() {
       )}
 
       <Spin spinning={loading}>
-        <Card title="冒险故事">
+        <Card title="冒险故事" extra={<AdventureTestGuide />}>
           {adventure && <AdventureSection data={adventure} range={range} />}
         </Card>
 

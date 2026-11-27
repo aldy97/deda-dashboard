@@ -11,6 +11,7 @@ import {
   useDeviceTestAssignment,
 } from '../../api/queries'
 import { useAllTestDevices } from '../../api/testDevices'
+import { useAnalyticsMeta } from '../../api/meta'
 import type { DeviceTestAssignment } from '../../types/adventureAdmin'
 import type { AllTestDevicesResult } from '../../api/testDevices'
 
@@ -26,6 +27,10 @@ vi.mock('../../api/testDevices', () => ({
   useAllTestDevices: vi.fn(),
 }))
 
+vi.mock('../../api/meta', () => ({
+  useAnalyticsMeta: vi.fn(),
+}))
+
 const mockAssignmentQuery = useDeviceTestAssignment as unknown as ReturnType<
   typeof vi.fn
 >
@@ -36,6 +41,7 @@ const mockDevices = useAllTestDevices as unknown as ReturnType<typeof vi.fn>
 const mockCapabilities = useAdventureCapabilities as unknown as ReturnType<
   typeof vi.fn
 >
+const mockMeta = useAnalyticsMeta as unknown as ReturnType<typeof vi.fn>
 
 function queryResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -147,6 +153,9 @@ function setup(
   )
   mockCapabilities.mockReturnValue({
     data: { fixedExitText: '好的，那么我们之后再一起继续冒险吧' },
+  })
+  mockMeta.mockReturnValue({
+    data: { admin: { role: 'superadmin' } },
   })
 
   render(
