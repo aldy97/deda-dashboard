@@ -17,6 +17,10 @@ import dayjs from 'dayjs'
 import CopyableText from '../../components/CopyableText'
 import InfoTip from '../../components/InfoTip'
 import DeviceProfile from '../../components/device/DeviceProfile'
+import TestWhitelistTag from '../../components/TestWhitelistTag'
+import { useAnalyticsMeta } from '../../api/meta'
+import { useAllTestDevices } from '../../api/testDevices'
+import { isSuperAdmin } from '../../components/access/role'
 import {
   useCurrentMemories,
   useFleetDeviceDetail,
@@ -113,6 +117,29 @@ export default function UserDeviceDetail() {
     fleetQuery.error instanceof Error &&
     (fleetQuery.error as Error & { status?: number }).status === 404
 
+  // 白名单样机备注只对超管下发（/analytics/test-devices 由 SuperAdminGuard 把守）。
+  // URL 里的 deviceId 大小写可能与库内不一致，和 Fleet 详情一样先精确后兜底。
+  const metaQuery = useAnalyticsMeta()
+  const superadmin = isSuperAdmin(metaQuery.data)
+  const whitelistQuery = useAllTestDevices(superadmin)
+  const whitelistItems = whitelistQuery.data?.items ?? []
+  const whitelist =
+    whitelistItems.find((item) => item.device.deviceId === deviceId) ??
+    whitelistItems.find(
+      (item) =>
+        item.device.deviceId.toLowerCase() === deviceId.toLowerCase(),
+    ) ??
+    null
+
+  // 绑定账号可能不止一个（多孩/祖辈家庭）：厂商去重后一起展示，未上报的跳过。
+  const phoneMakers = Array.from(
+    new Set(
+      (fleet?.boundUsers ?? [])
+        .map((user) => user.phoneMaker?.trim())
+        .filter((maker): maker is string => Boolean(maker)),
+    ),
+  )
+
   // 日报列表同时承担设备信息源（device 字段）与设备存在性判定（404）
   const [reportPage, setReportPage] = useState(1)
   const reportsQuery = useParentReports({ deviceId, page: reportPage, pageSize: 10 })
@@ -173,6 +200,16 @@ export default function UserDeviceDetail() {
               <Descriptions.Item label="产品">
                 {device ? <Tag color="blue">{device.characterKey}</Tag> : '—'}
               </Descriptions.Item>
+              {whitelist ? (
+                <>
+                  <Descriptions.Item label="测试白名单">
+                    <TestWhitelistTag note={whitelist.note} />
+                  </Descriptions.Item>
+                  <Descriptions.Item label="手机品牌">
+                    {phoneMakers.length > 0 ? phoneMakers.join('、') : '—'}
+                  </Descriptions.Item>
+                </>
+              ) : null}
               <Descriptions.Item label="记忆档案">
                 <Link to={`/memories/${deviceId}`}>查看版本时间线 →</Link>
               </Descriptions.Item>

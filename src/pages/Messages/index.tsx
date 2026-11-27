@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Alert,
   Button,
@@ -17,12 +17,16 @@ import {
   useMessageModes,
   useMessages,
 } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { useAllTestDevices } from '../../api/testDevices'
 import type { MessagesQuery } from '../../api/analytics'
 import type { MessageSort } from '../../types/analytics'
+import { isSuperAdmin } from '../../components/access/role'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import PageHeader from '../../components/PageHeader'
 import RefreshButton from '../../components/RefreshButton'
+import TestWhitelistTag from '../../components/TestWhitelistTag'
 import { fmt } from '../../utils/date-range'
 import { readParam, useUrlQuery } from '../../utils/url-state'
 import MessageDetailDrawer from './MessageDetailDrawer'
@@ -73,6 +77,19 @@ export default function Messages() {
       : undefined,
   )
   const interruption = interruptionQuery.data ?? null
+
+  // 白名单备注只对超管下发（/analytics/test-devices 由 SuperAdminGuard 把守）；
+  // 非超管连请求都不发，与设备舰队「testWhitelist=null 不显示」的结果一致。
+  const metaQuery = useAnalyticsMeta()
+  const superadmin = isSuperAdmin(metaQuery.data)
+  const whitelistQuery = useAllTestDevices(superadmin)
+  const whitelistNotes = useMemo(() => {
+    const notes = new Map<string, string | null>()
+    for (const item of whitelistQuery.data?.items ?? []) {
+      notes.set(item.device.deviceId, item.note)
+    }
+    return notes
+  }, [whitelistQuery.data])
 
   const messagesQueryParams: MessagesQuery = {
     ...(applied.range
@@ -271,8 +288,43 @@ export default function Messages() {
             {
               title: '设备',
               key: 'device',
-              width: 140,
-              render: (_, row) => row.device.deviceCode ?? row.device.deviceId,
+              width: 200,
+              render: (_, row) => {
+                const label = row.device.deviceCode ?? row.device.deviceId
+                // Map.get 的 undefined 与白名单里的 null 备注是两回事：
+                // 前者=不在册（不显示），后者=在册但没写备注（显示「白名单」）。
+                const note = whitelistNotes.get(row.device.deviceId)
+                return (
+                  <div
+                    data-testid="message-device-cell"
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      alignItems: 'center',
+                      gap: 4,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      title={label}
+                      style={{
+                        flexGrow: 0,
+                        flexShrink: 1,
+                        flexBasis: 'auto',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {label}
+                    </span>
+                    {note !== undefined ? (
+                      <TestWhitelistTag note={note} />
+                    ) : null}
+                  </div>
+                )
+              },
             },
             {
               title: '角色',

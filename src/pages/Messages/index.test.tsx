@@ -339,3 +339,134 @@ describe('消息明细页 · URL 即筛选状态', () => {
     expect(search()).toContain('deviceId=dev-9')
   })
 })
+
+/**
+ * 设备列的白名单备注。
+ *
+ * 白名单只对超管可见（/analytics/test-devices 由 SuperAdminGuard 把守），
+ * 与设备舰队同一份数据、同一套视觉：在册设备在设备标识后面跟一个金色 Tag，
+ * 有备注显示备注，备注为空回落「白名单」。普通 admin 既拿不到数据，也不该发这个请求。
+ */
+describe('消息明细页 · 设备列白名单备注', () => {
+  const SUPERADMIN_META = {
+    nodeEnv: 'staging',
+    promptWriteEnabled: false,
+    publishConfirmCode: 'PUBLISH',
+    admin: { username: 'root', displayName: 'Root', role: 'superadmin' },
+  }
+  const ADMIN_META = {
+    ...SUPERADMIN_META,
+    admin: { username: 'ops', displayName: 'Ops', role: 'admin' },
+  }
+
+  function whitelistItem(deviceId: string, note: string | null) {
+    return {
+      id: `wl-${deviceId}`,
+      active: true,
+      note,
+      addedBy: 'root',
+      addedAt: '2026-11-22T10:00:00.000Z',
+      addedReason: '需要验证新一集',
+      revokedBy: null,
+      revokedAt: null,
+      revokeReason: null,
+      device: {
+        id: `uuid-${deviceId}`,
+        deviceId,
+        deviceCode: null,
+        macAddress: null,
+        characterKey: 'elly',
+        firmwareVersion: '1.2.3',
+      },
+    }
+  }
+
+  function mockWhitelistScenario(meta: unknown) {
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/meta') return Promise.resolve({ data: meta })
+      if (url === '/analytics/test-devices') {
+        return Promise.resolve({
+          data: {
+            enabled: { adventure: true },
+            items: [
+              whitelistItem('dev-1', '3 号样机-熊枫'),
+              whitelistItem('dev-2', null),
+              whitelistItem('dev-3', '   '),
+            ],
+            total: 3,
+          },
+        })
+      }
+      if (url === '/analytics/messages/modes') {
+        return Promise.resolve({ data: MODES_RESPONSE })
+      }
+      if (url === '/analytics/messages/interruption-rate') {
+        return Promise.resolve({ data: INTERRUPTION_RESPONSE })
+      }
+      if (url === '/analytics/messages') {
+        return Promise.resolve({
+          data: makeList([
+            makeMessage({ id: 'm-1', content: '第一条', mode: 'free_story' }),
+            makeMessage({
+              id: 'm-2',
+              content: '第二条',
+              mode: 'free_story',
+              device: { deviceId: 'dev-2', deviceCode: 'D002', characterKey: 'elly' },
+            }),
+            makeMessage({
+              id: 'm-3',
+              content: '第三条',
+              mode: 'free_story',
+              device: { deviceId: 'dev-3', deviceCode: 'D003', characterKey: 'elly' },
+            }),
+          ]),
+        })
+      }
+      return Promise.resolve({ data: null })
+    })
+  }
+
+  beforeEach(() => {
+    mockGet.mockReset()
+  })
+
+  it('超管视角：有备注显示金色备注 Tag，空备注回落「白名单」', async () => {
+    mockWhitelistScenario(SUPERADMIN_META)
+    renderPage()
+
+    await screen.findByText('第一条')
+    await screen.findByText('3 号样机-熊枫')
+
+    const tag = screen.getByText('3 号样机-熊枫')
+    expect(tag.className).toContain('ant-tag')
+    expect(tag.className).toContain('ant-tag-gold')
+    // dev-2（null）与 dev-3（全空白）都回落「白名单」
+    expect(screen.getAllByText('白名单')).toHaveLength(2)
+    expect(callsTo('/analytics/test-devices').length).toBeGreaterThan(0)
+  })
+
+  it('设备标识与备注 Tag 同一行不换行，被压缩的是设备标识', async () => {
+    mockWhitelistScenario(SUPERADMIN_META)
+    renderPage()
+
+    const tag = await screen.findByText('3 号样机-熊枫')
+    const cell = screen.getAllByTestId('message-device-cell')[0]
+
+    expect(cell.style.flexWrap).toBe('nowrap')
+    expect(cell.style.gap).toBe('4px')
+    expect(cell.contains(tag)).toBe(true)
+    expect(tag.style.flexShrink).toBe('0')
+    expect(tag.style.maxWidth).toBe('96px')
+  })
+
+  it('普通 admin：不发白名单请求，也不显示任何金色 Tag', async () => {
+    mockWhitelistScenario(ADMIN_META)
+    renderPage()
+
+    await screen.findByText('第一条')
+
+    expect(callsTo('/analytics/test-devices')).toHaveLength(0)
+    expect(screen.queryByText('3 号样机-熊枫')).toBeNull()
+    expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
+  })
+})

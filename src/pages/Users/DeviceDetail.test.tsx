@@ -119,7 +119,26 @@ function makeFleetDetail() {
       charging: false,
       lastSeenAt: 1700000000000,
     },
-    boundUsers: [],
+    boundUsers: [
+      {
+        userId: 'user-1',
+        isOwner: true,
+        boundAt: '2026-01-02T00:00:00.000Z',
+        phoneMaker: 'Apple',
+      },
+      {
+        userId: 'user-2',
+        isOwner: false,
+        boundAt: '2026-01-03T00:00:00.000Z',
+        phoneMaker: '华为',
+      },
+      {
+        userId: 'user-3',
+        isOwner: false,
+        boundAt: '2026-01-04T00:00:00.000Z',
+        phoneMaker: null,
+      },
+    ],
     presence: [
       { date: '2026-11-10', reportCount: 3, firstSeenAt: '2026-11-10T08:00:00Z', lastSeenAt: '2026-11-10T20:00:00Z' },
       { date: '2026-11-11', reportCount: 5, firstSeenAt: '2026-11-11T08:00:00Z', lastSeenAt: '2026-11-11T20:00:00Z' },
@@ -149,8 +168,20 @@ function makeMessageDetail(msgId: string) {
   }
 }
 
-function stubAllApi(fleet404 = false) {
+function stubAllApi(
+  fleet404 = false,
+  opts: { meta?: unknown; items?: unknown[]; fleetDetail?: unknown } = {},
+) {
   mockGet.mockImplementation((url: string) => {
+    if (url === '/analytics/meta') {
+      return Promise.resolve({ data: opts.meta ?? null })
+    }
+    if (url === '/analytics/test-devices') {
+      const items = opts.items ?? []
+      return Promise.resolve({
+        data: { enabled: { adventure: true }, items, total: items.length },
+      })
+    }
     if (url === '/analytics/parent-reports') {
       return Promise.resolve({ data: makeParentReportResponse() })
     }
@@ -167,7 +198,7 @@ function stubAllApi(fleet404 = false) {
       if (fleet404) {
         return Promise.reject(Object.assign(new Error('Not Found'), { status: 404 }))
       }
-      return Promise.resolve({ data: makeFleetDetail() })
+      return Promise.resolve({ data: opts.fleetDetail ?? makeFleetDetail() })
     }
     if (url.startsWith('/analytics/messages/')) {
       const id = url.split('/').pop() as string
@@ -380,5 +411,161 @@ describe('Users/DeviceDetail · 消息详情抽屉', () => {
       // 应跳转到 /messages 页面
       expect(screen.getByText('Messages Page')).toBeTruthy()
     })
+  })
+})
+
+/**
+ * 白名单样机备注 + 绑定账号的手机品牌。
+ *
+ * 备注数据源是超管专属的 /analytics/test-devices（与设备舰队列表同一份在册名单），
+ * 非超管不发请求、不展示；备注为空时与舰队口径一致回落「白名单」。
+ * 手机品牌取设备详情 boundUsers[].phoneMaker（服务端归一化厂商），多账号去重展示。
+ */
+describe('Users/DeviceDetail · 白名单样机', () => {
+  const SUPERADMIN_META = {
+    nodeEnv: 'staging',
+    promptWriteEnabled: false,
+    publishConfirmCode: 'PUBLISH',
+    admin: { username: 'root', displayName: 'Root', role: 'superadmin' },
+  }
+  const ADMIN_META = {
+    ...SUPERADMIN_META,
+    admin: { username: 'ops', displayName: 'Ops', role: 'admin' },
+  }
+
+  function whitelistItem(
+    deviceId: string,
+    note: string | null,
+    characterKey = 'elly',
+  ) {
+    return {
+      id: `wl-${deviceId}`,
+      active: true,
+      note,
+      addedBy: 'root',
+      addedAt: '2026-11-22T10:00:00.000Z',
+      addedReason: '需要验证新一集',
+      revokedBy: null,
+      revokedAt: null,
+      revokeReason: null,
+      device: {
+        id: `uuid-${deviceId}`,
+        deviceId,
+        deviceCode: 'D-360',
+        macAddress: null,
+        characterKey,
+        firmwareVersion: '1.0.0',
+      },
+    }
+  }
+
+  function stubWhitelist(opts: {
+    meta: unknown
+    items: unknown[]
+    fleetDetail?: unknown
+  }) {
+    stubAllApi(false, opts)
+  }
+
+  beforeEach(() => {
+    mockGet.mockReset()
+  })
+
+  it('超管视角：在册样机显示备注 Tag 与手机品牌', async () => {
+    stubWhitelist({
+      meta: SUPERADMIN_META,
+      items: [whitelistItem('dev-360', '3 号样机-熊枫')],
+    })
+    renderPage()
+
+    await screen.findByText('用户详情')
+    const tag = await screen.findByText('3 号样机-熊枫')
+    expect(tag.className).toContain('ant-tag-gold')
+    expect(screen.getByText('Apple、华为')).toBeTruthy()
+
+    const calls = mockGet.mock.calls.filter(
+      (call: unknown[]) => call[0] === '/analytics/test-devices',
+    )
+    expect(calls.length).toBeGreaterThan(0)
+  })
+
+  it('备注为空时回落「白名单」', async () => {
+    stubWhitelist({
+      meta: SUPERADMIN_META,
+      items: [whitelistItem('dev-360', null)],
+    })
+    renderPage()
+
+    await screen.findByText('用户详情')
+    expect(await screen.findByText('白名单')).toBeTruthy()
+  })
+
+  it('不在白名单的设备不展示备注', async () => {
+    stubWhitelist({
+      meta: SUPERADMIN_META,
+      items: [whitelistItem('dev-other', '别的样机')],
+    })
+    renderPage()
+
+    await screen.findByText('用户详情')
+    await waitFor(() =>
+      expect(
+        mockGet.mock.calls.some(
+          (call: unknown[]) => call[0] === '/analytics/test-devices',
+        ),
+      ).toBe(true),
+    )
+    expect(screen.queryByText('别的样机')).toBeNull()
+  })
+
+  it('绑定账号都没有上报手机品牌时显示 —', async () => {
+    const detail = makeFleetDetail()
+    detail.boundUsers = [
+      {
+        userId: 'user-1',
+        isOwner: true,
+        boundAt: '2026-01-02T00:00:00.000Z',
+        phoneMaker: null,
+      },
+    ]
+    stubWhitelist({
+      meta: SUPERADMIN_META,
+      items: [whitelistItem('dev-360', '3 号样机-熊枫')],
+      fleetDetail: detail,
+    })
+    renderPage()
+
+    await screen.findByText('用户详情')
+    expect(await screen.findByText('3 号样机-熊枫')).toBeTruthy()
+    expect(screen.getByText('手机品牌')).toBeTruthy()
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('URL 设备 ID 大小写与库内不一致时仍能匹配白名单', async () => {
+    stubWhitelist({
+      meta: SUPERADMIN_META,
+      items: [whitelistItem('dev-360', '3 号样机-熊枫')],
+    })
+    renderPage('/users/DEV-360')
+
+    await screen.findByText('用户详情')
+    expect(await screen.findByText('3 号样机-熊枫')).toBeTruthy()
+  })
+
+  it('普通 admin：不发白名单请求，也不展示备注', async () => {
+    stubWhitelist({
+      meta: ADMIN_META,
+      items: [whitelistItem('dev-360', '3 号样机-熊枫')],
+    })
+    renderPage()
+
+    await screen.findByText('用户详情')
+    await waitFor(() => expect(screen.getByText('D-360')).toBeTruthy())
+    expect(
+      mockGet.mock.calls.some(
+        (call: unknown[]) => call[0] === '/analytics/test-devices',
+      ),
+    ).toBe(false)
+    expect(screen.queryByText('3 号样机-熊枫')).toBeNull()
   })
 })

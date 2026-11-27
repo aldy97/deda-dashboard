@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import type { FleetDeviceItem } from '../../types/analytics'
 import { useFleetDevices } from '../../api/queries'
 import InfoTip from '../../components/InfoTip'
+import TestWhitelistTag from '../../components/TestWhitelistTag'
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
@@ -54,7 +55,6 @@ export default function DeviceTable({ onOpenDevice }: Props) {
       width: 200,
       ellipsis: true,
       render: (v: string, r: FleetDeviceItem) => {
-        const note = r.testWhitelist?.note?.trim()
         return (
           <div
             data-testid="device-id-cell"
@@ -83,20 +83,7 @@ export default function DeviceTable({ onOpenDevice }: Props) {
               {v}
             </Link>
             {r.testWhitelist ? (
-              <Tag
-                color="gold"
-                title={note || '白名单'}
-                style={{
-                  marginInlineEnd: 0,
-                  flexShrink: 0,
-                  maxWidth: 96,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {note || '白名单'}
-              </Tag>
+              <TestWhitelistTag note={r.testWhitelist.note} />
             ) : null}
           </div>
         )
