@@ -8,6 +8,7 @@ import {
   useFeatureAdoption,
   useHourlyHeatmap,
   useModeUsage,
+  useNetworkUsage,
 } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import AnalyticsDatePicker from '../../components/AnalyticsDatePicker'
@@ -19,6 +20,7 @@ import type { DayRange } from '../../utils/date-range'
 import { messagesModeLink, uniqueModes } from './mode-links'
 import SummaryCards from './SummaryCards'
 import ModeUsageChart from './ModeUsageChart'
+import NetworkUsageCard from './NetworkUsageCard'
 import HourlyHeatmap from './HourlyHeatmap'
 import DurationDistributionChart from './DurationDistributionChart'
 import FeatureAdoptionTable from './FeatureAdoptionTable'
@@ -40,14 +42,17 @@ export default function Engagement() {
   const summaryQuery = useEngagementSummary(rangeParams)
   const modeUsageQuery = useModeUsage(rangeParams)
   const heatmapQuery = useHourlyHeatmap(rangeParams)
+  const networkUsageQuery = useNetworkUsage(rangeParams)
   const summary = summaryQuery.data ?? null
   const modeUsage = modeUsageQuery.data ?? null
   const heatmap = heatmapQuery.data ?? null
+  const networkUsage = networkUsageQuery.data ?? null
   const rangeLoading =
     summaryQuery.isLoading || modeUsageQuery.isLoading || heatmapQuery.isLoading
   const rangeError = toErrorMessage(
     summaryQuery.error ?? modeUsageQuery.error ?? heatmapQuery.error,
   )
+  const networkError = toErrorMessage(networkUsageQuery.error)
 
   // ---- 单日口径（duration-distribution / feature-adoption）----
   const [date, setDate] = useState<Dayjs>(today())
@@ -140,6 +145,24 @@ export default function Engagement() {
               ))}
             </Space>
           )}
+        </Card>
+
+        <Card
+          title={`对话网络分布（${fmt(range[0])} ~ ${fmt(range[1])}）`}
+          style={{ marginTop: 16 }}
+        >
+          {networkError && (
+            <Alert
+              type="error"
+              showIcon
+              message="网络数据加载失败"
+              description={networkError}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+          <Spin spinning={networkUsageQuery.isLoading}>
+            {networkUsage && <NetworkUsageCard data={networkUsage} />}
+          </Spin>
         </Card>
 
         <Card

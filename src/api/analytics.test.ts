@@ -3,6 +3,8 @@ import { apiClient } from './client'
 import {
   deleteDeviceChildProfile,
   fetchDeviceChildProfile,
+  fetchNetworkUsage,
+  fetchPhoneBrands,
 } from './analytics'
 
 vi.mock('./client', () => ({
@@ -58,5 +60,33 @@ describe('fleet child-profile api', () => {
     const result = await deleteDeviceChildProfile('28c3619bee9b')
 
     expect(result.deleted).toBe(false)
+  })
+})
+
+describe('terminal analytics api', () => {
+  it('fetchNetworkUsage 打 network-usage 并透传日期区间', async () => {
+    const data = { totalTurns: 6, knownTurns: 4, unknownTurns: 2 }
+    mockGet.mockResolvedValueOnce({ data })
+
+    const result = await fetchNetworkUsage({
+      startDate: '2026-11-01',
+      endDate: '2026-11-30',
+    })
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/analytics/engagement/network-usage',
+      { params: { startDate: '2026-11-01', endDate: '2026-11-30' } },
+    )
+    expect(result).toBe(data)
+  })
+
+  it('fetchPhoneBrands 打 phone-brands', async () => {
+    const data = { totalUsers: 10, reportedUsers: 8, brands: [] }
+    mockGet.mockResolvedValueOnce({ data })
+
+    const result = await fetchPhoneBrands()
+
+    expect(mockGet).toHaveBeenCalledWith('/analytics/users/phone-brands')
+    expect(result).toBe(data)
   })
 })

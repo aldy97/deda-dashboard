@@ -39,9 +39,11 @@ import type {
   MessageModesResponse,
   MessageSort,
   ModeUsageResponse,
+  NetworkUsageResponse,
   OverviewResponse,
   OverviewTrendResponse,
   ParentReportListResponse,
+  PhoneBrandsResponse,
   QualityConversationResponse,
   ReportFeedbackListResponse,
   RetentionCohortsResponse,
@@ -230,6 +232,17 @@ export async function fetchModeUsage(params: {
   return resp.data as ModeUsageResponse
 }
 
+/** 对话网络分布（读服务端日聚合表，不依赖 messages） */
+export async function fetchNetworkUsage(params: {
+  startDate: string
+  endDate: string
+}): Promise<NetworkUsageResponse> {
+  const resp = await apiClient.get('/analytics/engagement/network-usage', {
+    params,
+  })
+  return resp.data as NetworkUsageResponse
+}
+
 export async function fetchFeatureAdoption(
   date?: string,
 ): Promise<FeatureAdoptionResponse> {
@@ -253,6 +266,12 @@ export async function fetchUsersSummary(params?: {
 export async function fetchUsersDemographics(): Promise<UsersDemographicsResponse> {
   const resp = await apiClient.get('/analytics/users/demographics')
   return resp.data as UsersDemographicsResponse
+}
+
+/** 家长手机厂商分布（全量注册用户当前快照，只出聚合计数） */
+export async function fetchPhoneBrands(): Promise<PhoneBrandsResponse> {
+  const resp = await apiClient.get('/analytics/users/phone-brands')
+  return resp.data as PhoneBrandsResponse
 }
 
 // ---- 内容与质量 ----

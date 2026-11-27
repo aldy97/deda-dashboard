@@ -240,6 +240,46 @@ export interface ModeUsageResponse {
   }>
 }
 
+/**
+ * 对话网络分布（GET /analytics/engagement/network-usage）。
+ * 数据源是服务端 conversation_network_daily，删除 messages 不影响结果。
+ */
+export interface NetworkUsageResponse {
+  startDate: string
+  endDate: string
+  totalTurns: number
+  knownTurns: number
+  unknownTurns: number
+  coverage: number | null
+  deviceCount: number
+  firstTrackedDate: string | null
+  wifi: {
+    turns: number
+    devices: number
+    shareOfKnown: number | null
+    shareOfTotal: number | null
+  }
+  fourG: {
+    turns: number
+    devices: number
+    shareOfKnown: number | null
+    shareOfTotal: number | null
+  }
+  unknown: {
+    turns: number
+    devices: number
+    shareOfTotal: number | null
+  }
+  series: Array<{
+    date: string
+    wifiTurns: number
+    fourGTurns: number
+    unknownTurns: number
+    wifiShareOfKnown: number | null
+    fourGShareOfKnown: number | null
+  }>
+}
+
 export interface FeatureAdoptionItem {
   key: 'sleep_mode' | 'adventure' | 'habit_plan' | 'english'
   label: string
@@ -274,6 +314,26 @@ export interface UsersDemographicsResponse {
   genderSplit: { male: number; female: number; unset: number }
   characterKeySplit: Array<{ characterKey: string; devices: number }>
   bindingsPerDevice: Array<{ count: 1 | 2 | '3+'; devices: number }>
+}
+
+/**
+ * 家长手机厂商分布（GET /analytics/users/phone-brands）。
+ * 全量注册用户当前快照；makerKey 与 dashboard 的 logo 映射一一对应。
+ */
+export interface PhoneBrandsResponse {
+  totalUsers: number
+  reportedUsers: number
+  unknownUsers: number
+  coverage: number | null
+  firstReportedAt: string | null
+  brands: Array<{
+    makerKey: string
+    makerLabel: string
+    users: number
+    shareOfReported: number | null
+    shareOfTotal: number | null
+    rawBrands: Array<{ brand: string; users: number }>
+  }>
 }
 
 // ---- 内容与质量 ----
@@ -430,6 +490,8 @@ export interface MessageAdventureEpisode {
 /** 整行详情，rawPayload 原样返回 */
 export interface MessageDetailResponse extends MessageListItem {
   rawPayload: unknown
+  /** 对话发起时设备网络快照（2026-11-27 起）；旧服务端没有该字段时为 undefined */
+  networkMode?: 'wifi' | '4g' | null
   /** 仅 mode=adventure_story 时可能非空；旧服务端没有该字段时为 undefined */
   adventureEpisode?: MessageAdventureEpisode | null
 }

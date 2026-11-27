@@ -41,6 +41,14 @@ import {
 
 const formatTime = (iso: string) => dayjs(iso).format('YYYY-MM-DD HH:mm:ss')
 
+/** 对话网络快照：wifi / 4g / null=未知；旧服务端无该字段时显示 — */
+function NetworkTag({ mode }: { mode: 'wifi' | '4g' | null | undefined }) {
+  if (mode === 'wifi') return <Tag color="blue">WiFi</Tag>
+  if (mode === '4g') return <Tag color="orange">4G</Tag>
+  if (mode === null) return <Tag>未知</Tag>
+  return <>—</>
+}
+
 /**
  * 消息详情抽屉：整行字段 + rawPayload 原样 JSON（对标 Prisma Studio 行展开）。
  * 「查看同一轮问答」把 turnId 回填给列表作精确过滤。
@@ -190,6 +198,11 @@ export default function MessageDetailDrawer({
                 ) : (
                   modeLabel(row.mode)
                 ),
+              },
+              {
+                key: 'networkMode',
+                label: '网络',
+                children: <NetworkTag mode={detail?.networkMode} />,
               },
               ...(row.mode === 'adventure_story'
                 ? [

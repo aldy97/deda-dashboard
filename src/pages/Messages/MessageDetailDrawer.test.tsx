@@ -405,3 +405,49 @@ describe('MessageDetailDrawer 提示词入口', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('MessageDetailDrawer 网络字段', () => {
+  it.each([
+    ['wifi', 'WiFi'],
+    ['4g', '4G'],
+  ] as const)('networkMode=%s 时展示 %s', (networkMode, label) => {
+    mockDetail.mockReturnValue({
+      data: { ...makeMessage(), rawPayload: null, networkMode },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage() })
+
+    expect(screen.getByText('网络')).toBeInTheDocument()
+    expect(screen.getByText(label)).toBeInTheDocument()
+  })
+
+  it('networkMode=null 时展示未知', () => {
+    mockDetail.mockReturnValue({
+      data: { ...makeMessage(), rawPayload: null, networkMode: null },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage() })
+
+    expect(screen.getByText('网络')).toBeInTheDocument()
+    expect(screen.getByText('未知')).toBeInTheDocument()
+  })
+
+  it('旧服务端没有 networkMode 时展示 —，不误报 0/未知', () => {
+    mockDetail.mockReturnValue({
+      data: { ...makeMessage(), rawPayload: null },
+      isLoading: false,
+      error: null,
+    } as never)
+
+    renderDrawer({ message: makeMessage() })
+
+    expect(screen.getByText('网络')).toBeInTheDocument()
+    expect(screen.queryByText('WiFi')).not.toBeInTheDocument()
+    expect(screen.queryByText('4G')).not.toBeInTheDocument()
+    expect(screen.queryByText('未知')).not.toBeInTheDocument()
+  })
+})
