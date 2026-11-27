@@ -155,7 +155,7 @@ describe('MessageDetailDrawer 本轮安全判定', () => {
     expect(screen.getByText('L2')).toBeInTheDocument()
     expect(screen.getByText('暴力')).toBeInTheDocument()
     expect(screen.getByText('已拦截')).toBeInTheDocument()
-    expect(screen.getByText('L2 小模型判定')).toBeInTheDocument()
+    expect(screen.getByText('L2 模型判定')).toBeInTheDocument()
     expect(screen.getByText('代码固定话术')).toBeInTheDocument()
     expect(screen.getByText('历史回补')).toBeInTheDocument()
   })
@@ -188,7 +188,7 @@ describe('MessageDetailDrawer 本轮安全判定', () => {
     expect(screen.getByText('推断回补')).toBeInTheDocument()
     expect(screen.getByText('模型回抄安全句')).toBeInTheDocument()
     expect(screen.getByText('未能判定')).toBeInTheDocument()
-    expect(screen.queryByText('L2 小模型判定')).not.toBeInTheDocument()
+    expect(screen.queryByText('L2 模型判定')).not.toBeInTheDocument()
   })
 
   it('没有快照时明确显示未记录，不能显示成安全', async () => {

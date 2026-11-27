@@ -113,6 +113,16 @@ describe('LlmMonitor 四个 tab', () => {
     expect(screen.getByText(/首包时间仅流式场景有值/)).toBeInTheDocument()
   })
 
+  it('页头说明统一 qwen-flash，并标注 filler 已下线', () => {
+    renderAt()
+
+    expect(screen.getByText(/统一 qwen-flash/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/filler 首响过渡语已于 2026-11 下线/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/deepseek-flash/)).not.toBeInTheDocument()
+  })
+
   it('标题下给出四个 tab 的分工说明，避免运营走错页', () => {
     renderAt()
 

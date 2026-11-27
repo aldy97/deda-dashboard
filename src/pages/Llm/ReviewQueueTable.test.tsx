@@ -110,7 +110,7 @@ describe('ReviewQueueTable 行内容', () => {
     expect(screen.getByText('暴力')).toBeInTheDocument()
     expect(screen.getByText('情绪伤害')).toBeInTheDocument()
     expect(screen.getByText('未走到路由')).toBeInTheDocument()
-    expect(screen.getByText('小模型判定')).toBeInTheDocument()
+    expect(screen.getByText('模型判定')).toBeInTheDocument()
 
     const link = screen.getByRole('link', { name: /turn-aaa/ })
     // 应用路由带 basename='/dashboard'，测试用 MemoryRouter 不带，故只断言路径尾段

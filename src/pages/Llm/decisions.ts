@@ -18,7 +18,7 @@ export interface SafetySourceMeta {
   color: string
   /** 该来源的结果是「放行」（未阻断本轮对话） */
   passes: boolean
-  /** 静默降级：不报错、走兜底判定，升高说明小模型在退化或不可用 */
+  /** 静默降级：不报错、走兜底判定，升高说明分类模型在退化或不可用 */
   silentDegrade: boolean
   /** 已知盲区：编排上根本没走到 L2 */
   blindSpot: boolean
@@ -38,16 +38,16 @@ export const SAFETY_SOURCE_META: Record<string, SafetySourceMeta> = {
     silentDegrade: false,
     blindSpot: false,
     description:
-      '关键词/正则闸直接拦下，未调小模型。量突增先看 safetyMatched 是否误伤孩子的气话。',
+      '关键词/正则闸直接拦下，未调分类模型。量突增先看 safetyMatched 是否误伤孩子的气话。',
   },
   l2_model: {
-    label: 'L2 小模型判定',
+    label: 'L2 模型判定',
     color: 'blue',
     passes: false,
     silentDegrade: false,
     blindSpot: false,
     description:
-      '小模型给出了契约内的合法标签（含 safe），是唯一「真审过」的来源。是否放行取决于类别。',
+      '分类模型给出了契约内的合法标签（含 safe），是唯一「真审过」的来源。是否放行取决于类别。',
   },
   l2_invalid_label: {
     label: 'L2 非法标签放行',
@@ -56,7 +56,7 @@ export const SAFETY_SOURCE_META: Record<string, SafetySourceMeta> = {
     silentDegrade: true,
     blindSpot: false,
     description:
-      '小模型有响应，但标签不在契约内（含把 unsafe/not safe 判成放行的反向陷阱）→ 放行。' +
+      '分类模型有响应，但标签不在契约内（含把 unsafe/not safe 判成放行的反向陷阱）→ 放行。' +
       '静默降级，升高=prompt 退化或模型漂移。',
   },
   l2_fail_open: {
@@ -66,7 +66,7 @@ export const SAFETY_SOURCE_META: Record<string, SafetySourceMeta> = {
     silentDegrade: true,
     blindSpot: false,
     description:
-      '小模型调用超时/异常 → 放行，仅靠 L3 大模型 system prompt 兜底。' +
+      '分类模型调用超时/异常 → 放行，仅靠 L3 大模型 system prompt 兜底。' +
       '静默降级，升高=模型不可用，可与「性能监控」tab 的 safety_l2 成功率按 turnId 对照。',
   },
   not_evaluated: {
@@ -112,24 +112,24 @@ export interface IntentSourceMeta {
 /** 十二项：9 条决策出口 + 3 条编排层来源（与后端 TURN_INTENT_SOURCES 对齐） */
 export const INTENT_SOURCE_META: Record<string, IntentSourceMeta> = {
   model: {
-    label: '小模型判定',
+    label: '模型判定',
     color: 'green',
     notRouted: false,
-    description: '小模型输出了契约内的合法意图标签，是唯一「模型真判过」的来源。',
+    description: '分类模型输出了契约内的合法意图标签，是唯一「模型真判过」的来源。',
   },
   fallback_invalid_label: {
     label: '兜底·标签非法',
     color: 'volcano',
     notRouted: false,
     description:
-      '小模型有响应但标签非法 → 关键词兜底。升高=prompt 退化，与 fallbackRate 一起告警。',
+      '分类模型有响应但标签非法 → 关键词兜底。升高=prompt 退化，与 fallbackRate 一起告警。',
   },
   fallback_error: {
     label: '兜底·调用异常',
     color: 'orange',
     notRouted: false,
     description:
-      '小模型超时/异常 → 关键词兜底。可按 turnId 与 llm_usage_logs.failureReason 拼接定位原因。',
+      '分类模型超时/异常 → 关键词兜底。可按 turnId 与 llm_usage_logs.failureReason 拼接定位原因。',
   },
   pre_filter_skip: {
     label: '正则未命中·直接闲聊',
@@ -287,7 +287,7 @@ export const intentSourceLabel = (source: string | null): string => {
   return INTENT_SOURCE_META[source]?.label ?? source
 }
 
-/** 静默降级：小模型该出结论却没出（非法标签 / 调用异常），不报错只放行 */
+/** 静默降级：分类模型该出结论却没出（非法标签 / 调用异常），不报错只放行 */
 export const isSilentDegradeSource = (source: string | null): boolean =>
   source !== null && (SAFETY_SOURCE_META[source]?.silentDegrade ?? false)
 
@@ -396,10 +396,10 @@ export function buildIntentStages(
     },
     {
       key: 'model',
-      label: '小模型给出结论',
+      label: '模型给出结论',
       count: model,
       rate: rate(model),
-      description: 'source=model。这一层跌了说明小模型在失效，是最该盯的一条线。',
+      description: 'source=model。这一层跌了说明分类模型在失效，是最该盯的一条线。',
     },
     {
       key: 'rule',
@@ -408,7 +408,7 @@ export function buildIntentStages(
       rate: rate(rule),
       description:
         '会话续接、会话粘滞、显式退出、强制哄睡（forceSleep）、哄睡时段门禁降级——最终意图由规则/会话状态给出。' +
-        'sleep_window_closed 本轮调过模型，只是结论被规则否掉，故不计入「小模型给出结论」。' +
+        'sleep_window_closed 本轮调过模型，只是结论被规则否掉，故不计入「分类模型给出结论」。' +
         '正则未命中直接闲聊（pre_filter_skip）已停用，只有历史数据会落进这一层。',
     },
     {

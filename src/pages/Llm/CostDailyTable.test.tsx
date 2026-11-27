@@ -125,7 +125,7 @@ describe('CostDailyTable 对账条', () => {
       />,
     )
 
-    expect(screen.getByText(/小模型估算 ¥12\.50 vs 账单真值/)).toBeInTheDocument()
+    expect(screen.getByText(/qwen-flash 估算 ¥12\.50 vs 账单真值/)).toBeInTheDocument()
     expect(screen.getByText('账单真值为 0，无法计算偏差')).toBeInTheDocument()
   })
 
@@ -293,7 +293,7 @@ describe('CostDailyTable 表格内容', () => {
       />,
     )
 
-    for (const title of ['小模型 ¥', '主模型 ¥', '其他 ¥', '合计 ¥', '日期']) {
+    for (const title of ['qwen-flash ¥', '历史主模型 ¥', '其他 ¥', '合计 ¥', '日期']) {
       const header = screen.getAllByText(title)[0].closest('th')
       expect(header).not.toBeNull()
       // 升序与降序各点一次：排序器两个比较参数都会走到

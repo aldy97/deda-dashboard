@@ -180,7 +180,7 @@ describe('IntentTab 决策路径', () => {
     expect(counts.routed).toBe(counts.model + counts.rule + counts.fallback)
 
     expect(screen.getByText('进入意图路由')).toBeInTheDocument()
-    expect(screen.getByText('小模型给出结论')).toBeInTheDocument()
+    expect(screen.getByText('模型给出结论')).toBeInTheDocument()
     expect(screen.getByText('规则/会话接管')).toBeInTheDocument()
     expect(screen.getByText('关键词兜底')).toBeInTheDocument()
     expect(screen.getByTestId('intent-stage-rate-routed').textContent).toBe('83.00%')
@@ -195,7 +195,7 @@ describe('IntentTab 决策路径', () => {
       '正则未命中直接闲聊',
     )
     expect(screen.getByTestId('intent-stage-desc-model').textContent).toContain(
-      '小模型在失效',
+      '分类模型在失效',
     )
   })
 
@@ -228,7 +228,7 @@ describe('IntentTab 分布与交叉表', () => {
 
     const axis = JSON.stringify(optionOf(1).xAxis)
     expect(axis).toContain('正则未命中·直接闲聊')
-    expect(axis).toContain('小模型判定')
+    expect(axis).toContain('模型判定')
     expect(axis).toContain('未路由·被安全拦截')
     expect(axis).not.toContain('pre_filter_skip')
   })
@@ -254,7 +254,7 @@ describe('IntentTab 分布与交叉表', () => {
 
     const option = optionOf(2)
     const names = (option.series as Array<{ name: string }>).map((s) => s.name)
-    expect(names).toEqual(['判定轮次', '小模型判定', '关键词兜底'])
+    expect(names).toEqual(['判定轮次', '模型判定', '关键词兜底'])
     const fallback = (
       option.series as Array<{ name: string; data: number[] }>
     ).find((s) => s.name === '关键词兜底')

@@ -60,6 +60,7 @@ export default function CostTab() {
         }}
       >
         <Typography.Text type="secondary">
+          2026-11 起统一 qwen-flash：当期费用全部归 DashScope；「主模型」仅历史区间（DeepSeek 时期）有值。
           账单延迟约 24h 出账，费用数据截至昨日；今日数字必然偏低，故本页禁选今日
         </Typography.Text>
         <AnalyticsRangePicker

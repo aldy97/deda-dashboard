@@ -19,9 +19,9 @@ export const dayTotalPartial = (s: LlmCostSeriesItem): boolean =>
 export function dayTotalMissing(s: LlmCostSeriesItem): string | null {
   if (!dayTotalPartial(s)) return null
   const missing: string[] = []
-  if (s.smallCny === null) missing.push('小模型（当日账单未出）')
+  if (s.smallCny === null) missing.push('qwen-flash（当日账单未出）')
   if (s.mainCny === null && s.mainTokens > 0) {
-    missing.push('主模型（有 token 但未计价）')
+    missing.push('历史主模型（有 token 但未计价）')
   }
   return `合计不含${missing.join('、')}`
 }

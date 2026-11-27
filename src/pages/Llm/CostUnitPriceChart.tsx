@@ -15,9 +15,9 @@ interface ReferenceLines {
 
 /**
  * 参考线全部取自后端 pricing.lines，前端不写任何价格或档位字面量。
- * - 小模型：qwen-flash 按上下文长度分档，取**最低档**（后端按 QWEN_FLASH_TIERS 升序 push，
+ * - qwen-flash：按上下文长度分档，取**最低档**（后端按 QWEN_FLASH_TIERS 升序 push，
  *   数组第一条即最低档；实际流量几乎全落此档）。档位标签由数据推导，后端改格式不会静默失效。
- * - 主模型：取空闲时段价（日单价是峰谷混合值，参考线只作量级锚点；label 里已带「空闲」字样）。
+ * - 历史主模型：取空闲时段价（日单价是峰谷混合值，参考线只作量级锚点；label 里已带「空闲」字样）。
  */
 function pickReferenceLines(lines: LlmOfficialPriceLine[]): ReferenceLines {
   const qwen = lines.filter((l) => l.model === SMALL_MODEL && l.band === null)
@@ -48,16 +48,18 @@ function priceLineMark(
     symbol: 'none',
     lineStyle: { color, type: 'dashed' },
     label: {
-      formatter: `${line.label} ¥${line.cnyPerMillionTokens.toFixed(4)}`,
+      formatter: `${line.label
+        .replace('小模型', 'qwen-flash')
+        .replace('主模型', '历史主模型')} ¥${line.cnyPerMillionTokens.toFixed(4)}`,
       position: 'end',
     },
   }
 }
 
 /**
- * 图C：小模型与主模型的每日百万 token 单价折线 + 定价参考线。
+ * 图C：qwen-flash 与历史主模型的每日百万 token 单价折线 + 定价参考线。
  * 把「量」的影响除掉，一眼看出 prompt 变胖、缓存失效、峰谷占比漂移；
- * 小模型这条还能直接验证账单解析对不对。
+ * qwen-flash 这条还能直接验证账单解析对不对。
  */
 export default function CostUnitPriceChart({ data }: { data: LlmCostResponse }) {
   const { series, pricing } = data
@@ -92,7 +94,7 @@ export default function CostUnitPriceChart({ data }: { data: LlmCostResponse }) 
         return [`${point.date}`, ...lines].join('<br/>')
       },
     },
-    legend: { data: ['小模型单价', '主模型单价'], bottom: 0 },
+    legend: { data: ['qwen-flash 单价', '历史主模型单价'], bottom: 0 },
     grid: { left: 56, right: 24, top: 24, bottom: 56 },
     xAxis: { type: 'category', data: dates },
     yAxis: {
@@ -102,7 +104,7 @@ export default function CostUnitPriceChart({ data }: { data: LlmCostResponse }) 
     },
     series: [
       {
-        name: '小模型单价',
+        name: 'qwen-flash 单价',
         type: 'line',
         smooth: true,
         connectNulls: false,
@@ -113,7 +115,7 @@ export default function CostUnitPriceChart({ data }: { data: LlmCostResponse }) 
           : {}),
       },
       {
-        name: '主模型单价',
+        name: '历史主模型单价',
         type: 'line',
         smooth: true,
         connectNulls: false,
@@ -127,7 +129,7 @@ export default function CostUnitPriceChart({ data }: { data: LlmCostResponse }) 
     <div>
       <div style={{ marginBottom: 8 }}>
         <InfoTip
-          title={`单价 = 日费用 / 日百万 token 数（小模型分母为全部 token，主模型分母为已计价 token）；null 表示当天无对应消费。虚线为官网定价参考线，取自 pricing.version=${pricing.version} 的 pricing.lines，前端不硬编码价格。`}
+          title={`单价 = 日费用 / 日百万 token 数（qwen-flash 分母为全部 token，历史主模型分母为已计价 token）；null 表示当天无对应消费。虚线为官网定价参考线，取自 pricing.version=${pricing.version} 的 pricing.lines，前端不硬编码价格。`}
         />
       </div>
       <ReactECharts option={option} style={{ height: 320 }} notMerge />

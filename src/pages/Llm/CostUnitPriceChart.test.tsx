@@ -166,14 +166,14 @@ describe('CostUnitPriceChart 空态', () => {
 })
 
 describe('CostUnitPriceChart 参考线', () => {
-  it('小模型只取最低档的输入未命中价与输出价，主模型只取空闲时段', () => {
+  it('qwen-flash 只取最低档的输入未命中价与输出价，历史主模型只取空闲时段', () => {
     render(<CostUnitPriceChart data={costResponse(priceLines)} />)
 
     const markLines = option().series[0].markLine!.data
     expect(markLines).toHaveLength(4)
     expect(markLines.map((m) => m.yAxis)).toEqual([0.3, 1.2, 0.5, 2])
-    expect(markLines[0].label.formatter).toBe('小模型输入（未命中） ¥0.3000')
-    expect(markLines[3].label.formatter).toBe('主模型输出（空闲） ¥2.0000')
+    expect(markLines[0].label.formatter).toBe('qwen-flash输入（未命中） ¥0.3000')
+    expect(markLines[3].label.formatter).toBe('历史主模型输出（空闲） ¥2.0000')
   })
 
   it('没有任何匹配的定价行时不加 markLine', () => {
@@ -189,7 +189,7 @@ describe('CostUnitPriceChart 参考线', () => {
     expect(option().series[0].markLine).toBeUndefined()
   })
 
-  it('qwen 行 tierLabel 为 null 时无法定档，不画小模型参考线', () => {
+  it('qwen 行 tierLabel 为 null 时无法定档，不画 qwen-flash 参考线', () => {
     render(
       <CostUnitPriceChart
         data={costResponse([line({ tierLabel: null })])}
@@ -218,7 +218,7 @@ describe('CostUnitPriceChart 参考线', () => {
     )
 
     const opt = option()
-    expect(opt.series.map((s) => s.name)).toEqual(['小模型单价', '主模型单价'])
+    expect(opt.series.map((s) => s.name)).toEqual(['qwen-flash 单价', '历史主模型单价'])
     expect(opt.series[0].data).toEqual([0.3, null])
     expect(opt.series[1].data).toEqual([1.5, null])
   })
@@ -241,13 +241,13 @@ describe('CostUnitPriceChart tooltip', () => {
 
     expect(
       formatter([
-        { name: '11-01', seriesName: '小模型单价', value: 0.3, dataIndex: 0 },
-        { name: '11-01', seriesName: '主模型单价', value: null, dataIndex: 0 },
+        { name: '11-01', seriesName: 'qwen-flash 单价', value: 0.3, dataIndex: 0 },
+        { name: '11-01', seriesName: '历史主模型单价', value: null, dataIndex: 0 },
       ]).split('<br/>'),
     ).toEqual([
       '2026-11-01',
-      '小模型单价：¥0.3000/M tokens',
-      '主模型单价：—',
+      'qwen-flash 单价：¥0.3000/M tokens',
+      '历史主模型单价：—',
     ])
   })
 

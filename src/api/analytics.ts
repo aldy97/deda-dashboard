@@ -28,7 +28,6 @@ import type {
   LlmSlowCallsResponse,
   LlmSummaryResponse,
   LlmTurnChainResponse,
-  LlmTurnHandoffResponse,
   LlmTrendResponse,
   LlmCostResponse,
   MemoriesOverviewResponse,
@@ -402,17 +401,6 @@ export async function fetchLlmCallsByTurn(
     params: { turnId },
   })
   return resp.data as LlmTurnChainResponse
-}
-
-/** 轮次衔接健康度（生成侧口径，UI 须标注） */
-export async function fetchLlmTurnHandoff(params: {
-  startDate: string
-  endDate: string
-  /** 空窗判定阈值 ms，缺省 0 */
-  gapThresholdMs?: number
-}): Promise<LlmTurnHandoffResponse> {
-  const resp = await apiClient.get('/analytics/llm/turn-handoff', { params })
-  return resp.data as LlmTurnHandoffResponse
 }
 
 /** 慢调用长尾（仅成功调用，latencyMs 倒序；limit ≤ 50，缺省 20） */

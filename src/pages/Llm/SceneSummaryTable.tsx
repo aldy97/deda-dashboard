@@ -12,7 +12,7 @@ import {
 
 /**
  * 场景总览表：每场景一行的调用量 / 成功率 / 延迟 / 首包 / token / 失败 Top1。
- * fail-open 场景（安全分类、过渡语）带「静默降级」徽标：成功率跌不会报错，必须盯这里。
+ * fail-open 场景（安全分类）带「静默降级」徽标：成功率跌不会报错，必须盯这里。
  * 场景名的 InfoTip 解释来自 SCENE_META（语义与 deda-server 各调用点一致）。
  * 场景名是到 /prompts?scene= 的 Link，下钻到对应 prompt 管理页。
  */
@@ -29,7 +29,12 @@ export default function SceneSummaryTable({
       pagination={false}
       columns={[
         {
-          title: '场景',
+          title: (
+            <span>
+              场景
+              <InfoTip title="tier 是调用角色，不表示模型规格；2026-11 起主/辅助链路都跑 qwen-flash。" />
+            </span>
+          ),
           dataIndex: 'scene',
           width: 200,
           render: (scene: string, row) => {
@@ -39,8 +44,9 @@ export default function SceneSummaryTable({
                 <Link to={`/prompts?scene=${scene}`}>{sceneLabel(scene)}</Link>
                 {meta && <InfoTip title={meta.description} />}
                 <Tag color={row.tier === 'small' ? 'geekblue' : 'gold'}>
-                  {row.tier === 'small' ? '小模型' : '主模型'}
+                  {row.tier === 'small' ? '辅助链路' : '主链路'}
                 </Tag>
+                {meta?.deprecated && <Tag>历史</Tag>}
                 {meta?.failOpen && (
                   <>
                     <Tag color="volcano">静默降级</Tag>
@@ -90,7 +96,7 @@ export default function SceneSummaryTable({
           title: (
             <>
               首包 P50 / P90
-              <InfoTip title="TTFT：请求发出 → 首个流式 chunk 的耗时，孩子「开口前等待」的直接体验指标。仅流式场景（主对话、首响过渡语）有值，其余场景恒为 —。" />
+              <InfoTip title="TTFT：请求发出 → 首个流式 chunk 的耗时，孩子「开口前等待」的直接体验指标。仅流式场景（主对话）有值，其余场景恒为 —；历史区间的过渡语行仍有首包。" />
             </>
           ),
           key: 'ttft',
@@ -105,7 +111,7 @@ export default function SceneSummaryTable({
           title: (
             <>
               总 Token
-              <InfoTip title="该场景区间内全部调用的 prompt + completion token 合计，成本核算依据。上游未回传 usage 的调用按 0 计（如首响过渡语）。" />
+              <InfoTip title="该场景区间内全部调用的 prompt + completion token 合计，成本核算依据。上游未回传 usage 的调用按 0 计。" />
             </>
           ),
           dataIndex: 'totalTokens',

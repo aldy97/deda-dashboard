@@ -13,20 +13,17 @@ vi.mock('../SceneSummaryTable', () => ({
 vi.mock('../LlmTrendChart', () => ({
   default: () => <div data-testid="llm-trend-chart" />,
 }))
-vi.mock('../TurnHandoffCard', () => ({
-  default: (props: { startDate: string; endDate: string }) => (
-    <div
-      data-testid="turn-handoff-card"
-      data-start={props.startDate}
-      data-end={props.endDate}
-    />
-  ),
-}))
 vi.mock('../RecentFailuresTable', () => ({
   default: () => <div data-testid="recent-failures" />,
 }))
 vi.mock('../SlowCallsTable', () => ({
-  default: () => <div data-testid="slow-calls" />,
+  default: (props: { startDate: string; endDate: string }) => (
+    <div
+      data-testid="slow-calls"
+      data-start={props.startDate}
+      data-end={props.endDate}
+    />
+  ),
 }))
 
 vi.mock('../../../components/AnalyticsRangePicker', async () => {
@@ -100,12 +97,8 @@ describe('PerfTab 区间变更', () => {
 
     await user.click(screen.getByRole('button', { name: 'set-range' }))
 
-    expect(screen.getByTestId('turn-handoff-card').dataset.start).toBe(
-      '2026-10-01',
-    )
-    expect(screen.getByTestId('turn-handoff-card').dataset.end).toBe(
-      '2026-10-10',
-    )
+    expect(screen.getByTestId('slow-calls').dataset.start).toBe('2026-10-01')
+    expect(screen.getByTestId('slow-calls').dataset.end).toBe('2026-10-10')
     expect(mockSummary).toHaveBeenLastCalledWith({
       startDate: '2026-10-01',
       endDate: '2026-10-10',
@@ -121,11 +114,11 @@ describe('PerfTab 区间变更', () => {
     const user = userEvent.setup()
     mockOk()
     renderTab()
-    const before = screen.getByTestId('turn-handoff-card').dataset.start
+    const before = screen.getByTestId('slow-calls').dataset.start
 
     await user.click(screen.getByRole('button', { name: 'clear-range' }))
 
-    expect(screen.getByTestId('turn-handoff-card').dataset.start).toBe(before)
+    expect(screen.getByTestId('slow-calls').dataset.start).toBe(before)
   })
 })
 

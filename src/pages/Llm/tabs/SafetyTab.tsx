@@ -32,7 +32,7 @@ const GRANULARITY_OPTIONS = [
 ]
 
 /**
- * 安全监控 tab：小模型安全判定的可信度，数据源 turn_decision_logs。
+ * 安全监控 tab：分类模型安全判定的可信度，数据源 turn_decision_logs。
  *
  * 看这一页要记住三件事：
  * 1. 分桶必须按 safetySource，不能按 category——l2_invalid_label / l2_fail_open /
@@ -100,7 +100,7 @@ export default function SafetyTab() {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message={`小模型安全分类存在静默降级：${summary.failOpenCount} 次调用异常放行、${summary.invalidLabelCount} 次非法标签放行`}
+          message={`安全分类模型存在静默降级：${summary.failOpenCount} 次调用异常放行、${summary.invalidLabelCount} 次非法标签放行`}
           description="这些轮次没有经过 L2 语义审核就放行了，只靠 L3 大模型 system prompt 兜底。调用异常升高＝模型不可用（与性能监控的 safety_l2 成功率对照），非法标签升高＝prompt 退化或模型漂移。"
         />
       )}

@@ -54,13 +54,13 @@ describe('IntentTrendChart tooltip', () => {
 
     const html = formatter([
       { name: '11-11', seriesName: '判定轮次', value: 400, dataIndex: 0 },
-      { name: '11-11', seriesName: '小模型判定', value: 350, dataIndex: 0 },
+      { name: '11-11', seriesName: '模型判定', value: 350, dataIndex: 0 },
       { name: '11-11', seriesName: '关键词兜底', value: 4, dataIndex: 0 },
     ])
     expect(html.split('<br/>')).toEqual([
       '2026-11-11',
       '判定轮次：400',
-      '小模型判定：350',
+      '模型判定：350',
       '关键词兜底：4',
       '模型判定率：87.50%',
     ])
@@ -99,7 +99,7 @@ describe('IntentTrendChart 序列', () => {
 
     expect(option().series.map((s) => s.name)).toEqual([
       '判定轮次',
-      '小模型判定',
+      '模型判定',
       '关键词兜底',
     ])
     expect(option().series.map((s) => s.data)).toEqual([

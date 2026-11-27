@@ -63,9 +63,9 @@ describe('SafetyBreakdownChart 来源图 tooltip', () => {
     renderChart(summary({ total: 0, bySource: [{ source: 'l2_model', count: 0 }] }))
 
     const html = tooltipOf(chartOptions[0])([
-      { name: 'L2 小模型判定', seriesName: '判定来源', value: 0, dataIndex: 0 },
+      { name: 'L2 模型判定', seriesName: '判定来源', value: 0, dataIndex: 0 },
     ])
-    expect(html.split('<br/>')[0]).toBe('L2 小模型判定：0 轮（—）')
+    expect(html.split('<br/>')[0]).toBe('L2 模型判定：0 轮（—）')
   })
 
   it('后端新增未知来源时降级显示原始 key，且不附解释', () => {
@@ -116,7 +116,7 @@ describe('SafetyBreakdownChart 类别图 tooltip', () => {
     const html = tooltipOf(chartOptions[1])([
       { name: '未能判定', seriesName: '判定类别', value: 12, dataIndex: 2 },
     ])
-    expect(html).toContain('小模型没给出契约内标签，与「安全」严格区分')
+    expect(html).toContain('分类模型没给出契约内标签，与「安全」严格区分')
   })
 
   it('safe 类别不附加「未能判定」的说明', () => {
@@ -150,7 +150,7 @@ describe('SafetyBreakdownChart 分桶与着色', () => {
     renderChart(summary())
 
     expect(optionAt(0).xAxis.data).toEqual([
-      'L2 小模型判定',
+      'L2 模型判定',
       'L1 正则命中',
       '未做 L2（冒险接管）',
     ])

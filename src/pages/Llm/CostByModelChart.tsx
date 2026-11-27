@@ -20,8 +20,8 @@ function hasOther(series: LlmCostSeriesItem[]) {
 }
 
 /**
- * 图A：按小模型/主模型/其他拆分的每日费用折线图。
- * 主模型用虚线（估算），未终账日期用 markArea 标「暂估」。
+ * 图A：按 qwen-flash / 历史主模型 / 其他拆分的每日费用折线图。
+ * 历史主模型用虚线（估算），未终账日期用 markArea 标「暂估」。
  */
 export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }) {
   if (data.length === 0) {
@@ -54,7 +54,7 @@ export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }
 
   const seriesConfig: Array<Record<string, unknown>> = [
     {
-      name: '小模型（账单）',
+      name: 'qwen-flash（账单）',
       type: 'line',
       smooth: true,
       connectNulls: false,
@@ -62,7 +62,7 @@ export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }
       data: data.map((p) => p.smallCny),
     },
     {
-      name: '主模型（估算）',
+      name: '历史主模型（估算）',
       type: 'line',
       smooth: true,
       connectNulls: false,
@@ -84,8 +84,8 @@ export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }
   }
 
   const legendData = [
-    '小模型（账单）',
-    '主模型（估算）',
+    'qwen-flash（账单）',
+    '历史主模型（估算）',
     ...(showOther ? ['其他（账单）' as string] : []),
   ]
 
@@ -105,8 +105,8 @@ export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }
           return `${p.seriesName}：${val}`
         })
         const meta = [
-          `主模型来源：${mainSourceLabel(point.mainSource)}`,
-          `主模型精度：${mainAccuracyLabel(point.mainAccuracy)}`,
+          `历史主模型来源：${mainSourceLabel(point.mainSource)}`,
+          `历史主模型精度：${mainAccuracyLabel(point.mainAccuracy)}`,
           `终账状态：${settledLabel(point.settled)}`,
         ]
         return [`${point.date}`, ...lines, ...meta].join('<br/>')

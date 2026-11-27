@@ -80,7 +80,7 @@ export default function SafetyBreakdownChart({
           `${point.name}：${point.value} 轮`,
           `其中拦截 ${bucket?.blockedCount ?? 0} 轮`,
           point.name === '未能判定'
-            ? '小模型没给出契约内标签，与「安全」严格区分'
+            ? '分类模型没给出契约内标签，与「安全」严格区分'
             : '',
         ]
           .filter(Boolean)

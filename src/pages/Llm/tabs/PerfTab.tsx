@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Card, Select, Spin } from 'antd'
+import { Alert, Card, Select, Spin, Typography } from 'antd'
 import { useLlmSummary, useLlmTrend } from '../../../api/queries'
 import AnalyticsRangePicker from '../../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../../utils/date-range'
@@ -9,13 +9,12 @@ import LlmTrendChart from '../LlmTrendChart'
 import RecentFailuresTable from '../RecentFailuresTable'
 import SceneSummaryTable from '../SceneSummaryTable'
 import SlowCallsTable from '../SlowCallsTable'
-import TurnHandoffCard from '../TurnHandoffCard'
 import { SCENE_META } from '../scenes'
 
 /**
  * 性能监控 tab：调用健康度（成功率 / 延迟 / 首包 / 失败明细 / 慢调用）。
  * 由原 /llm 单页拆分而来，行为逐项平移：默认近 7 天含今日、场景筛选联动趋势与两张明细表。
- * fail-open 场景（安全分类、过渡语）失败不报错，只能靠本页成功率发现。
+ * fail-open 场景（安全分类）失败不报错，只能靠本页成功率发现。
  *
  * 场景筛选走 URL query ?scene=，跨页下钻（如 /prompts → /llm?tab=perf&scene=chat_main）
  * 可直接带上下文跳入，筛选变更用 replace 写入不堆历史栈。
@@ -51,6 +50,10 @@ export default function PerfTab() {
           }}
         />
       </div>
+
+      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
+        filler 已下线，轮次衔接 gap 指标不再适用；首包体验看下表「首包 P50/P90」。
+      </Typography.Text>
 
       {error && (
         <Alert
@@ -108,13 +111,6 @@ export default function PerfTab() {
           }
         >
           {trend && <LlmTrendChart data={trend} />}
-        </Card>
-
-        <Card
-          title="轮次衔接健康度（防死空气）"
-          style={{ marginTop: 16 }}
-        >
-          <TurnHandoffCard startDate={fmt(range[0])} endDate={fmt(range[1])} />
         </Card>
 
         <Card title="最近失败明细" style={{ marginTop: 16 }}>

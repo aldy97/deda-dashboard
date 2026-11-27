@@ -59,8 +59,8 @@ describe('CostByModelChart 系列与暂估标记', () => {
 
     const opt = option()
     expect(opt.xAxis.data).toEqual(['11-01', '11-02'])
-    expect(opt.series.map((s) => s.name)).toEqual(['小模型（账单）', '主模型（估算）'])
-    expect(opt.legend.data).toEqual(['小模型（账单）', '主模型（估算）'])
+    expect(opt.series.map((s) => s.name)).toEqual(['qwen-flash（账单）', '历史主模型（估算）'])
+    expect(opt.legend.data).toEqual(['qwen-flash（账单）', '历史主模型（估算）'])
   })
 
   it('otherCny 非零时增加「其他（账单）」系列与图例', () => {
@@ -75,8 +75,8 @@ describe('CostByModelChart 系列与暂估标记', () => {
 
     const opt = option()
     expect(opt.series.map((s) => s.name)).toEqual([
-      '小模型（账单）',
-      '主模型（估算）',
+      'qwen-flash（账单）',
+      '历史主模型（估算）',
       '其他（账单）',
     ])
     expect(opt.legend.data).toContain('其他（账单）')
@@ -118,7 +118,7 @@ describe('CostByModelChart 系列与暂估标记', () => {
 })
 
 describe('CostByModelChart tooltip', () => {
-  it('逐行给出金额与主模型来源/精度/终账状态', () => {
+  it('逐行给出金额与历史主模型来源/精度/终账状态', () => {
     render(
       <CostByModelChart
         data={[
@@ -150,31 +150,31 @@ describe('CostByModelChart tooltip', () => {
 
     expect(
       formatter([
-        { name: '11-01', seriesName: '小模型（账单）', value: 0.1, dataIndex: 0 },
-        { name: '11-01', seriesName: '主模型（估算）', value: 0.2, dataIndex: 0 },
+        { name: '11-01', seriesName: 'qwen-flash（账单）', value: 0.1, dataIndex: 0 },
+        { name: '11-01', seriesName: '历史主模型（估算）', value: 0.2, dataIndex: 0 },
       ]).split('<br/>'),
     ).toEqual([
       '2026-11-01',
-      '小模型（账单）：¥0.10',
-      '主模型（估算）：¥0.20',
-      '主模型来源：估算',
-      '主模型精度：上界',
+      'qwen-flash（账单）：¥0.10',
+      '历史主模型（估算）：¥0.20',
+      '历史主模型来源：估算',
+      '历史主模型精度：上界',
       '终账状态：暂估',
     ])
 
     const second = formatter([
-      { name: '11-02', seriesName: '小模型（账单）', value: null, dataIndex: 1 },
-      { name: '11-02', seriesName: '主模型（估算）', value: 0.5, dataIndex: 1 },
+      { name: '11-02', seriesName: 'qwen-flash（账单）', value: null, dataIndex: 1 },
+      { name: '11-02', seriesName: '历史主模型（估算）', value: 0.5, dataIndex: 1 },
     ])
-    expect(second).toContain('小模型（账单）：—')
-    expect(second).toContain('主模型来源：none')
-    expect(second).toContain('主模型精度：—')
+    expect(second).toContain('qwen-flash（账单）：—')
+    expect(second).toContain('历史主模型来源：none')
+    expect(second).toContain('历史主模型精度：—')
     expect(second).toContain('终账状态：—')
 
     const third = formatter([
-      { name: '11-03', seriesName: '小模型（账单）', value: 0.1, dataIndex: 2 },
+      { name: '11-03', seriesName: 'qwen-flash（账单）', value: 0.1, dataIndex: 2 },
     ])
-    expect(third).toContain('主模型精度：混合')
+    expect(third).toContain('历史主模型精度：混合')
     expect(third).toContain('终账状态：已终账')
   })
 

@@ -13,36 +13,39 @@ export interface SceneMeta {
   streaming: boolean
   /** 静默降级设计：失败不报错但质量下降，需重点盯成功率 */
   failOpen: boolean
+  /** 已下线场景：仅历史区间有数据，UI 需标「历史」 */
+  deprecated?: boolean
 }
 
 export const SCENE_META: Record<string, SceneMeta> = {
   chat_main: {
     label: '主对话回答',
     description:
-      '主模型流式生成给孩子的正式回答，是对话体验延迟的主指标。' +
+      '主对话链路流式生成给孩子的正式回答，是对话体验延迟的主指标。' +
       '流式被提前打断时按已观测部分记账，可能记为失败。',
     streaming: true,
     failOpen: false,
   },
   parent_report: {
     label: '家长日报生成',
-    description: '每日定时任务汇总当日使用与学习数据，由主模型生成给家长的日报文案。',
+    description: '每日定时任务汇总当日使用与学习数据，由模型生成给家长的日报文案。',
     streaming: false,
     failOpen: false,
   },
   filler: {
-    label: '首响过渡语',
+    label: '首响过渡语（历史）',
     description:
-      '小模型流式生成的即时过渡语（「打哈哈」），为主回答争取时间。' +
-      '静默降级：失败只跳过、不影响正式回答。' +
-      '注意：上游流式未回传 usage，Token 恒为 0。',
+      '2026-11 起 live 链路不再写入，仅历史区间可见。原为确定性模板池的即时过渡语，' +
+      '为主回答争取时间；静默降级：失败只跳过、不影响正式回答。' +
+      '上游流式未回传 usage，Token 恒为 0。',
     streaming: true,
     failOpen: true,
+    deprecated: true,
   },
   safety_l2: {
     label: '安全语义分类',
     description:
-      '关键词过滤之后的第二层安全审核：小模型做语义分类，补关键词盲区。' +
+      '关键词过滤之后的第二层安全审核：分类模型做语义分类，补关键词盲区。' +
       '静默降级：调用失败时走兜底判定，不阻塞对话。',
     streaming: false,
     failOpen: true,
@@ -65,7 +68,7 @@ export const SCENE_META: Record<string, SceneMeta> = {
   adventure_script_convert: {
     label: '故事稿转换',
     description:
-      '冒险内容工作台「从 docx 填充 / 生成草稿」时调用：主模型把带标注的中文故事稿转成结构化段落 JSON' +
+      '冒险内容工作台「从 docx 填充 / 生成草稿」时调用：模型把带标注的中文故事稿转成结构化段落 JSON' +
       '（温度 0.2、关闭思考、maxTokens 8000）。只在 authoring 环境生成预览，不落库、不面向孩子；' +
       '失败会返回 SCRIPT_CONVERT_FAILED 让作者重试。',
     streaming: false,

@@ -158,6 +158,13 @@ base=staging → `feature-to-staging.md`；base=main → `release-to-main.md`。
 
 PR 有未勾的「合并到 staging 后需要人工点」项时，创建时带 `--label 人工验证`。
 
+## PR 改动截图（2026-11-27 起）
+
+dashboard 的每个 PR 正文必须包含 `## 改动截图` 段（release PR 为 `### 改动截图`）。
+UI 改动逐页/逐状态放改动后的截图，标注路由、tab/状态与视口；无 UI 改动写「无」+ 一句理由。
+截图托管二选一：提交到 `.github/pr-screenshots/<slug>/` 并用该提交 SHA 的 raw URL 引用
+（分支删除后仍可访问），或 GitHub 上传后的 user-images URL；不得只写文字。
+
 ## URL 查询状态契约（跨页下钻，2026-11-15）
 
 全站的可跳转入口与「刷新/分享能还原现场」共用一套 query 契约。唯一读写入口是

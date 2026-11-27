@@ -24,7 +24,6 @@ export const PAGE_QUERY_KEYS = {
     'llmTrend',
     'llmRecentFailures',
     'llmSlowCalls',
-    'llmTurnHandoff',
     'llmCost',
     'safetySummary',
     'safetyTrend',

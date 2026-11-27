@@ -116,7 +116,7 @@ describe('CostTotalChart tooltip', () => {
       '2026-11-02',
       '每日总费用：¥0.20',
       '累计：—',
-      '合计不含小模型（当日账单未出）',
+      '合计不含qwen-flash（当日账单未出）',
     ])
 
     const complete = formatter([

@@ -236,7 +236,7 @@ describe('CostCards 健康区间', () => {
 })
 
 describe('CostCards 降级与缺源', () => {
-  it('合计不完整时列出两个缺源原因；主模型未计价单独占位', () => {
+  it('合计不完整时列出缺源原因；本期无主模型调用单独占位', () => {
     render(
       <CostCards
         data={costData({
@@ -255,11 +255,27 @@ describe('CostCards 降级与缺源', () => {
     )
 
     expect(screen.getByText('合计不完整')).toBeInTheDocument()
-    expect(screen.getByText('未计价')).toBeInTheDocument()
+    expect(screen.getByText('本期无调用')).toBeInTheDocument()
     expect(screen.getByText('暂无账单')).toBeInTheDocument()
     expect(screen.getByText('账单未同步')).toBeInTheDocument()
     // aliyun 不可用 → 小模型金额显式占位「—」
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('有历史主模型行但无成本快照时标「未计价」', () => {
+    render(
+      <CostCards
+        data={costData({
+          totals: { partial: false, totalCny: 0, smallCny: 1, mainCny: null },
+          series: [point({ settled: true, mainCny: null })],
+          aliyun: { status: 'ok', modelSplit: true, latestBillDate: '2026-11-01' },
+          deepseek: { rows: 5, pricedRows: 0, cacheHitRows: 0 },
+          unitEconomics: [],
+        })}
+      />,
+    )
+
+    expect(screen.getByText('未计价')).toBeInTheDocument()
   })
 
   it('账单未接入时标「未接入账单」，message 为空也不崩', () => {

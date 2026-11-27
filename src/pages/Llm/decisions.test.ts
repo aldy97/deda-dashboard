@@ -98,7 +98,7 @@ describe('判定枚举的中文名与着色', () => {
   })
 
   it('意图来源十二项齐全，编排层三项单独标注', () => {
-    expect(intentSourceLabel('model')).toBe('小模型判定')
+    expect(intentSourceLabel('model')).toBe('模型判定')
     expect(intentSourceLabel('pre_filter_skip')).toBe('正则未命中·直接闲聊')
     expect(intentSourceLabel('adventure_takeover')).toBe('冒险接管')
     expect(intentSourceLabel('no_device')).toBe('匿名链路')
