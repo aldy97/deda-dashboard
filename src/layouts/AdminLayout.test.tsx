@@ -99,6 +99,24 @@ describe('AdminLayout 标题与环境标签', () => {
     expect(tag).toHaveTextContent('测试')
   })
 
+  it('品牌头钉在侧栏顶端：菜单滚动时不跟着走', () => {
+    stubMeta({
+      nodeEnv: 'staging',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    const header = screen.getByTestId('brand-header')
+    // sticky 必须在滚动容器（Sider）内部；不透明底色与层级防止菜单从底下透出
+    expect(header).toHaveStyle({
+      position: 'sticky',
+      top: '0px',
+      zIndex: '1',
+      backgroundColor: 'rgb(0, 21, 41)',
+    })
+  })
+
   it.each([
     ['development', '本地', 'local'],
     ['staging', '测试', 'staging'],

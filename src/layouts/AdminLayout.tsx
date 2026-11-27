@@ -117,6 +117,14 @@ export default function AdminLayout() {
         <div
           data-testid="brand-header"
           style={{
+            // 菜单列超过一屏时 Sider 整体滚动；品牌头 sticky 在顶端，
+            // 环境标签必须常驻可见（它是「我在哪个环境」的唯一提示）。
+            // 底色必须不透明，否则滚上来的菜单会从底下透出来。
+            position: 'sticky',
+            top: 0,
+            zIndex: 1,
+            background: '#001529',
+            boxShadow: '0 1px 0 rgba(255, 255, 255, 0.06)',
             color: '#fff',
             fontWeight: 600,
             fontSize: 15,
