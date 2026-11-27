@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Alert, Button, Card, Form, Input, Typography } from 'antd'
+import { Alert, Button, ConfigProvider, Form, Input } from 'antd'
+import {
+  LineChartOutlined,
+  LockOutlined,
+  RobotOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { adminLogin } from '../../api/analytics'
 import { getToken, setToken } from '../../utils/auth-token'
@@ -9,6 +16,8 @@ import {
   LOGIN_NEXT_PARAM,
   resolveNextIntent,
 } from '../../router/redirect'
+import logoHeader from '../../assets/logo-header.png'
+import './login.css'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -63,49 +72,123 @@ export default function Login() {
   if (getToken() && intent) return <Navigate to={intent} replace />
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+    /**
+     * 只给登录页局部改主题：品牌蓝比全站默认蓝更贴近侧栏 logo，
+     * 不动 App.tsx 的全局 ConfigProvider（那是全站视觉，另开 PR 再谈）。
+     */
+    <ConfigProvider
+      theme={{ token: { colorPrimary: '#2f5d8a', borderRadius: 8 } }}
     >
-      <Card style={{ width: 380 }}>
-        <Typography.Title level={4} style={{ marginTop: 0 }}>
-          Deda Dashboard
-        </Typography.Title>
-        <Typography.Paragraph type="secondary">
-          内部产品分析平台，管理员账号登录。
-        </Typography.Paragraph>
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            showIcon
-            style={{ marginBottom: 16 }}
+      <div className="login-page">
+        {/* 桌面端品牌区；<960px 时整块隐藏，由下面的移动端顶部条接管 */}
+        <aside className="login-brand" aria-label="Deda Dashboard">
+          <span
+            className="login-brand-glow login-brand-glow-pink"
+            aria-hidden="true"
           />
-        )}
-        <Form layout="vertical" onFinish={onFinish}>
-          <Form.Item
-            name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
-          >
-            <Input autoComplete="username" />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label="密码"
-            rules={[{ required: true, message: '请输入密码' }]}
-          >
-            <Input.Password autoComplete="current-password" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={submitting}>
-            登录
-          </Button>
-        </Form>
-      </Card>
-    </div>
+          <span
+            className="login-brand-glow login-brand-glow-coral"
+            aria-hidden="true"
+          />
+
+          <div className="login-brand-head">
+            <span className="login-logo-badge">
+              <img
+                data-testid="login-brand-logo"
+                src={logoHeader}
+                alt=""
+                aria-hidden="true"
+                width={40}
+                height={40}
+              />
+            </span>
+            <span className="login-wordmark">Deda Dashboard</span>
+          </div>
+
+          <div className="login-brand-body">
+            <p className="login-slogan-title">儿童 AI 毛绒玩具</p>
+            <p className="login-slogan-sub">产品使用分析平台</p>
+            <ul className="login-features">
+              <li>
+                <LineChartOutlined aria-hidden="true" />
+                产品数据总览
+              </li>
+              <li>
+                <TeamOutlined aria-hidden="true" />
+                用户与对话洞察
+              </li>
+              <li>
+                <RobotOutlined aria-hidden="true" />
+                设备与内容运营
+              </li>
+            </ul>
+          </div>
+
+          <p className="login-brand-foot">内部系统 · 仅限授权管理员访问</p>
+        </aside>
+
+        {/* 移动端顶部条：sticky 在顶端，表单在下面滚动 */}
+        <div className="login-mobile-brand">
+          <img src={logoHeader} alt="" aria-hidden="true" width={28} height={28} />
+          <span>Deda Dashboard</span>
+        </div>
+
+        <main className="login-form-panel">
+          <div className="login-form-inner">
+            <h1 className="login-title">欢迎回来</h1>
+            <p className="login-subtitle">登录以继续访问 Deda Dashboard</p>
+
+            {error && (
+              <Alert
+                type="error"
+                message={error}
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
+            <Form layout="vertical" onFinish={onFinish}>
+              <Form.Item
+                name="username"
+                label="用户名"
+                rules={[{ required: true, message: '请输入用户名' }]}
+              >
+                <Input
+                  size="large"
+                  prefix={<UserOutlined aria-hidden="true" />}
+                  autoComplete="username"
+                  placeholder="请输入用户名"
+                  autoFocus
+                />
+              </Form.Item>
+              <Form.Item
+                name="password"
+                label="密码"
+                rules={[{ required: true, message: '请输入密码' }]}
+              >
+                <Input.Password
+                  size="large"
+                  prefix={<LockOutlined aria-hidden="true" />}
+                  autoComplete="current-password"
+                  placeholder="请输入密码"
+                />
+              </Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                loading={submitting}
+                className="login-submit"
+              >
+                登录
+              </Button>
+            </Form>
+
+            <p className="login-hint">遇到登录问题请联系系统管理员</p>
+          </div>
+        </main>
+      </div>
+    </ConfigProvider>
   )
 }
