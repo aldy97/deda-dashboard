@@ -1,9 +1,12 @@
 /**
  * 菜单选中态推导与运维组路径清单。
  *
- * 详情页（/users/:deviceId、/memories/:deviceId）没有自己的菜单项，取路径首段
- * 回落到所属一级入口高亮，不再逐个特判——之前只特判了 /memories，
- * 结果用户详情页左侧一个选中项都没有。
+ * 详情页（/users/:deviceId、/memories/:deviceId、/parents/:userId）没有自己的
+ * 菜单项，取路径首段回落到所属一级入口高亮，不再逐个特判——之前只特判了
+ * /memories，结果设备档案页左侧一个选中项都没有。
+ *
+ * 家长档案（/parents/:userId）在菜单里没有独立入口，显式回落到「用户画像」
+ * （/users）。其余路径仍取首段，/users/:deviceId 的行为因此保持不变。
  *
  * 单独成模块（而不是从 AdminLayout.tsx 导出）是为了不破坏 Fast Refresh：
  * 组件文件只导出组件。运维组清单也放这里：路由表包 OpsGate 与菜单加锁标
@@ -11,7 +14,9 @@
  */
 export function selectedMenuKey(pathname: string): string[] {
   const segment = pathname.split('/')[1]
-  return segment ? [`/${segment}`] : []
+  if (!segment) return []
+  if (segment === 'parents') return ['/users']
+  return [`/${segment}`]
 }
 
 /** 运维组 = 全部破坏性操作所在的 tab，只对 superadmin 开放。顺序即菜单顺序。 */

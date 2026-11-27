@@ -4,7 +4,7 @@ import type { Dayjs } from 'dayjs'
 import type { PresenceDay } from '../../types/analytics'
 
 /**
- * 单设备开机日历（设备舰队抽屉与用户详情页共用）。
+ * 单设备开机日历（设备舰队抽屉与设备档案页共用）。
  *
  * 后端只返回「有 presence 行的日期」，不补无数据的日期，补齐与按周对齐都在前端做：
  * 先按周一对齐补首行前导空格，再把末行尾部补满，否则最后一周的日期会落到

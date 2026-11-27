@@ -11,9 +11,9 @@ interface Props {
 }
 
 /**
- * 单设备明细抽屉：设备 360 的快速预览，正文与用户详情页共用 DeviceProfile。
+ * 单设备明细抽屉：设备 360 的快速预览，正文与设备档案页共用 DeviceProfile。
  * days 控件（1–90，缺省 30）挂在抽屉 extra。设备不存在（404）时显示错误态。
- * 抽屉只是预览，完整档案（日报、记忆、反馈、消息）在用户详情页，出口链接置顶。
+ * 抽屉只是预览，完整档案（日报、记忆、反馈、消息）在设备档案页，出口链接置顶。
  */
 export default function DeviceDetailDrawer({ deviceId, onClose }: Props) {
   const [days, setDays] = useState(30)
@@ -86,10 +86,10 @@ export default function DeviceDetailDrawer({ deviceId, onClose }: Props) {
                 exitLinks={
                   <Space direction="vertical" size={4}>
                     <Typography.Text type="secondary">
-                      这里是快速预览，完整设备 360 在用户详情页
+                      这里是快速预览，完整设备 360 在设备档案页
                     </Typography.Text>
                     <Space wrap>
-                      <Link to={`/users/${data.deviceId}`}>用户详情 →</Link>
+                      <Link to={`/users/${data.deviceId}`}>设备档案 →</Link>
                       <Link to={`/memories/${data.deviceId}`}>
                         记忆档案 →
                       </Link>

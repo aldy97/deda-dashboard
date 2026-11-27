@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OPS_PATHS, OPS_ROUTE_META, isOpsPath } from './menu'
+import { OPS_PATHS, OPS_ROUTE_META, isOpsPath, selectedMenuKey } from './menu'
 
 /**
  * 运维组的路径清单是「雾」与菜单锁标的唯一来源，路由表与测试都从这里取，
@@ -36,5 +36,25 @@ describe('运维组路径', () => {
     expect(isOpsPath('/memories/dev-001')).toBe(false)
     expect(isOpsPath('/overview')).toBe(false)
     expect(isOpsPath('/llmxyz')).toBe(false)
+  })
+})
+
+describe('菜单选中态推导', () => {
+  it('一级路径取自身', () => {
+    expect(selectedMenuKey('/overview')).toEqual(['/overview'])
+    expect(selectedMenuKey('/users')).toEqual(['/users'])
+  })
+
+  it('详情页回落到所属一级入口', () => {
+    expect(selectedMenuKey('/users/DEV001')).toEqual(['/users'])
+    expect(selectedMenuKey('/memories/DEV001')).toEqual(['/memories'])
+  })
+
+  it('家长档案没有自己的菜单项，回落到「用户画像」', () => {
+    expect(selectedMenuKey('/parents/u1')).toEqual(['/users'])
+  })
+
+  it('根路径无选中项', () => {
+    expect(selectedMenuKey('/')).toEqual([])
   })
 })

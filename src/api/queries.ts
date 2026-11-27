@@ -37,6 +37,7 @@ import {
   fetchNetworkUsage,
   fetchOverview,
   fetchOverviewTrend,
+  fetchParentDetail,
   fetchQualityConversation,
   fetchReportFeedbacks,
   fetchParentReports,
@@ -183,7 +184,7 @@ export function useUserFeedbacks(query: UserFeedbackQuery) {
   })
 }
 
-/** 单设备日报列表（用户详情页）；deviceId 为空串时不发起 */
+/** 单设备日报列表（设备档案页）；deviceId 为空串时不发起 */
 export function useParentReports(query: {
   deviceId: string
   page?: number
@@ -273,6 +274,15 @@ export function usePhoneBrands() {
   return useQuery({
     queryKey: ['analytics', 'phoneBrands'],
     queryFn: fetchPhoneBrands,
+  })
+}
+
+/** 家长档案；userId 为空串时不发起（路由参数缺失时不要打空 ID 的 404） */
+export function useParentDetail(userId: string) {
+  return useQuery({
+    queryKey: ['analytics', 'parentDetail', userId],
+    queryFn: () => fetchParentDetail(userId),
+    enabled: userId !== '',
   })
 }
 

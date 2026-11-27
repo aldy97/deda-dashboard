@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import Users from './index'
 import type {
@@ -22,6 +23,7 @@ const SUMMARY: UsersSummaryResponse = {
   usersWithBoundDevice: 80,
   avgDevicesPerUser: 1.2,
   multiChildFamilies: 8,
+  multiDeviceFamilies: 3,
 }
 
 const DEMOGRAPHICS: UsersDemographicsResponse = {
@@ -63,8 +65,15 @@ function renderPage() {
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <Users />
+      <MemoryRouter initialEntries={['/users']}>
+        <Routes>
+          <Route path="/users" element={<Users />} />
+          <Route
+            path="/users/:deviceId"
+            element={<div>设备详情桩</div>}
+          />
+          <Route path="/parents/:userId" element={<div>家长档案桩</div>} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -110,5 +119,61 @@ describe('用户画像页 · 家长手机品牌分布', () => {
 
     expect(await screen.findByText('手机品牌数据加载失败')).toBeTruthy()
     expect(screen.getByText('注册家长总数')).toBeTruthy()
+  })
+})
+
+/**
+ * 搜索框是「以设备为锚」与「以家长为锚」两个入口的唯一分流点：
+ * UUID → 家长档案，其余（业务设备 ID）→ 设备档案。分错了会把用户带到 404。
+ */
+describe('用户画像页 · 搜索分流与概览卡片', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/users/summary')
+        return Promise.resolve({ data: SUMMARY })
+      if (url === '/analytics/users/demographics')
+        return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/phone-brands')
+        return Promise.resolve({ data: PHONE_BRANDS })
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  async function search(value: string) {
+    const user = userEvent.setup()
+    const input = await screen.findByPlaceholderText(
+      '输入设备 ID 或家长 ID 查看详情',
+    )
+    await user.type(input, `${value}{enter}`)
+  }
+
+  it('UUID（家长 ID）跳家长档案，允许前后空白', async () => {
+    renderPage()
+    await search('  9f8b7c6d-1a2b-4c3d-8e9f-0a1b2c3d4e5f  ')
+    expect(await screen.findByText('家长档案桩')).toBeTruthy()
+    expect(screen.queryByText('设备详情桩')).toBeNull()
+  })
+
+  it('非 UUID（业务设备 ID）仍跳设备档案', async () => {
+    renderPage()
+    await search('DEV-001')
+    expect(await screen.findByText('设备详情桩')).toBeTruthy()
+    expect(screen.queryByText('家长档案桩')).toBeNull()
+  })
+
+  it('纯空白输入不跳转，仍留在用户画像页', async () => {
+    renderPage()
+    await search('   ')
+    expect(screen.queryByText('家长档案桩')).toBeNull()
+    expect(screen.queryByText('设备详情桩')).toBeNull()
+    expect(screen.getByText('注册家长总数')).toBeTruthy()
+  })
+
+  it('概览新增「多设备家庭」卡片', async () => {
+    renderPage()
+    const title = await screen.findByText('多设备家庭')
+    expect(title).toBeTruthy()
+    expect(title.closest('.ant-statistic')?.textContent).toContain('3')
   })
 })

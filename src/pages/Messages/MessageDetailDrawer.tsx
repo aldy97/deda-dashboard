@@ -55,7 +55,7 @@ function NetworkTag({ mode }: { mode: 'wifi' | '4g' | null | undefined }) {
  *
  * 两种打开方式：列表点行时把整行传进来（先渲染列表字段，详情回来再补 rawPayload）；
  * 只凭 URL（?messageId=）打开时只有 id，字段全部等详情接口回来。后者让抽屉可分享、
- * 可刷新还原，也让别的页面（用户详情页的近期消息）能把人直接带到某一条消息上。
+ * 可刷新还原，也让别的页面（设备档案页的近期消息）能把人直接带到某一条消息上。
  */
 export default function MessageDetailDrawer({
   message,

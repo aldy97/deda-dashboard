@@ -97,7 +97,7 @@ function ReportFeedbackTag({ feedbacks }: { feedbacks: ParentReportItem['feedbac
 }
 
 /**
- * 单设备用户详情：以设备为锚点聚合该设备（及其绑定家庭）的全部可看数据——
+ * 设备档案页：以设备为锚点聚合该设备（及其绑定家庭）的全部可看数据——
  * 设备信息、记忆槽位、家长日报（反馈内联标注）、使用反馈、近期消息。
  * 入口：用户画像页搜索 / 记忆档案设备列表 / 日报反馈设备列 / 消息详情设备 ID。
  * 使用反馈口径：该设备全部绑定账号的反馈（Feedback 表只挂 userId，
@@ -181,7 +181,7 @@ export default function UserDeviceDetail() {
             <Descriptions
               title={
                 <Space>
-                  用户详情
+                  设备档案
                   <InfoTip title="以设备为锚点聚合：该设备自己的消息/日报/记忆，加上该设备全部绑定账号的反馈。一台设备可被多个家长账号绑定（多孩/祖辈家庭）。" />
                 </Space>
               }

@@ -11,7 +11,7 @@ import type {
 
 /**
  * 记忆设备详情页跨页出口。
- * 头部区域：用户详情 → /users/:deviceId、该设备全部消息 → /messages?deviceId=<id>
+ * 头部区域：设备档案 → /users/:deviceId、该设备全部消息 → /messages?deviceId=<id>
  */
 
 vi.mock('../../api/client', () => ({
@@ -127,12 +127,12 @@ describe('DeviceDetail 跨页出口', () => {
     })
   })
 
-  it('头部渲染用户详情链接 → /users/DEV001', async () => {
+  it('头部渲染设备档案链接 → /users/DEV001', async () => {
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText(/用户详情/)).toBeTruthy()
+      expect(screen.getByText(/设备档案/)).toBeTruthy()
     })
-    const link = screen.getByText(/用户详情/)
+    const link = screen.getByText(/设备档案/)
     expect(link.getAttribute('href')).toBe('/users/DEV001')
   })
 

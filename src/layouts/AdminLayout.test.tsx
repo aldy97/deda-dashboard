@@ -66,6 +66,10 @@ function renderLayout(entry = '/overview') {
             path="/users/:deviceId"
             element={<div data-testid="page-user-device" />}
           />
+          <Route
+            path="/parents/:userId"
+            element={<div data-testid="page-parent" />}
+          />
           <Route path="/adventure" element={<div data-testid="page-adventure" />} />
         </Route>
       </Routes>
@@ -183,7 +187,7 @@ describe('AdminLayout 菜单与路由', () => {
     ).toHaveClass('ant-menu-item-selected')
   })
 
-  it('用户详情页 /users/:deviceId 高亮「用户画像」（此前无选中项）', () => {
+  it('设备档案页 /users/:deviceId 高亮「用户画像」（此前无选中项）', () => {
     stubMeta({
       nodeEnv: 'development',
       promptWriteEnabled: true,
@@ -192,6 +196,20 @@ describe('AdminLayout 菜单与路由', () => {
     renderLayout('/users/dev-001')
 
     expect(screen.getByTestId('page-user-device')).toBeInTheDocument()
+    expect(
+      screen.getByRole('menuitem', { name: /用户画像/ }),
+    ).toHaveClass('ant-menu-item-selected')
+  })
+
+  it('家长档案页 /parents/:userId 回落高亮「用户画像」', () => {
+    stubMeta({
+      nodeEnv: 'development',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout('/parents/u-1')
+
+    expect(screen.getByTestId('page-parent')).toBeInTheDocument()
     expect(
       screen.getByRole('menuitem', { name: /用户画像/ }),
     ).toHaveClass('ant-menu-item-selected')
