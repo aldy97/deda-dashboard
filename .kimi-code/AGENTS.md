@@ -259,3 +259,15 @@ query 的键抹掉（`/messages` 同时有筛选与抽屉的 `messageId`，`/llm
    `afterEach` 还原（见 `src/api/client.test.ts`）。不要断言
    `window.location.search` 来验证 router 状态——`MemoryRouter` 不同步真实
    地址栏，那样永远是空串。
+
+## 组件复用与抽象（2026-11-27）
+
+1. 新建界面前先查 `src/components/**`（access/、device/、message/ 已按域分目录）
+   与 `src/pages/*` 里已有的局部组件；`DeviceProfile.tsx` 这类「正文只有一份」的共享件
+   优先扩 props，不许在页面里另写一份。
+2. 同一 layout + 框架出现在第 2 处 → 抽到 `src/components/<域>/`，两处都改成调用；
+   只出现一次的内联不提前抽象。
+3. 抽出的组件同目录配 `*.test.tsx`（TDD + 改动文件行覆盖 ≥90%，Adventure Studio
+   豁免范围除外）；共享纯函数 / 常量按「URL 查询状态契约」第 6 条放独立模块，
+   不要从组件文件外导（oxlint `only-export-components`）。
+4. 完成报告必须写：复用了哪个 / 抽出了哪个 + ≥2 个调用点路径，或「无」。
