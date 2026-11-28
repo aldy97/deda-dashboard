@@ -95,6 +95,9 @@ const AUDIT_ACTION_META: Record<string, Meta> = {
   recovery_breaker_reset: { label: '解除熔断', color: 'purple' },
   device_test_assign: { label: '下发测试故事', color: 'cyan' },
   device_test_clear: { label: '清除测试故事', color: 'cyan' },
+  video_generate: { label: '生成短视频', color: 'geekblue' },
+  video_retry: { label: '重试短视频', color: 'geekblue' },
+  video_cancel: { label: '取消短视频', color: 'default' },
 }
 
 export function auditActionMeta(action: string): Meta {
