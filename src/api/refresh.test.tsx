@@ -159,3 +159,29 @@ describe('usePageRefresh · content / feedback', () => {
     )
   })
 })
+
+describe('usePageRefresh · parent', () => {
+  it('parent 页只命中家长档案详情，不误刷用户画像聚合', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const spy = vi.spyOn(client, 'refetchQueries')
+    const { result } = renderHook(() => usePageRefresh('parent'), {
+      wrapper: createWrapper(client),
+    })
+    result.current.refresh()
+
+    const predicate = spy.mock.calls[0][0]!.predicate!
+    expect(
+      predicate({ queryKey: ['analytics', 'parentDetail', 'u1'] } as never),
+    ).toBe(true)
+    // 白名单备注在家长档案页也要能被「刷新」带新
+    expect(
+      predicate({ queryKey: ['analytics', 'testDevices', 'all'] } as never),
+    ).toBe(true)
+    expect(predicate({ queryKey: ['analytics', 'usersSummary', {}] } as never)).toBe(
+      false,
+    )
+    expect(
+      predicate({ queryKey: ['analytics', 'parentDemographics'] } as never),
+    ).toBe(false)
+  })
+})

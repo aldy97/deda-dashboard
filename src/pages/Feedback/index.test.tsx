@@ -37,25 +37,24 @@ function search(): string {
   return screen.getByTestId('search').textContent ?? ''
 }
 
-describe('用户反馈页 · 三 tab', () => {
+describe('用户反馈页 · 两 tab（家长报告已并入日报反馈）', () => {
   beforeEach(() => {
     mockGet.mockReset()
     mockGet.mockImplementation(() => Promise.resolve({ data: null }))
   })
 
-  it('渲染三个 tab：日报反馈、使用反馈、家长报告', async () => {
+  it('只渲染两个 tab：日报反馈、使用反馈', async () => {
     renderPage()
     expect(screen.getByText('日报反馈')).toBeTruthy()
     expect(screen.getByText('使用反馈')).toBeTruthy()
-    expect(screen.getByText('家长报告')).toBeTruthy()
+    // 「家长报告」不再是独立 tab，它的内容并入了日报反馈
+    expect(screen.queryByRole('tab', { name: '家长报告' })).toBeNull()
   })
 
-  it('?tab=parentReport 直接打开家长报告 tab', async () => {
+  it('老链接 ?tab=parentReport 读时回退到日报反馈，URL 原样保留', async () => {
     renderPage('/feedback?tab=parentReport')
-    // 检查家长报告面板渲染了（有它的 AnalyticsRangePicker）
-    expect(await screen.findByText('家长报告')).toBeTruthy()
-    // tab 在 URL 中
-    expect(search()).toContain('tab=parentReport')
+    expect(await screen.findByText('日报反馈')).toBeTruthy()
+    expect(search()).toBe('?tab=parentReport')
   })
 
   it('?tab=report 默认打开日报反馈 tab', async () => {
@@ -86,13 +85,13 @@ describe('用户反馈页 · 三 tab', () => {
   it('点 tab 把 ?tab= 写进 URL', async () => {
     renderPage()
     await screen.findByText('日报反馈')
-    fireEvent.click(screen.getByText('家长报告'))
+    fireEvent.click(screen.getByText('使用反馈'))
     await waitFor(() => {
-      expect(search()).toContain('tab=parentReport')
+      expect(search()).toContain('tab=user')
     })
   })
 
-  it('点击刷新重新拉取三个 tab 的查询', async () => {
+  it('点击刷新重新拉取本页全部查询', async () => {
     renderPage()
     await screen.findByText('日报反馈')
     await waitFor(() => expect(mockGet).toHaveBeenCalled())

@@ -12,13 +12,16 @@ import {
 } from 'antd'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { useReportFeedbacks } from '../../api/queries'
+import { useContentParentReport, useReportFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import { useUrlQuery, readParam } from '../../utils/url-state'
 
 type UsefulFilter = 'all' | 'useful' | 'not_useful'
+
+const formatPct = (rate: number | null | undefined) =>
+  rate === null || rate === undefined ? '—' : `${(rate * 100).toFixed(1)}%`
 
 const USEFUL_OPTIONS: Array<{ label: string; value: UsefulFilter }> = [
   { label: '全部', value: 'all' },
@@ -28,6 +31,12 @@ const USEFUL_OPTIONS: Array<{ label: string; value: UsefulFilter }> = [
 
 /**
  * 日报反馈：区间内家长对每日报告的有用/无用评价明细。
+ *
+ * 「家长报告」tab 已并入本面板：生成量（生成报告数 / 失败数 / 成功率）与
+ * 报告反馈的有用率在同一张统计卡里，共用同一个日期区间——此前是第三个 tab，
+ * 两个区间控件各滚各的，同一屏上看生成量和有用率还得对两次日期。
+ * 收到反馈数不再单列：无 deviceId 预筛时它恒等于「有用 + 无用」。
+ *
  * 顶部统计为区间整体有用率（后端口径，不受「有用/无用」筛选影响）。
  * 排序按 feedbackAt（= updatedAt）倒序：改票后记录浮到最前。
  * URL 支持 ?deviceId= 预筛：从其他页面下钻时带入，渲染可关闭 Tag。
@@ -47,8 +56,19 @@ export default function ReportFeedbackPanel() {
     page,
     pageSize,
   })
+  // 生成质量与反馈明细吃同一个区间，避免两套日期控件口径漂移
+  const qualityQuery = useContentParentReport({
+    startDate: fmt(range[0]),
+    endDate: fmt(range[1]),
+  })
+  const quality = qualityQuery.data ?? null
   const data = query.data ?? null
   const loading = query.isLoading
+  const qualityError = qualityQuery.error
+    ? qualityQuery.error instanceof Error
+      ? qualityQuery.error.message
+      : '加载失败'
+    : null
   const error = query.error
     ? query.error instanceof Error
       ? query.error.message
@@ -93,28 +113,52 @@ export default function ReportFeedbackPanel() {
         </Tag>
       )}
 
-      {data && (
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={8}>
-            <Card size="small" style={{ height: '100%' }}>
-              <Statistic
-                title="区间有用率"
-                value={(data.summary.usefulRate * 100).toFixed(1)}
-                suffix="%"
-              />
-            </Card>
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic title="生成报告数" value={quality?.generated ?? '—'} />
           </Col>
-          <Col span={8}>
-            <Card size="small" style={{ height: '100%' }}>
-              <Statistic title="有用" value={data.summary.usefulCount} />
-            </Card>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic title="生成失败数" value={quality?.failed ?? '—'} />
           </Col>
-          <Col span={8}>
-            <Card size="small" style={{ height: '100%' }}>
-              <Statistic title="无用" value={data.summary.notUsefulCount} />
-            </Card>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic
+              title="生成成功率"
+              value={formatPct(quality?.successRate)}
+            />
+          </Col>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic
+              title="区间有用率"
+              value={data ? (data.summary.usefulRate * 100).toFixed(1) : '—'}
+              suffix={data ? '%' : undefined}
+            />
+          </Col>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic title="有用" value={data?.summary.usefulCount ?? '—'} />
+          </Col>
+          <Col xs={12} md={8} lg={4}>
+            <Statistic
+              title="无用"
+              value={data?.summary.notUsefulCount ?? '—'}
+            />
           </Col>
         </Row>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Link to="/llm?tab=perf&scene=parent_report">
+            生成失败排查：模型监控·家长日报生成 →
+          </Link>
+        </Typography.Text>
+      </Card>
+
+      {qualityError && (
+        <Alert
+          type="error"
+          showIcon
+          message="家长报告数据加载失败"
+          description={qualityError}
+          style={{ marginBottom: 12 }}
+        />
       )}
 
       {error && (

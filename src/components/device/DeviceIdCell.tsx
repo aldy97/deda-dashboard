@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import CopyableText from '../CopyableText'
 import TestWhitelistTag from '../TestWhitelistTag'
 
 interface DeviceIdCellProps {
@@ -11,6 +12,10 @@ interface DeviceIdCellProps {
    * null = 在册但没写备注（Tag 回落「白名单」）。
    */
   whitelistNote?: string | null
+  /** true = 第三格给复制图标（家长档案用）；不传保持舰队/消息明细的两格布局 */
+  copyable?: boolean
+  /** 首列（设备标识）宽度，默认 104px；家长档案的业务设备 ID 更长，需要放宽 */
+  labelWidth?: number
 }
 
 const LABEL_STYLE = {
@@ -31,16 +36,28 @@ export default function DeviceIdCell({
   label,
   href,
   whitelistNote,
+  copyable = false,
+  labelWidth = 104,
 }: DeviceIdCellProps) {
+  const hasWhitelist = whitelistNote !== undefined
+  // 列宽按实际存在的槽位拼：「ID → 复制 → 备注」；缺哪个就不占那一格，
+  // 避免右侧留一段空白把备注推远。
+  const columns = [
+    `${labelWidth}px`,
+    ...(copyable ? ['auto'] : []),
+    ...(hasWhitelist ? ['minmax(0, 1fr)'] : []),
+  ].join(' ')
+
   return (
     <div
       data-testid="device-id-cell"
       style={{
-        // 第一列固定宽度：设备 ID 长短不影响第二列 Tag 的左边缘。
+        // 第一列固定宽度：设备 ID 长短不影响后面复制图标与 Tag 的左边缘。
         display: 'grid',
-        gridTemplateColumns: '104px minmax(0, 1fr)',
+        gridTemplateColumns: columns,
         alignItems: 'center',
-        columnGap: 4,
+        // 同格内的三件套贴紧：ID → 复制 → 备注，2px 是复制图标的最小呼吸感
+        columnGap: 2,
         minWidth: 0,
       }}
     >
@@ -57,6 +74,14 @@ export default function DeviceIdCell({
       ) : (
         <span data-testid="device-id-label" title={label} style={LABEL_STYLE}>
           {label}
+        </span>
+      )}
+      {copyable && (
+        <span
+          data-testid="device-id-copy"
+          style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
+        >
+          <CopyableText text={label} tip="复制设备 ID" />
         </span>
       )}
       {whitelistNote !== undefined && (
