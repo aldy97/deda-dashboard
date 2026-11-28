@@ -3,7 +3,7 @@ import type { Key, MouseEvent, ReactNode } from 'react'
 import { Button, Card, Empty, Pagination, Select, Space, Spin, Table } from 'antd'
 import type { TableProps } from 'antd'
 import type { ColumnsType, ColumnType } from 'antd/es/table'
-import { useIsMobile } from '../utils/use-layout-mode'
+import { useLayoutMode } from '../utils/use-layout-mode'
 
 export interface ResponsiveTableProps<RowType extends object>
   extends TableProps<RowType> {
@@ -29,9 +29,14 @@ export interface ResponsiveTableProps<RowType extends object>
 export default function ResponsiveTable<RowType extends object>(
   props: ResponsiveTableProps<RowType>,
 ) {
-  const isMobile = useIsMobile()
-  if (!isMobile) return <Table<RowType> {...props} />
-  return <MobileCards {...props} />
+  const mode = useLayoutMode()
+  // 平板（768–991）默认给横向滚动：图标栏占掉 64px 后正文只有 ~650px，
+  // 列多的表格会不再换行而是把每列压成竖排文字。max-content + min-width:100%
+  // 在放得下时与原来完全一致；桌面档不强行加，避免改变现有的表格度量。
+  const scroll =
+    props.scroll ?? (mode === 'tablet' ? { x: 'max-content' as const } : undefined)
+  if (mode !== 'mobile') return <Table<RowType> {...props} scroll={scroll} />
+  return <MobileCards {...props} scroll={scroll} />
 }
 
 function columnKey<RowType>(column: ColumnType<RowType>): string {

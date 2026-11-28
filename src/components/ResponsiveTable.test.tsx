@@ -204,6 +204,54 @@ describe('ResponsiveTable 形态切换', () => {
     expect(screen.getAllByTestId(/^card-r-/)).toHaveLength(1)
   })
 
+  it('桌面未传 scroll：不给表格加横向滚动，度量与改动前一致', () => {
+    render(
+      <ResponsiveTable<Row>
+        rowKey="id"
+        columns={COLUMNS}
+        dataSource={makeRows(2)}
+        pagination={false}
+      />,
+    )
+
+    const content = document.querySelector('.ant-table-content') as HTMLElement
+    expect(content.style.overflowX).not.toBe('auto')
+  })
+
+  it('调用方传了 scroll 时以调用方为准', () => {
+    render(
+      <ResponsiveTable<Row>
+        rowKey="id"
+        columns={COLUMNS}
+        dataSource={makeRows(2)}
+        pagination={false}
+        scroll={{ x: 1200 }}
+      />,
+    )
+
+    const table = document.querySelector('.ant-table-content table') as HTMLElement
+    expect(table.style.width).toBe('1200px')
+  })
+
+  it('平板宽度（900）仍是表格，未传 scroll 时默认横向滚动', () => {
+    act(() => setViewportWidth(900))
+    render(
+      <ResponsiveTable<Row>
+        rowKey="id"
+        columns={COLUMNS}
+        dataSource={makeRows(2)}
+        pagination={false}
+      />,
+    )
+
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    const content = document.querySelector('.ant-table-content') as HTMLElement
+    expect(content.style.overflowX).toBe('auto')
+    expect(document.querySelector('.ant-table-content table')).toHaveStyle(
+      'width: max-content',
+    )
+  })
+
   it('分组表头（列有 children）无法摊平，退回横向滚动表格', () => {
     renderMobile({
       rowKey: 'id',

@@ -131,12 +131,15 @@ export default function SideNav({
           position: 'sticky',
           top: 0,
           zIndex: 1,
+          // 与 antd Layout.Header 同高（controlHeight 32 × 2 = 64）：
+          // 两栏顶部必须在同一条水平线上，否则侧栏品牌头比顶栏矮一截
+          minHeight: 64,
           background: '#001529',
           boxShadow: '0 1px 0 rgba(255, 255, 255, 0.06)',
           color: '#fff',
           fontWeight: 600,
           fontSize: 15,
-          padding: collapsed ? '16px 0 12px' : '16px 12px 12px',
+          padding: collapsed ? '0' : '0 12px',
           letterSpacing: 0.5,
           display: 'flex',
           alignItems: 'center',

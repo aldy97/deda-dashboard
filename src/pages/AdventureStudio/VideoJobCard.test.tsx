@@ -71,8 +71,10 @@ describe('VideoJobCard', () => {
         authoring
       />,
     )
-    const video = document.querySelector('video')
+    const video = document.querySelector('video') as HTMLVideoElement
     expect(video?.getAttribute('src')).toBe('https://oss/final.mp4?sig=1')
+    // 竖屏成片高度封顶，否则手机上播放器会把整页顶走
+    expect(video).toHaveStyle({ maxHeight: '320px', objectFit: 'contain' })
     expect(screen.getByText(/系统音色试跑/)).toBeTruthy()
   })
 

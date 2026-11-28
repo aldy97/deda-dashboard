@@ -104,6 +104,21 @@ describe('AdminLayout 标题与环境标签', () => {
     expect(tag).toHaveTextContent('测试')
   })
 
+  it('品牌头与顶栏同高（64px），两栏顶边在同一条水平线上', () => {
+    stubMeta({
+      nodeEnv: 'staging',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    // antd Header 高度 = controlHeight(32) × 2 = 64；品牌头不设这个下限会矮一截
+    expect(screen.getByTestId('brand-header')).toHaveStyle('min-height: 64px')
+    expect(document.querySelector('.ant-layout-header')).toHaveClass(
+      'ant-layout-header',
+    )
+  })
+
   it('品牌头钉在侧栏顶端：菜单滚动时不跟着走', () => {
     stubMeta({
       nodeEnv: 'staging',
