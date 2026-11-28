@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import VideoTab from './VideoTab'
 import { useVideoCapabilities } from '../../api/adventureVideo'
 import type { VideoCapabilities } from '../../types/adventureVideo'
 
+const { createMutate } = vi.hoisted(() => ({ createMutate: vi.fn() }))
+
 vi.mock('../../api/adventureVideo', () => ({
   useVideoCapabilities: vi.fn(),
   useVideoJobs: vi.fn(() => ({ data: [], isLoading: false, error: null })),
-  useCreateVideoJob: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useCreateVideoJob: vi.fn(() => ({
+    mutateAsync: createMutate,
+    isPending: false,
+  })),
 }))
 
 const mockCaps = useVideoCapabilities as unknown as ReturnType<typeof vi.fn>
@@ -72,5 +77,53 @@ describe('VideoTab', () => {
     })
     renderTab()
     expect(screen.getByText('复刻音色未就绪')).toBeTruthy()
+  })
+
+  it('能力加载中显示加载态', () => {
+    mockCaps.mockReturnValue({ isLoading: true, data: undefined })
+    const { container } = renderTab()
+    expect(container.querySelector('.ant-spin')).toBeTruthy()
+  })
+
+  it('打开弹窗→填理由→提交：requestId/分辨率/理由随请求发出', async () => {
+    createMutate.mockReset()
+    createMutate.mockResolvedValue({ job: {}, reused: false })
+    mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
+    renderTab()
+
+    fireEvent.click(screen.getByRole('button', { name: /生成 60 秒预告/ }))
+    await screen.findByRole('dialog')
+    fireEvent.change(document.querySelector('textarea')!, {
+      target: { value: '给第 3 集做一支投放预告' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '开始生成' }))
+
+    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1))
+    const payload = createMutate.mock.calls[0][0]
+    expect(payload).toMatchObject({
+      episodeId: 'ep-1',
+      episodeVersionId: 'v-1',
+      resolution: '720P',
+      reason: '给第 3 集做一支投放预告',
+    })
+    expect(payload.requestId).toMatch(/^video-/)
+  })
+
+  it('建单失败时在弹窗内显示可读错误', async () => {
+    createMutate.mockReset()
+    createMutate.mockRejectedValue(new Error('预估 60 元，超过单支预算 50 元'))
+    mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
+    renderTab()
+
+    fireEvent.click(screen.getByRole('button', { name: /生成 60 秒预告/ }))
+    await screen.findByRole('dialog')
+    fireEvent.change(document.querySelector('textarea')!, {
+      target: { value: '先试一次预算闸看看' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '开始生成' }))
+
+    expect(
+      await screen.findByText('预估 60 元，超过单支预算 50 元'),
+    ).toBeTruthy()
   })
 })
