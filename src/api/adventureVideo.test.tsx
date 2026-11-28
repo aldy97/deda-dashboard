@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { apiClient } from './client'
 import {
   createVideoJob,
@@ -8,6 +11,13 @@ import {
   fetchVideoPreviewUrl,
   cancelVideoJob,
   retryVideoJob,
+  useCancelVideoJob,
+  useCreateVideoJob,
+  useRetryVideoJob,
+  useVideoCapabilities,
+  useVideoJob,
+  useVideoJobs,
+  useVideoPreviewUrl,
   VIDEO_QUERY_ROOT,
 } from './adventureVideo'
 import {
@@ -139,5 +149,77 @@ describe('adventureVideo 展示辅助', () => {
     const id = newRequestId()
     expect(id).toMatch(/^[A-Za-z0-9_-]{8,64}$/)
     expect(newRequestId()).not.toBe(id)
+  })
+})
+
+describe('adventureVideo hooks', () => {
+  function makeWrapper(client: QueryClient) {
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    }
+  }
+
+  it('能力 / 列表 / 详情按 queryKey 取数', async () => {
+    mockGet.mockReset()
+    mockGet
+      .mockResolvedValueOnce({ data: { enabled: true } })
+      .mockResolvedValueOnce({ data: { items: [JOB] } })
+      .mockResolvedValueOnce({ data: { ...JOB, shots: [], assets: [] } })
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = makeWrapper(client)
+
+    const caps = renderHook(() => useVideoCapabilities(), { wrapper })
+    await waitFor(() => expect(caps.result.current.data).toEqual({ enabled: true }))
+
+    const jobs = renderHook(() => useVideoJobs('ep-1'), { wrapper })
+    await waitFor(() => expect(jobs.result.current.data).toEqual([JOB]))
+
+    const job = renderHook(() => useVideoJob('job-1'), { wrapper })
+    await waitFor(() => expect(job.result.current.data?.id).toBe('job-1'))
+
+    client.clear()
+  })
+
+  it('预览地址在 enabled=false 时不发请求', () => {
+    mockGet.mockReset()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = makeWrapper(client)
+    const preview = renderHook(() => useVideoPreviewUrl('job-1', false), { wrapper })
+    expect(preview.result.current.fetchStatus).toBe('idle')
+    expect(mockGet).not.toHaveBeenCalled()
+    client.clear()
+  })
+
+  it('三个 mutation 成功后都作废整组视频缓存', async () => {
+    mockPost.mockReset()
+    mockPost.mockResolvedValue({ data: { job: JOB, reused: false } })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    const wrapper = makeWrapper(client)
+
+    const create = renderHook(() => useCreateVideoJob(), { wrapper })
+    await act(async () => {
+      await create.result.current.mutateAsync({
+        episodeId: 'ep-1',
+        episodeVersionId: 'v-1',
+        requestId: 'video-12345678',
+        reason: '做一支预告',
+      })
+    })
+
+    const retry = renderHook(() => useRetryVideoJob(), { wrapper })
+    await act(async () => {
+      await retry.result.current.mutateAsync({ jobId: 'job-1', reason: '重跑一次' })
+    })
+
+    const cancel = renderHook(() => useCancelVideoJob(), { wrapper })
+    await act(async () => {
+      await cancel.result.current.mutateAsync({ jobId: 'job-1', reason: '先不投放' })
+    })
+
+    expect(invalidate).toHaveBeenCalledTimes(3)
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: VIDEO_QUERY_ROOT })
+    client.clear()
   })
 })
