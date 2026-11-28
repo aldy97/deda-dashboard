@@ -313,6 +313,11 @@ export interface ParentUser {
   id: string
   nickname: string | null
   phone: string | null
+  /** 同一手机号被其他家长账号使用过（反馈回写允许重复） */
+  phoneDuplicate: boolean
+  gender: 'male' | 'female' | null
+  /** YYYY-MM-DD */
+  birthday: string | null
   /** ISO 8601 */
   registeredAt: string
   phoneMaker: string | null
@@ -363,6 +368,19 @@ export interface UsersDemographicsResponse {
   genderSplit: { male: number; female: number; unset: number }
   characterKeySplit: Array<{ characterKey: string; devices: number }>
   bindingsPerDevice: Array<{ count: 1 | 2 | '3+'; devices: number }>
+}
+
+/**
+ * GET /analytics/users/parent-demographics：家长口径的性别与年龄段分布。
+ * 统计单位是家长账号（users 表），与孩子/设备口径互不混算。
+ */
+export interface ParentDemographicsResponse {
+  totalUsers: number
+  genderSplit: { male: number; female: number; unset: number }
+  ageDistribution: Array<{
+    range: '<18' | '18-24' | '25-34' | '35-44' | '45+' | 'unknown'
+    users: number
+  }>
 }
 
 /**

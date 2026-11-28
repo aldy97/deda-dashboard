@@ -22,6 +22,9 @@ const PARENT: ParentDetailResponse = {
     id: '9f8b7c6d-1a2b-4c3d-8e9f-0a1b2c3d4e5f',
     nickname: '小明妈妈',
     phone: '13800000000',
+    phoneDuplicate: false,
+    gender: 'female',
+    birthday: '1990-05-20',
     registeredAt: '2026-01-02T03:04:05.000Z',
     phoneMaker: 'Apple',
   },
@@ -93,12 +96,48 @@ describe('家长档案页', () => {
     expect(await screen.findByText('小明妈妈')).toBeTruthy()
     expect(screen.getByText('13800000000')).toBeTruthy()
     expect(screen.getByText('Apple')).toBeTruthy()
+    expect(screen.getByText('女')).toBeTruthy()
+    expect(screen.getByText('1990-05-20')).toBeTruthy()
     expect(screen.getAllByText(/2026-01-02/).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('昵称：已填')).toBeTruthy()
     expect(screen.getByText('手机号：已填')).toBeTruthy()
+    expect(screen.getByText('性别：已填')).toBeTruthy()
+    expect(screen.getByText('生日：已填')).toBeTruthy()
     expect(screen.getByText('设备 2 台 · 孩子 1 位 · 反馈 3 条')).toBeTruthy()
     // 品牌已定家长不支持自定义头像：页面上不应出现任何头像区块
     expect(screen.queryByText(/头像/)).toBeNull()
+  })
+
+  it('手机号重复时展示黄色「重复」tag，未重复不展示', async () => {
+    const { unmount } = renderPage()
+
+    expect(await screen.findByText('13800000000')).toBeTruthy()
+    expect(screen.queryByText('重复')).toBeNull()
+    unmount()
+
+    mockGet.mockResolvedValue({
+      data: {
+        ...PARENT,
+        user: { ...PARENT.user, phoneDuplicate: true },
+      },
+    })
+    renderPage()
+
+    expect(await screen.findByText('重复')).toBeTruthy()
+  })
+
+  it('性别/生日缺失时给「未设置」，完整度标未填', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        ...PARENT,
+        user: { ...PARENT.user, gender: null, birthday: null },
+      },
+    })
+    renderPage()
+
+    expect(await screen.findByText('性别：未填')).toBeTruthy()
+    expect(screen.getByText('生日：未填')).toBeTruthy()
+    expect(screen.getAllByText('未设置').length).toBeGreaterThanOrEqual(2)
   })
 
   it('设备表渲染链接、角色、共享与最近开机日，孩子档案缺失给「未录入」', async () => {
@@ -129,6 +168,8 @@ describe('家长档案页', () => {
           nickname: null,
           phone: null,
           phoneMaker: null,
+          gender: null,
+          birthday: null,
         },
       },
     })

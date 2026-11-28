@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import Users from './index'
 import type {
+  ParentDemographicsResponse,
   PhoneBrandsResponse,
   UsersDemographicsResponse,
   UsersSummaryResponse,
@@ -28,15 +29,28 @@ const SUMMARY: UsersSummaryResponse = {
 
 const DEMOGRAPHICS: UsersDemographicsResponse = {
   ageDistribution: [
-    { range: '0-3', devices: 0 },
+    { range: '0-3', devices: 1 },
     { range: '3-6', devices: 0 },
     { range: '6-9', devices: 0 },
     { range: '9+', devices: 0 },
     { range: 'unknown', devices: 0 },
   ],
-  genderSplit: { male: 0, female: 0, unset: 0 },
+  genderSplit: { male: 1, female: 0, unset: 0 },
   characterKeySplit: [],
   bindingsPerDevice: [],
+}
+
+const PARENT_DEMOGRAPHICS: ParentDemographicsResponse = {
+  totalUsers: 100,
+  genderSplit: { male: 30, female: 55, unset: 15 },
+  ageDistribution: [
+    { range: '<18', users: 0 },
+    { range: '18-24', users: 10 },
+    { range: '25-34', users: 45 },
+    { range: '35-44', users: 30 },
+    { range: '45+', users: 5 },
+    { range: 'unknown', users: 10 },
+  ],
 }
 
 const PHONE_BRANDS: PhoneBrandsResponse = {
@@ -87,6 +101,8 @@ describe('用户画像页 · 家长手机品牌分布', () => {
         return Promise.resolve({ data: SUMMARY })
       if (url === '/analytics/users/demographics')
         return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/parent-demographics')
+        return Promise.resolve({ data: PARENT_DEMOGRAPHICS })
       if (url === '/analytics/users/phone-brands')
         return Promise.resolve({ data: PHONE_BRANDS })
       return Promise.resolve({ data: null })
@@ -112,6 +128,8 @@ describe('用户画像页 · 家长手机品牌分布', () => {
         return Promise.resolve({ data: SUMMARY })
       if (url === '/analytics/users/demographics')
         return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/parent-demographics')
+        return Promise.resolve({ data: PARENT_DEMOGRAPHICS })
       return Promise.resolve({ data: null })
     })
 
@@ -134,6 +152,8 @@ describe('用户画像页 · 搜索分流与概览卡片', () => {
         return Promise.resolve({ data: SUMMARY })
       if (url === '/analytics/users/demographics')
         return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/parent-demographics')
+        return Promise.resolve({ data: PARENT_DEMOGRAPHICS })
       if (url === '/analytics/users/phone-brands')
         return Promise.resolve({ data: PHONE_BRANDS })
       return Promise.resolve({ data: null })
@@ -175,5 +195,46 @@ describe('用户画像页 · 搜索分流与概览卡片', () => {
     const title = await screen.findByText('多设备家庭')
     expect(title).toBeTruthy()
     expect(title.closest('.ant-statistic')?.textContent).toContain('3')
+  })
+})
+
+describe('用户画像页 · 家长 / 孩子设备双 tab', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/users/summary')
+        return Promise.resolve({ data: SUMMARY })
+      if (url === '/analytics/users/parent-demographics')
+        return Promise.resolve({ data: PARENT_DEMOGRAPHICS })
+      if (url === '/analytics/users/demographics')
+        return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/phone-brands')
+        return Promise.resolve({ data: PHONE_BRANDS })
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  it('默认落在家长画像，不请求孩子/设备画像接口', async () => {
+    renderPage()
+
+    expect(await screen.findByText('注册家长总数')).toBeTruthy()
+    expect(screen.getByText(/家长性别分布/)).toBeTruthy()
+    expect(mockGet).not.toHaveBeenCalledWith('/analytics/users/demographics')
+    expect(screen.getByRole('tab', { name: '家长画像' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: '孩子 / 设备画像' }),
+    ).toBeInTheDocument()
+  })
+
+  it('切到孩子/设备画像才请求 demographics，并显示口径说明', async () => {
+    renderPage()
+    await screen.findByText('注册家长总数')
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('tab', { name: '孩子 / 设备画像' }))
+
+    expect(await screen.findByText('统计单位：设备与孩子档案')).toBeTruthy()
+    expect(mockGet).toHaveBeenCalledWith('/analytics/users/demographics')
+    expect(screen.getByText(/孩子年龄段分布/)).toBeTruthy()
   })
 })
