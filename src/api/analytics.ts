@@ -42,6 +42,7 @@ import type {
   NetworkUsageResponse,
   OverviewResponse,
   OverviewTrendResponse,
+  ParentDemographicsResponse,
   ParentDetailResponse,
   ParentReportListResponse,
   PhoneBrandsResponse,
@@ -277,6 +278,12 @@ export async function fetchParentDetail(
 export async function fetchUsersDemographics(): Promise<UsersDemographicsResponse> {
   const resp = await apiClient.get('/analytics/users/demographics')
   return resp.data as UsersDemographicsResponse
+}
+
+/** 家长口径的性别/年龄段分布（统计单位是家长账号，不是设备） */
+export async function fetchParentDemographics(): Promise<ParentDemographicsResponse> {
+  const resp = await apiClient.get('/analytics/users/parent-demographics')
+  return resp.data as ParentDemographicsResponse
 }
 
 /** 家长手机厂商分布（全量注册用户当前快照，只出聚合计数） */

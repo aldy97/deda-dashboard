@@ -1,5 +1,8 @@
 import { Empty } from 'antd'
-import ReactECharts from 'echarts-for-react'
+import {
+  DistributionBar,
+  DistributionPie,
+} from '../../components/analytics/DistributionCharts'
 import type { UsersDemographicsResponse } from '../../types/analytics'
 
 const AGE_LABELS: Record<string, string> = {
@@ -12,7 +15,7 @@ const AGE_LABELS: Record<string, string> = {
 const AGE_ORDER = ['0-3', '3-6', '6-9', '9+', 'unknown']
 
 /**
- * 用户画像分布图：年龄段柱状 + 性别饼图 + IP 型号饼图 + 家庭绑定结构柱状。
+ * 孩子 / 设备画像分布图：统计单位是设备与孩子档案，不是家长账号。
  * PII 红线：只展示聚合计数，无个体信息。
  */
 export default function Demographics({
@@ -46,40 +49,6 @@ export default function Demographics({
     return <Empty description="暂无设备画像数据" />
   }
 
-  const pieOption = (title: string, items: Array<{ name: string; value: number }>) => ({
-    tooltip: { trigger: 'item', formatter: '{b}: {c} 台（{d}%）' },
-    legend: { bottom: 0 },
-    series: [
-      {
-        name: title,
-        type: 'pie',
-        radius: ['40%', '65%'],
-        center: ['50%', '45%'],
-        label: { formatter: '{b}\n{c} 台' },
-        data: items,
-      },
-    ],
-  })
-
-  const barOption = (
-    categories: string[],
-    values: number[],
-  ) => ({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: 48, right: 24, top: 24, bottom: 56 },
-    xAxis: { type: 'category', data: categories, axisLabel: { interval: 0 } },
-    yAxis: { type: 'value', name: '设备数', minInterval: 1 },
-    series: [
-      {
-        type: 'bar',
-        barMaxWidth: 48,
-        label: { show: true, position: 'top' },
-        itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] },
-        data: values,
-      },
-    ],
-  })
-
   return (
     <div
       style={{
@@ -88,52 +57,30 @@ export default function Demographics({
         gap: 16,
       }}
     >
-      <div>
-        <ReactECharts
-          notMerge
-          style={{ height: 260 }}
-          option={barOption(
-            AGE_ORDER.map((k) => AGE_LABELS[k] ?? k),
-            ageData,
-          )}
-        />
-        <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.45)' }}>
-          孩子年龄段分布
-        </div>
-      </div>
-      <div>
-        <ReactECharts
-          notMerge
-          style={{ height: 260 }}
-          option={pieOption('性别', genderData)}
-        />
-        <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.45)' }}>
-          性别分布
-        </div>
-      </div>
-      <div>
-        <ReactECharts
-          notMerge
-          style={{ height: 260 }}
-          option={pieOption('型号', characterData)}
-        />
-        <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.45)' }}>
-          IP 型号分布
-        </div>
-      </div>
-      <div>
-        <ReactECharts
-          notMerge
-          style={{ height: 260 }}
-          option={barOption(
-            bindingData.map((b) => b.name),
-            bindingData.map((b) => b.value),
-          )}
-        />
-        <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.45)' }}>
-          每台设备绑定家庭数
-        </div>
-      </div>
+      <DistributionBar
+        caption="孩子年龄段分布（按设备）"
+        categories={AGE_ORDER.map((k) => AGE_LABELS[k] ?? k)}
+        values={ageData}
+        unit="台"
+      />
+      <DistributionPie
+        caption="孩子性别分布（按孩子档案）"
+        seriesName="性别"
+        items={genderData}
+        unit="台"
+      />
+      <DistributionPie
+        caption="IP 型号分布（按设备）"
+        seriesName="型号"
+        items={characterData}
+        unit="台"
+      />
+      <DistributionBar
+        caption="每台设备绑定家庭数（按设备）"
+        categories={bindingData.map((b) => b.name)}
+        values={bindingData.map((b) => b.value)}
+        unit="台"
+      />
     </div>
   )
 }

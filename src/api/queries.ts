@@ -38,6 +38,7 @@ import {
   fetchOverview,
   fetchOverviewTrend,
   fetchParentDetail,
+  fetchParentDemographics,
   fetchQualityConversation,
   fetchReportFeedbacks,
   fetchParentReports,
@@ -267,6 +268,14 @@ export function useUsersDemographics() {
   return useQuery({
     queryKey: ['analytics', 'usersDemographics'],
     queryFn: fetchUsersDemographics,
+  })
+}
+
+/** 家长口径画像；只在「家长画像」tab 挂载后请求 */
+export function useParentDemographics() {
+  return useQuery({
+    queryKey: ['analytics', 'parentDemographics'],
+    queryFn: fetchParentDemographics,
   })
 }
 

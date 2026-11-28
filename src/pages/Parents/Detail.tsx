@@ -13,6 +13,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import PageHeader from '../../components/PageHeader'
+import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
 import { useParentDetail } from '../../api/queries'
 import type { ParentDevice } from '../../types/analytics'
 
@@ -112,7 +113,24 @@ export default function ParentDetail() {
               {user.nickname ?? <Tag>未设置昵称</Tag>}
             </Descriptions.Item>
             <Descriptions.Item label="手机号">
-              {user.phone ?? '未绑定'}
+              {user.phone ? (
+                <Space size={8}>
+                  <span>{user.phone}</span>
+                  <PhoneDuplicateTag duplicate={user.phoneDuplicate} />
+                </Space>
+              ) : (
+                '未绑定'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="性别">
+              {user.gender ? (
+                GENDER_LABEL[user.gender]
+              ) : (
+                <Tag>未设置</Tag>
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="生日">
+              {user.birthday ?? '未设置'}
             </Descriptions.Item>
             <Descriptions.Item label="手机厂商">
               {user.phoneMaker ?? '—'}
@@ -130,6 +148,12 @@ export default function ParentDetail() {
             </Tag>
             <Tag color={user.phone ? 'success' : 'default'}>
               手机号：{user.phone ? '已填' : '未填'}
+            </Tag>
+            <Tag color={user.gender ? 'success' : 'default'}>
+              性别：{user.gender ? '已填' : '未填'}
+            </Tag>
+            <Tag color={user.birthday ? 'success' : 'default'}>
+              生日：{user.birthday ? '已填' : '未填'}
             </Tag>
           </Space>
         </Card>

@@ -4,6 +4,7 @@ import {
   deleteDeviceChildProfile,
   fetchDeviceChildProfile,
   fetchNetworkUsage,
+  fetchParentDemographics,
   fetchParentDetail,
   fetchPhoneBrands,
 } from './analytics'
@@ -109,5 +110,21 @@ describe('家长档案 api', () => {
     await fetchParentDetail('a/b?c')
 
     expect(mockGet).toHaveBeenCalledWith('/analytics/parents/a%2Fb%3Fc')
+  })
+})
+
+describe('家长画像 api', () => {
+  it('fetchParentDemographics 打 parent-demographics 并剥离信封', async () => {
+    const data = {
+      totalUsers: 2,
+      genderSplit: { male: 1, female: 1, unset: 0 },
+      ageDistribution: [{ range: '25-34', users: 2 }],
+    }
+    mockGet.mockResolvedValueOnce({ data })
+
+    const result = await fetchParentDemographics()
+
+    expect(mockGet).toHaveBeenCalledWith('/analytics/users/parent-demographics')
+    expect(result).toBe(data)
   })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -194,5 +194,28 @@ describe('内容与质量页 · 归位', () => {
     const engStoryLink = screen.getByText(/英语故事消息/)
     expect(engStoryLink.tagName).toBe('A')
     expect(engStoryLink.getAttribute('href')).toContain('mode=english_story')
+  })
+
+  it('点击刷新重新拉取本页全部区块', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
+      if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
+      if (url === '/analytics/content/learning') return Promise.resolve({ data: LEARNING_RESPONSE })
+      if (url === '/analytics/quality/conversation') return Promise.resolve({ data: QUALITY_RESPONSE })
+      return Promise.resolve({ data: null })
+    })
+
+    renderPage()
+    expect(await screen.findByText('新学单词总数')).toBeTruthy()
+
+    const callsBefore = mockGet.mock.calls.length
+    await userEvent.click(screen.getByRole('button', { name: /刷新/ }))
+
+    await waitFor(() =>
+      expect(mockGet.mock.calls.length).toBeGreaterThan(callsBefore),
+    )
+    expect(
+      mockGet.mock.calls.some(([url]) => url === '/analytics/content/adventure-choices'),
+    ).toBe(true)
   })
 })

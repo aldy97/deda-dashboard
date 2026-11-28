@@ -9,6 +9,8 @@ import {
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import InfoTip from '../../components/InfoTip'
 import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
+import { usePageRefresh } from '../../api/refresh'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import AdventureSection from './AdventureSection'
@@ -49,6 +51,7 @@ export default function Content() {
       : '加载失败'
     : null
   const dateQuery = `startDate=${fmt(range[0])}&endDate=${fmt(range[1])}`
+  const { refresh, isRefreshing } = usePageRefresh('content')
 
   return (
     <div>
@@ -56,12 +59,15 @@ export default function Content() {
         title="内容与质量"
         description="区间为闭区间，含今日时今日数据进行中"
         actions={
-          <AnalyticsRangePicker
-            value={range}
-            onChange={(r) => {
-              if (r) setRange(r)
-            }}
-          />
+          <>
+            <AnalyticsRangePicker
+              value={range}
+              onChange={(r) => {
+                if (r) setRange(r)
+              }}
+            />
+            <RefreshButton loading={isRefreshing} onClick={refresh} />
+          </>
         }
       />
 
