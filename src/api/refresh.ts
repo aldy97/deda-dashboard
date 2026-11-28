@@ -25,6 +25,7 @@ export const PAGE_QUERY_KEYS = {
     'parentDemographics',
     'phoneBrands',
   ],
+  parent: ['parentDetail'],
   content: [
     'contentAdventure',
     'contentAdventureChoices',
