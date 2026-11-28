@@ -54,7 +54,8 @@ describe('DeviceIdCell', () => {
     // 链接形态与超长省略
     expect(label.tagName).toBe('A')
     expect(label).toHaveAttribute('href', '/users/aabbccddeeff')
-    expect(label).toHaveAttribute('title', 'aabbccddeeff')
+    expect(label).not.toHaveAttribute('title')
+    expect(label).toHaveAttribute('data-hint', 'device-profile')
     expect(label.style.minWidth).toBe('0px')
     expect(label.style.overflow).toBe('hidden')
     expect(label.style.textOverflow).toBe('ellipsis')

@@ -10,8 +10,8 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
-import { Link } from 'react-router-dom'
 import { useReviewQueue } from '../../api/queries'
+import AccessLink from '../../components/access/AccessLink'
 import InfoTip from '../../components/InfoTip'
 import type { ReviewQueueSort } from '../../types/analytics'
 import {
@@ -181,7 +181,13 @@ export default function ReviewQueueTable({
             width: 120,
             fixed: 'left',
             render: (turnId: string) => (
-              <Link to={`/messages?turnId=${turnId}`}>{turnId.slice(0, 8)}…</Link>
+              <AccessLink
+                hint="message-detail"
+                carries={['turnId']}
+                to={`/messages?turnId=${turnId}`}
+              >
+                {turnId.slice(0, 8)}…
+              </AccessLink>
             ),
           },
           {

@@ -49,3 +49,12 @@ export const OPS_ROUTE_META: Record<OpsPath, { title: string }> = {
 export function isOpsPath(pathname: string): boolean {
   return (OPS_PATHS as readonly string[]).includes(pathname)
 }
+
+/**
+ * 超管专属目标判定：`to` 是站内路径（可带 query / hash），先剥掉再比对。
+ * AccessLink 用它决定「渲染链接」还是「退化为纯文本」，因此新增运维页只改
+ * OPS_PATHS 一处即可，调用点无需声明。
+ */
+export function isExclusivePath(to: string): boolean {
+  return isOpsPath(to.split(/[?#]/, 1)[0])
+}

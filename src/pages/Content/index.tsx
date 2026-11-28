@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Statistic } from 'antd'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import {
   useContentAdventure,
   useContentLearning,
@@ -94,12 +94,20 @@ export default function Content() {
           title="学习数据"
           extra={
             <div style={{ display: 'flex', gap: 12 }}>
-              <Link to={`/messages?mode=english_chat&${dateQuery}`}>
+              <AccessLink
+                hint="message-list"
+                carries={['mode', '当前时间区间']}
+                to={`/messages?mode=english_chat&${dateQuery}`}
+              >
                 英语对话消息 →
-              </Link>
-              <Link to={`/messages?mode=english_story&${dateQuery}`}>
+              </AccessLink>
+              <AccessLink
+                hint="message-list"
+                carries={['mode', '当前时间区间']}
+                to={`/messages?mode=english_story&${dateQuery}`}
+              >
                 英语故事消息 →
-              </Link>
+              </AccessLink>
             </div>
           }
           style={{ marginTop: 16 }}
@@ -147,8 +155,12 @@ export default function Content() {
           }
           extra={
             <div style={{ display: 'flex', gap: 12 }}>
-              <Link to="/llm?tab=perf">模型监控·性能 →</Link>
-              <Link to="/llm?tab=safety">模型监控·安全 →</Link>
+              <AccessLink hint="llm-perf" arrow to="/llm?tab=perf">
+                模型监控·性能
+              </AccessLink>
+              <AccessLink hint="llm-safety" arrow to="/llm?tab=safety">
+                模型监控·安全
+              </AccessLink>
             </div>
           }
           style={{ marginTop: 16 }}

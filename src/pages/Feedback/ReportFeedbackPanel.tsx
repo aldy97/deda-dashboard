@@ -10,9 +10,9 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useContentParentReport, useReportFeedbacks } from '../../api/queries'
+import AccessLink from '../../components/access/AccessLink'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
@@ -145,9 +145,15 @@ export default function ReportFeedbackPanel() {
           </Col>
         </Row>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          <Link to="/llm?tab=perf&scene=parent_report">
-            生成失败排查：模型监控·家长日报生成 →
-          </Link>
+          <AccessLink
+            hint="llm-perf"
+            detail="家长日报生成"
+            carries={['scene']}
+            arrow
+            to="/llm?tab=perf&scene=parent_report"
+          >
+            生成失败排查：模型监控·家长日报生成
+          </AccessLink>
         </Typography.Text>
       </Card>
 
@@ -228,9 +234,13 @@ export default function ReportFeedbackPanel() {
             key: 'device',
             width: 140,
             render: (_, row) => (
-              <Link to={`/users/${encodeURIComponent(row.device.deviceId)}`}>
+              <AccessLink
+                hint="device-profile"
+                carries={['deviceId']}
+                to={`/users/${encodeURIComponent(row.device.deviceId)}`}
+              >
                 {row.device.deviceCode ?? row.device.deviceId}
-              </Link>
+              </AccessLink>
             ),
           },
           {

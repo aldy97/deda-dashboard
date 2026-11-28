@@ -15,7 +15,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { SnippetsOutlined } from '@ant-design/icons'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import CopyableText from '../../components/CopyableText'
 import PageHeader from '../../components/PageHeader'
 import { readText } from '../../utils/clipboard'
@@ -135,12 +135,14 @@ export default function TestDevices() {
       width: 220,
       render: (_, row) => (
         <Space size={4}>
-          <Link
+          <AccessLink
+            hint="device-profile"
+            carries={['deviceId']}
             to={`/users/${encodeURIComponent(row.device.deviceId)}`}
             style={{ fontFamily: 'monospace' }}
           >
             {row.device.deviceId}
-          </Link>
+          </AccessLink>
           <CopyableText text={row.device.deviceId} tip="复制设备 ID" />
         </Space>
       ),

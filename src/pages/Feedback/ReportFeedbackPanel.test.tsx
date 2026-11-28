@@ -177,10 +177,23 @@ describe('ReportFeedbackPanel · 家长报告生成质量并入日报反馈', ()
   })
 
   it('保留「生成失败排查」的模型监控深链，不再指向已合并的 tab', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/meta')
+        return Promise.resolve({
+          data: {
+            nodeEnv: 'staging',
+            promptWriteEnabled: true,
+            publishConfirmCode: 'DEDA2025',
+            admin: { username: 'root', displayName: '超管', role: 'superadmin' },
+          },
+        })
+      return Promise.resolve({ data: SUMMARY_RESPONSE })
+    })
+
     renderPanel()
 
     expect(await screen.findByText(/生成失败排查/)).toBeTruthy()
-    const link = screen.getByText(/模型监控/)
+    const link = await screen.findByRole('link', { name: /生成失败排查/ })
     expect(link.getAttribute('href')).toBe('/llm?tab=perf&scene=parent_report')
     expect(screen.queryByText(/看日报反馈明细/)).toBeNull()
   })

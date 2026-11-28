@@ -1,6 +1,6 @@
 import { Empty, Table, Tag } from 'antd'
-import { Link } from 'react-router-dom'
 import type { IntentSummaryResponse } from '../../types/analytics'
+import AccessLink from '../../components/access/AccessLink'
 import {
   INTENT_META,
   NULL_BUCKET,
@@ -65,11 +65,13 @@ export default function IntentMatrixTable({
             const mode = intentToMode(intent)
             if (mode) {
               return (
-                <Link
+                <AccessLink
+                  hint="message-list"
+                  carries={['mode', '当前时间区间']}
                   to={`/messages?mode=${mode}&startDate=${startDate}&endDate=${endDate}`}
                 >
                   {tag}
-                </Link>
+                </AccessLink>
               )
             }
             return tag

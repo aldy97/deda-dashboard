@@ -13,6 +13,7 @@ import {
 } from 'antd'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import AccessLink from '../../components/access/AccessLink'
 import InfoTip from '../../components/InfoTip'
 import { useCurrentMemories, useMemoryHistory } from '../../api/queries'
 import {
@@ -218,9 +219,13 @@ export default function MemoryDetail() {
                           {fmtTime(v.validFrom)} →{' '}
                           {v.validTo ? fmtTime(v.validTo) : '至今'} · 置信度{' '}
                           {(v.confidence * 100).toFixed(0)}% · 来源轮次{' '}
-                          <Link to={`/messages?turnId=${v.sourceTurnId}`}>
+                          <AccessLink
+                            hint="message-detail"
+                            carries={['turnId']}
+                            to={`/messages?turnId=${v.sourceTurnId}`}
+                          >
                             {v.sourceTurnId.slice(0, 8)}…
-                          </Link>
+                          </AccessLink>
                         </Typography.Text>
                       </div>
                     </div>

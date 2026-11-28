@@ -1,5 +1,6 @@
 import { Progress, Table } from 'antd'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
+import type { LinkHintTarget } from '../../components/access/link-hints'
 import InfoTip from '../../components/InfoTip'
 import type { FeatureAdoptionResponse } from '../../types/analytics'
 
@@ -11,6 +12,13 @@ const FEATURE_LINK: Record<string, (start: string, end: string) => string> = {
   english: (s, e) => `/messages?mode=english_chat&startDate=${s}&endDate=${e}`,
   sleep_mode: (s, e) => `/messages?mode=sleep_story&startDate=${s}&endDate=${e}`,
   habit_plan: () => '/content',
+}
+
+const FEATURE_HINT: Record<string, LinkHintTarget> = {
+  adventure: 'adventure',
+  english: 'message-list',
+  sleep_mode: 'message-list',
+  habit_plan: 'content',
 }
 
 /**
@@ -36,7 +44,18 @@ export default function FeatureAdoptionTable({
         { title: '功能', dataIndex: 'label', width: 110,
           render: (label: string, row) => {
             const href = FEATURE_LINK[row.key]?.(startDate ?? '', endDate ?? '')
-            return href ? <Link to={href}>{label}</Link> : label
+            const hint = FEATURE_HINT[row.key] ?? 'content'
+            return href ? (
+              <AccessLink
+                hint={hint}
+                carries={hint === 'message-list' ? ['mode', '当前时间区间'] : undefined}
+                to={href}
+              >
+                {label}
+              </AccessLink>
+            ) : (
+              label
+            )
           },
         },
         {

@@ -1,6 +1,6 @@
 import { Progress, Table, Tag } from 'antd'
-import { Link } from 'react-router-dom'
 import type { LlmSummaryResponse } from '../../types/analytics'
+import AccessLink from '../../components/access/AccessLink'
 import InfoTip from '../../components/InfoTip'
 import {
   FAILURE_REASON_META,
@@ -41,7 +41,14 @@ export default function SceneSummaryTable({
             const meta = SCENE_META[scene]
             return (
               <span>
-                <Link to={`/prompts?scene=${scene}`}>{sceneLabel(scene)}</Link>
+                <AccessLink
+                  hint="prompts"
+                  detail="该场景"
+                  carries={['scene']}
+                  to={`/prompts?scene=${scene}`}
+                >
+                  {sceneLabel(scene)}
+                </AccessLink>
                 {meta && <InfoTip title={meta.description} />}
                 <Tag color={row.tier === 'small' ? 'geekblue' : 'gold'}>
                   {row.tier === 'small' ? '辅助链路' : '主链路'}

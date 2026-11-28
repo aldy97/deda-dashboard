@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Alert, Card, Col, Row, Space, Spin, Typography } from 'antd'
-import { Link } from 'react-router-dom'
 import type { Dayjs } from 'dayjs'
+import AccessLink from '../../components/access/AccessLink'
 import {
   useDurationDistribution,
   useEngagementSummary,
@@ -132,8 +132,10 @@ export default function Engagement() {
           {modes.length > 0 && (
             <Space wrap style={{ marginTop: 8 }}>
               {modes.map((m) => (
-                <Link
+                <AccessLink
                   key={m}
+                  hint="message-list"
+                  carries={['mode', '当前时间区间']}
                   to={messagesModeLink(
                     m,
                     rangeDateStr.startDate,
@@ -141,7 +143,7 @@ export default function Engagement() {
                   )}
                 >
                   {modeLabel(m)}
-                </Link>
+                </AccessLink>
               ))}
             </Space>
           )}

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Alert, Table, Tag, Tooltip, Typography } from 'antd'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useLlmRecentFailures } from '../../api/queries'
+import AccessLink from '../../components/access/AccessLink'
 import { FAILURE_REASON_META, failureReasonLabel, sceneLabel } from './scenes'
 
 /**
@@ -159,7 +159,17 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
             dataIndex: 'turnId',
             width: 110,
             render: (v: string | null) =>
-              v ? <Link to={`/messages?turnId=${v}`}>查看链路</Link> : '—',
+              v ? (
+                <AccessLink
+                  hint="message-detail"
+                  carries={['turnId']}
+                  to={`/messages?turnId=${v}`}
+                >
+                  查看链路
+                </AccessLink>
+              ) : (
+                '—'
+              ),
           },
         ]}
       />

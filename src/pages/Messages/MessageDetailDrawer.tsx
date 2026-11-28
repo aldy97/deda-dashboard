@@ -6,14 +6,11 @@ import {
   Space,
   Spin,
   Tag,
-  Tooltip,
   Typography,
 } from 'antd'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMessageDetail, useMessages } from '../../api/queries'
-import { useAnalyticsMeta } from '../../api/meta'
-import { isSuperAdmin } from '../../components/access/role'
+import AccessLink from '../../components/access/AccessLink'
 import CopyableText from '../../components/CopyableText'
 import {
   isAssistantRawPayload,
@@ -86,15 +83,10 @@ export default function MessageDetailDrawer({
 
   // 冒险故事：集身份 + 该轮播放时锁定的版本；旧服务端没有该字段时按「未记录」处理
   const adventureEpisode = detail?.adventureEpisode ?? null
-  const metaQuery = useAnalyticsMeta()
-  const superadmin = isSuperAdmin(metaQuery.data)
-  // /prompts 是 OpsGate 超管专属页：非超管与 meta 未就绪都不给入口，避免链到雾层
-  const modePromptLink = superadmin
-    ? promptsEditorLink(row?.mode, row?.device.characterKey)
-    : null
-  const personaPromptLink = superadmin
-    ? promptsPersonaLink(row?.device.characterKey)
-    : null
+  // /prompts 与 /adventure 都是 OpsGate 超管专属页：AccessLink 对普通 admin
+  // 自动退化为纯文本，这里不再各自判断角色。
+  const modePromptLink = promptsEditorLink(row?.mode, row?.device.characterKey)
+  const personaPromptLink = promptsPersonaLink(row?.device.characterKey)
 
   // 同轮孩子 ASR 原文：排查「AI 答非所问」时先看识别成了什么
   const turnId = row?.turnId ?? null
@@ -187,14 +179,15 @@ export default function MessageDetailDrawer({
                 key: 'mode',
                 label: '模式',
                 children: modePromptLink ? (
-                  <Tooltip title="查看该模式用到的提示词">
-                    <Link
-                      to={modePromptLink}
-                      aria-label={`查看「${modeLabel(row.mode)}」用到的提示词`}
-                    >
-                      {modeLabel(row.mode)}
-                    </Link>
-                  </Tooltip>
+                  <AccessLink
+                    hint="prompts"
+                    detail="该模式用到的提示词"
+                    carries={['mode', 'characterKey']}
+                    to={modePromptLink}
+                    aria-label={`查看「${modeLabel(row.mode)}」用到的提示词`}
+                  >
+                    {modeLabel(row.mode)}
+                  </AccessLink>
                 ) : (
                   modeLabel(row.mode)
                 ),
@@ -220,18 +213,24 @@ export default function MessageDetailDrawer({
                           {adventureEpisode.versionId === null && (
                             <Tag>版本未记录</Tag>
                           )}
-                          {!superadmin ? null : adventureEpisode.versionId ? (
-                            <Link
+                          {adventureEpisode.versionId ? (
+                            <AccessLink
+                              hint="adventure"
+                              detail="该集版本快照"
+                              carries={['episodeId', 'versionId']}
                               to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}&versionId=${encodeURIComponent(adventureEpisode.versionId)}`}
                             >
                               查看当时版本 v{adventureEpisode.version}
-                            </Link>
+                            </AccessLink>
                           ) : (
-                            <Link
+                            <AccessLink
+                              hint="adventure"
+                              detail="该集版本历史"
+                              carries={['episodeId']}
                               to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}`}
                             >
                               查看该集版本历史
-                            </Link>
+                            </AccessLink>
                           )}
                         </Space>
                       ) : (
@@ -253,12 +252,14 @@ export default function MessageDetailDrawer({
                 label: '设备 ID',
                 children: (
                   <Space size={4}>
-                    <Link
+                    <AccessLink
+                      hint="device-profile"
+                      carries={['deviceId']}
                       to={`/users/${encodeURIComponent(row.device.deviceId)}`}
                       style={{ fontFamily: 'monospace' }}
                     >
                       {row.device.deviceId}
-                    </Link>
+                    </AccessLink>
                     <CopyableText
                       text={row.device.deviceId}
                       tip="复制设备 ID"
@@ -270,14 +271,15 @@ export default function MessageDetailDrawer({
                 key: 'character',
                 label: '产品',
                 children: personaPromptLink ? (
-                  <Tooltip title="查看该角色人设提示词">
-                    <Link
-                      to={personaPromptLink}
-                      aria-label={`查看角色 ${row.device.characterKey} 的人设提示词`}
-                    >
-                      {row.device.characterKey}
-                    </Link>
-                  </Tooltip>
+                  <AccessLink
+                    hint="prompts"
+                    detail="该角色人设"
+                    carries={['characterKey']}
+                    to={personaPromptLink}
+                    aria-label={`查看角色 ${row.device.characterKey} 的人设提示词`}
+                  >
+                    {row.device.characterKey}
+                  </AccessLink>
                 ) : (
                   row.device.characterKey
                 ),

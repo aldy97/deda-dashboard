@@ -1,7 +1,7 @@
 import { Alert, Button, Drawer, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import PageHeader from '../../components/PageHeader'
 import {
   UNKNOWN_ENV_VIEW,
@@ -133,7 +133,14 @@ export default function Prompts() {
       width: 130,
       render: (scene: string | null) =>
         scene ? (
-          <Link to={`/llm?tab=perf&scene=${scene}`}>{sceneLabel(scene)}</Link>
+          <AccessLink
+            hint="llm-perf"
+            detail="该场景"
+            carries={['scene']}
+            to={`/llm?tab=perf&scene=${scene}`}
+          >
+            {sceneLabel(scene)}
+          </AccessLink>
         ) : (
           sceneLabel(scene)
         ),

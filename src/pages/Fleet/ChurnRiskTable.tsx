@@ -1,7 +1,7 @@
 import { Empty, InputNumber, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import AccessLink from '../../components/access/AccessLink'
 import type {
   ChurnRiskDevice,
   FleetChurnRiskResponse,
@@ -43,7 +43,13 @@ export default function ChurnRiskTable({ data, days, onDaysChange, onOpenDevice 
       width: 150,
       ellipsis: true,
       render: (v: string, r: ChurnRiskDevice) => (
-        <Link to={`/users/${r.deviceId}`}>{v}</Link>
+        <AccessLink
+          hint="device-profile"
+          carries={['deviceId']}
+          to={`/users/${r.deviceId}`}
+        >
+          {v}
+        </AccessLink>
       ),
     },
     {

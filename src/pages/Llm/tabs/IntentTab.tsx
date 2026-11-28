@@ -9,8 +9,8 @@ import {
   Statistic,
   Typography,
 } from 'antd'
-import { Link } from 'react-router-dom'
 import { useIntentSummary, useIntentTrend } from '../../../api/queries'
+import AccessLink from '../../../components/access/AccessLink'
 import AnalyticsRangePicker from '../../../components/AnalyticsRangePicker'
 import InfoTip from '../../../components/InfoTip'
 import { defaultRange, fmt } from '../../../utils/date-range'
@@ -135,12 +135,14 @@ export default function IntentTab() {
                   />
                   {summary.adventureTakeoverCount > 0 && (
                     <div>
-                      <Link
+                      <AccessLink
+                        hint="message-list"
+                        carries={['mode', '当前时间区间']}
                         to={`/messages?mode=adventure_story&startDate=${params.startDate}&endDate=${params.endDate}`}
                         style={{ fontSize: 12 }}
                       >
                         查看冒险消息 →
-                      </Link>
+                      </AccessLink>
                     </div>
                   )}
                 </Col>

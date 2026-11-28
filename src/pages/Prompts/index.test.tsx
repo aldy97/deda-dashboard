@@ -46,6 +46,7 @@ function makeMeta(overrides: Partial<AnalyticsMeta> = {}): AnalyticsMeta {
     nodeEnv: 'staging',
     promptWriteEnabled: true,
     publishConfirmCode: 'DEDA2025',
+    admin: { username: 'root', displayName: '超管', role: 'superadmin' },
     ...overrides,
   }
 }

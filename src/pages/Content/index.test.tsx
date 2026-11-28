@@ -154,6 +154,15 @@ describe('内容与质量页 · 归位', () => {
 
   it('对话质量趋势卡片有 /llm?tab=perf 和 /llm?tab=safety 出口', async () => {
     mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/meta')
+        return Promise.resolve({
+          data: {
+            nodeEnv: 'staging',
+            promptWriteEnabled: true,
+            publishConfirmCode: 'DEDA2025',
+            admin: { username: 'root', displayName: '超管', role: 'superadmin' },
+          },
+        })
       if (url === '/analytics/content/adventure') return Promise.resolve({ data: ADVENTURE_RESPONSE })
       if (url === '/analytics/content/adventure-choices') return Promise.resolve({ data: CHOICES_RESPONSE })
       if (url === '/analytics/content/learning') return Promise.resolve({ data: LEARNING_RESPONSE })
@@ -165,12 +174,10 @@ describe('内容与质量页 · 归位', () => {
 
     expect(await screen.findByText('新学单词总数')).toBeTruthy()
 
-    const perfLink = screen.getByText(/模型监控.*性能/)
-    expect(perfLink.tagName).toBe('A')
+    const perfLink = await screen.findByRole('link', { name: /模型监控.*性能/ })
     expect(perfLink.getAttribute('href')).toBe('/llm?tab=perf')
 
-    const safetyLink = screen.getByText(/模型监控.*安全/)
-    expect(safetyLink.tagName).toBe('A')
+    const safetyLink = await screen.findByRole('link', { name: /模型监控.*安全/ })
     expect(safetyLink.getAttribute('href')).toBe('/llm?tab=safety')
   })
 

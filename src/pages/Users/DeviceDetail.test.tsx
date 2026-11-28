@@ -170,7 +170,12 @@ function makeMessageDetail(msgId: string) {
 
 function stubAllApi(
   fleet404 = false,
-  opts: { meta?: unknown; items?: unknown[]; fleetDetail?: unknown } = {},
+  opts: {
+    meta?: unknown
+    items?: unknown[]
+    fleetDetail?: unknown
+    memories?: unknown
+  } = {},
 ) {
   mockGet.mockImplementation((url: string) => {
     if (url === '/analytics/meta') {
@@ -186,7 +191,7 @@ function stubAllApi(
       return Promise.resolve({ data: makeParentReportResponse() })
     }
     if (url === '/analytics/memories/current') {
-      return Promise.resolve({ data: makeMemoriesResponse() })
+      return Promise.resolve({ data: opts.memories ?? makeMemoriesResponse() })
     }
     if (url === '/analytics/feedback/user-feedbacks') {
       return Promise.resolve({ data: makeUserFeedbacksResponse() })
@@ -313,6 +318,32 @@ describe('Users/DeviceDetail · 设备 360 舰队卡片', () => {
       const link = screen.getByText(/在设备舰队中查看/)
       expect(link.closest('a')?.getAttribute('href')).toBe('/fleet?deviceId=dev-360')
     })
+  })
+
+  it('记忆槽位可点进记忆档案，深链带 key 并标注目的地', async () => {
+    mockGet.mockReset()
+    stubAllApi(false, {
+      memories: {
+        deviceId: 'dev-360',
+        memories: [
+          {
+            key: 'favorite_color',
+            valueText: '蓝色',
+            version: 2,
+            confidence: 0.9,
+            injectionCount: 3,
+            lastInjectedAt: '2026-11-13T00:00:00.000Z',
+            lastConfirmedAt: '2026-11-12T00:00:00.000Z',
+            validFrom: '2026-11-10T00:00:00.000Z',
+          },
+        ],
+      },
+    })
+    renderPage()
+
+    const link = await screen.findByRole('link', { name: /最喜欢的颜色/ })
+    expect(link.getAttribute('href')).toBe('/memories/dev-360?key=favorite_color')
+    expect(link).toHaveAttribute('data-hint', 'memory-archive')
   })
 
   it('Fleet 404 时显示轻提示，不炸页面', async () => {

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Alert, Radio, Space, Table, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
-import { Link } from 'react-router-dom'
 import { useUserFeedbacks } from '../../api/queries'
+import AccessLink from '../../components/access/AccessLink'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import CopyableText from '../../components/CopyableText'
 import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
@@ -132,9 +132,13 @@ export default function UserFeedbackPanel() {
               return (
                 <Space size={4}>
                   {row.userId ? (
-                    <Link to={`/parents/${encodeURIComponent(row.userId)}`}>
+                    <AccessLink
+                      hint="parent-profile"
+                      carries={['userId']}
+                      to={`/parents/${encodeURIComponent(row.userId)}`}
+                    >
                       {contact}
-                    </Link>
+                    </AccessLink>
                   ) : (
                     <span>{contact}</span>
                   )}

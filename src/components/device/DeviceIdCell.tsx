@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import AccessLink from '../access/AccessLink'
 import CopyableText from '../CopyableText'
 import TestWhitelistTag from '../TestWhitelistTag'
 
@@ -62,7 +62,9 @@ export default function DeviceIdCell({
       }}
     >
       {href ? (
-        <Link
+        <AccessLink
+          hint="device-profile"
+          carries={['deviceId']}
           data-testid="device-id-label"
           to={href}
           onClick={(e) => e.stopPropagation()}
@@ -70,7 +72,7 @@ export default function DeviceIdCell({
           style={LABEL_STYLE}
         >
           {label}
-        </Link>
+        </AccessLink>
       ) : (
         <span data-testid="device-id-label" title={label} style={LABEL_STYLE}>
           {label}
