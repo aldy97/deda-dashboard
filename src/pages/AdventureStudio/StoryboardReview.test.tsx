@@ -232,6 +232,116 @@ describe('StoryboardReview', () => {
     ).toBe(true)
   })
 
+
+  it('校验/保存失败展示服务端错误', async () => {
+    validateMutate.mockReset()
+    saveMutate.mockReset()
+    validateMutate.mockRejectedValue(new Error('校验失败：字数超预算'))
+    saveMutate.mockRejectedValue(new Error('保存失败：revision 冲突'))
+    useVideoJob.mockReturnValue({ isLoading: false, data: DETAIL })
+    renderReview()
+
+    fireEvent.click(screen.getByRole('button', { name: /校\s*验/ }))
+    await waitFor(() =>
+      expect(screen.getByText('校验失败：字数超预算')).toBeTruthy(),
+    )
+
+    fireEvent.change(screen.getAllByDisplayValue(BEATS[0].text)[0], {
+      target: { value: '改一下' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /保\s*存/ }))
+    await waitFor(() =>
+      expect(screen.getByText('保存失败：revision 冲突')).toBeTruthy(),
+    )
+  })
+
+  it('有未保存修改时点重新生成被拦下', () => {
+    useVideoJob.mockReturnValue({ isLoading: false, data: DETAIL })
+    renderReview()
+    fireEvent.change(screen.getAllByDisplayValue(BEATS[0].text)[0], {
+      target: { value: '改一下' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '重新生成分镜' }))
+    expect(screen.getByText('有未保存的修改，请先保存再操作。')).toBeTruthy()
+  })
+
+  it('重新配音成功提交并关闭；失败展示错误', async () => {
+    revoiceMutate.mockReset()
+    revoiceMutate.mockResolvedValue({})
+    const onClose = vi.fn()
+    useVideoJob.mockReturnValue({ isLoading: false, data: DETAIL })
+    const first = render(<StoryboardReview jobId="job-1" open onClose={onClose} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '重新配音' }))
+    await waitFor(() => expect(document.querySelector('.ant-modal')).toBeTruthy())
+    const modal = document.querySelector('.ant-modal') as HTMLElement
+    fireEvent.change(modal.querySelector('textarea')!, {
+      target: { value: '文案改过，重新配音确认时长' },
+    })
+    fireEvent.click(
+      Array.from(modal.querySelectorAll('button')).find((button) =>
+        /提\s*交/.test(button.textContent ?? ''),
+      )!,
+    )
+    await waitFor(() => expect(revoiceMutate).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    first.unmount()
+
+    revoiceMutate.mockRejectedValue(new Error('重新配音失败'))
+    render(<StoryboardReview jobId="job-1" open onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: '重新配音' }))
+    await waitFor(() => expect(document.querySelector('.ant-modal')).toBeTruthy())
+    const modal2 = document.querySelector('.ant-modal') as HTMLElement
+    fireEvent.change(modal2.querySelector('textarea')!, {
+      target: { value: '文案改过，重新配音确认时长' },
+    })
+    fireEvent.click(
+      Array.from(modal2.querySelectorAll('button')).find((button) =>
+        /提\s*交/.test(button.textContent ?? ''),
+      )!,
+    )
+    await waitFor(() =>
+      expect(screen.getByText('重新配音失败')).toBeTruthy(),
+    )
+  })
+
+  it('画风/镜头/画面/情绪/optional 都能改', () => {
+    useVideoJob.mockReturnValue({ isLoading: false, data: DETAIL })
+    renderReview()
+
+    fireEvent.change(screen.getByDisplayValue('柔和 3D 毛绒质感'), {
+      target: { value: '新的画风' },
+    })
+    fireEvent.change(screen.getAllByPlaceholderText('景别/运镜/动作')[0], {
+      target: { value: '特写' },
+    })
+    fireEvent.change(screen.getAllByPlaceholderText('画面描述')[0], {
+      target: { value: '新的画面' },
+    })
+    fireEvent.click(screen.getAllByRole('switch')[0])
+
+    fireEvent.mouseDown(screen.getAllByRole('combobox')[0])
+    fireEvent.click(screen.getByText('兴奋'))
+
+    expect(screen.getByDisplayValue('新的画风')).toBeTruthy()
+    expect(screen.getByDisplayValue('特写')).toBeTruthy()
+    expect(screen.getByDisplayValue('新的画面')).toBeTruthy()
+  })
+
+  it('理由弹窗可以取消', async () => {
+    useVideoJob.mockReturnValue({ isLoading: false, data: DETAIL })
+    renderReview()
+    fireEvent.click(screen.getByRole('button', { name: '重新配音' }))
+    await waitFor(() => expect(document.querySelector('.ant-modal')).toBeTruthy())
+    const modal = document.querySelector('.ant-modal') as HTMLElement
+    const cancel = Array.from(modal.querySelectorAll('button')).find((button) =>
+      /返\s*回/.test(button.textContent ?? ''),
+    )!
+    revoiceMutate.mockReset()
+    fireEvent.click(cancel)
+    expect(revoiceMutate).not.toHaveBeenCalled()
+  })
+
   it('重新生成分镜走独立确认弹窗', async () => {
     regenerateMutate.mockReset()
     regenerateMutate.mockResolvedValue({})
