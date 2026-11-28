@@ -137,7 +137,6 @@ export default function IntentTab() {
                     <div>
                       <AccessLink
                         hint="message-list"
-                        carries={['mode', '当前时间区间']}
                         to={`/messages?mode=adventure_story&startDate=${params.startDate}&endDate=${params.endDate}`}
                         style={{ fontSize: 12 }}
                       >

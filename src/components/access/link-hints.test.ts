@@ -32,10 +32,8 @@ describe('link-hints', () => {
     expect(isOpsTarget('test-devices')).toBe(true)
   })
 
-  it('普通目标：说明目的地与要带过去的上下文', () => {
-    expect(linkHintTitle('device-profile', { carries: ['deviceId'] })).toBe(
-      '点击前往「设备档案」，会带上 deviceId',
-    )
+  it('普通目标：只说前往哪里，不列随链接带过去的上下文', () => {
+    expect(linkHintTitle('device-profile')).toBe('点击前往「设备档案」')
     expect(linkHintTitle('message-detail')).toBe('点击前往「消息明细 · 该轮问答」')
   })
 

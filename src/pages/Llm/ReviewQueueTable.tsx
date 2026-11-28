@@ -183,7 +183,6 @@ export default function ReviewQueueTable({
             render: (turnId: string) => (
               <AccessLink
                 hint="message-detail"
-                carries={['turnId']}
                 to={`/messages?turnId=${turnId}`}
               >
                 {turnId.slice(0, 8)}…

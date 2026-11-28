@@ -64,7 +64,6 @@ export default function DeviceIdCell({
       {href ? (
         <AccessLink
           hint="device-profile"
-          carries={['deviceId']}
           data-testid="device-id-label"
           to={href}
           onClick={(e) => e.stopPropagation()}

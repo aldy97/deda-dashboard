@@ -257,7 +257,6 @@ function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice>
           <AccessLink
             hint="prompts"
             detail="角色人设"
-            carries={['characterKey']}
             to={href}
           >
             {v}
@@ -339,7 +338,6 @@ function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice>
                 label: (
                   <AccessLink
                     hint="message-list"
-                    carries={['deviceId']}
                     to={`/messages?deviceId=${encodeURIComponent(r.deviceId)}`}
                   >
                     查看消息
@@ -351,7 +349,6 @@ function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice>
                 label: (
                   <AccessLink
                     hint="feedback-user"
-                    carries={['deviceId']}
                     to={`/feedback?tab=user&deviceId=${encodeURIComponent(r.deviceId)}`}
                   >
                     查看反馈

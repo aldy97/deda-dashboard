@@ -48,7 +48,6 @@ export default function FeatureAdoptionTable({
             return href ? (
               <AccessLink
                 hint={hint}
-                carries={hint === 'message-list' ? ['mode', '当前时间区间'] : undefined}
                 to={href}
               >
                 {label}

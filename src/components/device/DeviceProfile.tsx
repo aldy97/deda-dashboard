@@ -185,7 +185,6 @@ function BoundUsersTable({ users }: { users: BoundUser[] }) {
       render: (v: string) => (
         <AccessLink
           hint="parent-profile"
-          carries={['userId']}
           to={`/parents/${encodeURIComponent(v)}`}
         >
           {v}

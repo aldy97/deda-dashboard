@@ -182,7 +182,6 @@ export default function MessageDetailDrawer({
                   <AccessLink
                     hint="prompts"
                     detail="该模式用到的提示词"
-                    carries={['mode', 'characterKey']}
                     to={modePromptLink}
                     aria-label={`查看「${modeLabel(row.mode)}」用到的提示词`}
                   >
@@ -217,7 +216,6 @@ export default function MessageDetailDrawer({
                             <AccessLink
                               hint="adventure"
                               detail="该集版本快照"
-                              carries={['episodeId', 'versionId']}
                               to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}&versionId=${encodeURIComponent(adventureEpisode.versionId)}`}
                             >
                               查看当时版本 v{adventureEpisode.version}
@@ -226,7 +224,6 @@ export default function MessageDetailDrawer({
                             <AccessLink
                               hint="adventure"
                               detail="该集版本历史"
-                              carries={['episodeId']}
                               to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(adventureEpisode.episodeId)}`}
                             >
                               查看该集版本历史
@@ -254,7 +251,6 @@ export default function MessageDetailDrawer({
                   <Space size={4}>
                     <AccessLink
                       hint="device-profile"
-                      carries={['deviceId']}
                       to={`/users/${encodeURIComponent(row.device.deviceId)}`}
                       style={{ fontFamily: 'monospace' }}
                     >
@@ -274,7 +270,6 @@ export default function MessageDetailDrawer({
                   <AccessLink
                     hint="prompts"
                     detail="该角色人设"
-                    carries={['characterKey']}
                     to={personaPromptLink}
                     aria-label={`查看角色 ${row.device.characterKey} 的人设提示词`}
                   >

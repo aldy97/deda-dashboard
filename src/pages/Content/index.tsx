@@ -96,14 +96,12 @@ export default function Content() {
             <div style={{ display: 'flex', gap: 12 }}>
               <AccessLink
                 hint="message-list"
-                carries={['mode', '当前时间区间']}
                 to={`/messages?mode=english_chat&${dateQuery}`}
               >
                 英语对话消息 →
               </AccessLink>
               <AccessLink
                 hint="message-list"
-                carries={['mode', '当前时间区间']}
                 to={`/messages?mode=english_story&${dateQuery}`}
               >
                 英语故事消息 →

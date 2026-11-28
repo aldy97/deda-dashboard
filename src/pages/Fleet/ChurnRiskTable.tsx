@@ -45,7 +45,6 @@ export default function ChurnRiskTable({ data, days, onDaysChange, onOpenDevice 
       render: (v: string, r: ChurnRiskDevice) => (
         <AccessLink
           hint="device-profile"
-          carries={['deviceId']}
           to={`/users/${r.deviceId}`}
         >
           {v}

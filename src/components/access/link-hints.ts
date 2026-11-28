@@ -51,8 +51,6 @@ export function isOpsTarget(target: LinkHintTarget): boolean {
 export interface LinkHintOptions {
   /** 目标页内的具体位置，如「该集版本快照」 */
   detail?: string
-  /** 一起带过去的上下文，如 ['deviceId'] */
-  carries?: readonly string[]
   /** 目标页仅超管可访问 */
   exclusive?: boolean
 }
@@ -60,14 +58,14 @@ export interface LinkHintOptions {
 /**
  * 悬停文案。只给拿到链接的人看：普通 admin 侧不渲染链接、也不渲染本文案，
  * 「仅超管可访问」这层信息只在 superadmin 侧出现，避免两套说法。
+ * 只讲「去哪」，不列随链接带过去的上下文——那是实现细节，看的人不需要。
  */
 export function linkHintTitle(
   target: LinkHintTarget,
-  { detail, carries, exclusive }: LinkHintOptions = {},
+  { detail, exclusive }: LinkHintOptions = {},
 ): string {
   const label = detail ? `${TARGETS[target].label} · ${detail}` : TARGETS[target].label
   const parts = [`点击前往「${label}」`]
   if (exclusive) parts.push('（超级管理员专属）')
-  if (carries && carries.length > 0) parts.push(`，会带上 ${carries.join('、')}`)
   return parts.join('')
 }

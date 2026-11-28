@@ -28,8 +28,6 @@ export interface AccessLinkProps
   hint: LinkHintTarget
   /** 目标页内的具体位置，如「该集版本快照」 */
   detail?: string
-  /** 一起带过去的上下文，如 ['deviceId'] */
-  carries?: readonly string[]
   /** 仅 superadmin 侧渲染「 →」；admin 侧文本永远不带箭头 */
   arrow?: boolean
   className?: string
@@ -56,16 +54,12 @@ export default function AccessLink({ to, ...rest }: AccessLinkProps) {
 function PlainLink({
   hint,
   detail,
-  carries,
   arrow,
   children,
   title,
   ...linkProps
 }: AccessLinkProps) {
-  const tooltipTitle = withNativeTitle(
-    linkHintTitle(hint, { detail, carries }),
-    title,
-  )
+  const tooltipTitle = withNativeTitle(linkHintTitle(hint, { detail }), title)
   return (
     <Tooltip title={tooltipTitle} styles={TOOLTIP_STYLES}>
       <Link data-hint={hint} {...linkProps}>
@@ -79,7 +73,6 @@ function PlainLink({
 function ExclusiveLink({
   hint,
   detail,
-  carries,
   arrow,
   children,
   title,
@@ -107,7 +100,7 @@ function ExclusiveLink({
   }
 
   const tooltipTitle = withNativeTitle(
-    linkHintTitle(hint, { detail, carries, exclusive: true }),
+    linkHintTitle(hint, { detail, exclusive: true }),
     title,
   )
   return (

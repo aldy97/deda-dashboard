@@ -148,7 +148,6 @@ export default function ReportFeedbackPanel() {
           <AccessLink
             hint="llm-perf"
             detail="家长日报生成"
-            carries={['scene']}
             arrow
             to="/llm?tab=perf&scene=parent_report"
           >
@@ -236,7 +235,6 @@ export default function ReportFeedbackPanel() {
             render: (_, row) => (
               <AccessLink
                 hint="device-profile"
-                carries={['deviceId']}
                 to={`/users/${encodeURIComponent(row.device.deviceId)}`}
               >
                 {row.device.deviceCode ?? row.device.deviceId}
