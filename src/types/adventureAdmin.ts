@@ -51,6 +51,9 @@ export const AUDIT_ACTIONS = [
   'recovery_breaker_reset',
   'device_test_assign',
   'device_test_clear',
+  'video_generate',
+  'video_retry',
+  'video_cancel',
 ] as const
 
 export type AuditAction = string

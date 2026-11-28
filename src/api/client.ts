@@ -30,6 +30,7 @@ export interface ApiError extends Error {
  */
 const CAPABILITY_DENIED_PREFIXES = [
   '/analytics/adventure-admin',
+  '/analytics/adventure-video',
   '/analytics/prompts',
   '/analytics/llm',
   '/analytics/voice-speed',

@@ -64,8 +64,12 @@ describe('labels · 枚举展示映射', () => {
   })
 
   it('审计筛选选项覆盖服务端动作全集并按中文标签展示', () => {
-    expect(AUDIT_ACTION_OPTIONS.length).toBe(17)
+    expect(AUDIT_ACTION_OPTIONS.length).toBe(20)
     expect(AUDIT_ACTION_OPTIONS).toContainEqual({ value: 'discard', label: '作废整集' })
+    expect(AUDIT_ACTION_OPTIONS).toContainEqual({
+      value: 'video_generate',
+      label: '生成短视频',
+    })
   })
 
   it('导入动作：四种已知 + 未知兜底', () => {

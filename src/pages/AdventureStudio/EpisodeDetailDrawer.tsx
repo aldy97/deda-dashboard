@@ -13,6 +13,7 @@ import VersionHistory from './VersionHistory'
 import ChoiceStatsPanel from './ChoiceStatsPanel'
 import AuditLog from './AuditLog'
 import DeviceTestAssign from './DeviceTestAssign'
+import VideoTab from './VideoTab'
 import { useEpisodeContent } from './useEpisodeContent'
 import { characterLabel, fmtDateTime, LINT_WARNINGS_NOTES } from './labels'
 
@@ -40,7 +41,15 @@ interface Props {
   onClose: () => void
 }
 
-const TAB_KEYS = ['content', 'versions', 'impact', 'choices', 'audit', 'test'] as const
+const TAB_KEYS = [
+  'content',
+  'video',
+  'versions',
+  'impact',
+  'choices',
+  'audit',
+  'test',
+] as const
 
 type TabKey = (typeof TAB_KEYS)[number]
 
@@ -200,6 +209,20 @@ export default function EpisodeDetailDrawer({
                           <ContentPreview content={detail.content} />
                         </Space>
                       )
+                    ) : null,
+                },
+                {
+                  key: 'video',
+                  label: '短视频',
+                  children:
+                    tab === 'video' && episodeId && summary ? (
+                      <VideoTab
+                        episodeId={episodeId}
+                        currentVersionId={summary.currentVersionId}
+                        published={summary.published}
+                        retiredAt={summary.retiredAt}
+                        authoring={authoring}
+                      />
                     ) : null,
                 },
                 {
