@@ -1264,7 +1264,12 @@ export interface AnalyticsMeta {
 /** 管理员角色。与 deda-server `admin-role.ts` 的取值逐字对齐。 */
 export type AdminRole = 'superadmin' | 'admin'
 
-export type PromptCategory = 'small_model' | 'main_rules' | 'story' | 'persona'
+export type PromptCategory =
+  | 'small_model'
+  | 'main_rules'
+  | 'story'
+  | 'adventure_video'
+  | 'persona'
 
 /** 生效正文来自 DB 已发布版本、代码默认值，或动态角色人设尚未发布 */
 export type PromptSource = 'db' | 'default' | 'none'

@@ -16,6 +16,7 @@ export const CATEGORY_LABEL: Record<PromptCategory, string> = {
   small_model: '小模型',
   main_rules: '主模型规则段',
   story: '故事话术',
+  adventure_video: '冒险短视频',
   persona: '角色人设',
 }
 
