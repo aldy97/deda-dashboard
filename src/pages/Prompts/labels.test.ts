@@ -8,11 +8,12 @@ import {
 } from './labels'
 
 describe('categoryLabel', () => {
-  it('四个分类都有中文名', () => {
+  it('五个分类都有中文名', () => {
     expect(CATEGORY_LABEL).toEqual({
       small_model: '小模型',
       main_rules: '主模型规则段',
       story: '故事话术',
+      adventure_video: '冒险短视频',
       persona: '角色人设',
     })
   })

@@ -19,6 +19,16 @@ describe('LLM 场景元数据', () => {
     expect(meta.description).toContain('SCRIPT_CONVERT_FAILED')
   })
 
+  it('adventure_video_storyboard 有中文名，且不是流式 / 静默降级场景', () => {
+    expect(sceneLabel('adventure_video_storyboard')).toBe('冒险短视频分镜')
+
+    const meta = SCENE_META.adventure_video_storyboard
+    expect(meta).toBeDefined()
+    expect(meta.streaming).toBe(false)
+    expect(meta.failOpen).toBe(false)
+    expect(meta.description).toContain('分镜')
+  })
+
   it('未知场景回落原始 key，不凭空翻译', () => {
     expect(sceneLabel('new_scene_key')).toBe('new_scene_key')
     expect(SCENE_META.new_scene_key).toBeUndefined()
