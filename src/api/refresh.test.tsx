@@ -173,6 +173,10 @@ describe('usePageRefresh · parent', () => {
     expect(
       predicate({ queryKey: ['analytics', 'parentDetail', 'u1'] } as never),
     ).toBe(true)
+    // 白名单备注在家长档案页也要能被「刷新」带新
+    expect(
+      predicate({ queryKey: ['analytics', 'testDevices', 'all'] } as never),
+    ).toBe(true)
     expect(predicate({ queryKey: ['analytics', 'usersSummary', {}] } as never)).toBe(
       false,
     )

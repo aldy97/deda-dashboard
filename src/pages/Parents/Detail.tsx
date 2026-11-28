@@ -1,7 +1,9 @@
 import {
   Alert,
+  Button,
   Card,
   Descriptions,
+  Dropdown,
   Empty,
   Space,
   Spin,
@@ -10,6 +12,8 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { MoreOutlined } from '@ant-design/icons'
+import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import PageHeader from '../../components/PageHeader'
@@ -17,8 +21,13 @@ import CopyableText from '../../components/CopyableText'
 import InfoTip from '../../components/InfoTip'
 import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
 import RefreshButton from '../../components/RefreshButton'
+import DeviceIdCell from '../../components/device/DeviceIdCell'
+import { isSuperAdmin } from '../../components/access/role'
+import { promptsPersonaLink } from '../../components/message/mode-prompts'
 import { usePageRefresh } from '../../api/refresh'
 import { useParentDetail } from '../../api/queries'
+import { useAnalyticsMeta } from '../../api/meta'
+import { useAllTestDevices } from '../../api/testDevices'
 import type { ParentDevice } from '../../types/analytics'
 
 const fmtTime = (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm')
@@ -27,6 +36,9 @@ const GENDER_LABEL: Record<'male' | 'female', string> = {
   male: '男',
   female: '女',
 }
+
+/** 白名单备注：undefined = 不在册（不渲染 Tag），null = 在册但没写备注 */
+type WhitelistNotes = Map<string, string | null>
 
 /**
  * 家长档案：以家长为锚（一个家长可绑定多台设备）。
@@ -42,6 +54,21 @@ export default function ParentDetail() {
   const { userId = '' } = useParams<{ userId: string }>()
   const query = useParentDetail(userId)
   const { refresh, isRefreshing } = usePageRefresh('parent')
+  const metaQuery = useAnalyticsMeta()
+  // 白名单备注只对超管下发（/analytics/test-devices 由 SuperAdminGuard 把守）；
+  // 非超管连请求都不发，与设备舰队「testWhitelist=null 不显示」的结果一致。
+  const whitelistQuery = useAllTestDevices(isSuperAdmin(metaQuery.data))
+  const whitelistNotes = useMemo<WhitelistNotes>(() => {
+    const notes: WhitelistNotes = new Map()
+    for (const item of whitelistQuery.data?.items ?? []) {
+      notes.set(item.device.deviceId, item.note)
+    }
+    return notes
+  }, [whitelistQuery.data])
+  const columns = useMemo(
+    () => buildColumns(whitelistNotes),
+    [whitelistNotes],
+  )
   const data = query.data ?? null
   const err = query.error as (Error & { status?: number }) | null
   const notFound = err?.status === 404
@@ -185,7 +212,7 @@ export default function ParentDetail() {
           }
         >
           <Table<ParentDevice>
-            columns={mergedColumns}
+            columns={columns}
             dataSource={devices}
             rowKey="deviceId"
             size="small"
@@ -198,87 +225,134 @@ export default function ParentDetail() {
   )
 }
 
-const mergedColumns: ColumnsType<ParentDevice> = [
-  {
-    title: '设备 ID',
-    dataIndex: 'deviceId',
-    key: 'deviceId',
-    render: (v: string) => <Link to={`/users/${encodeURIComponent(v)}`}>{v}</Link>,
-  },
-  {
-    // 契约字段名是 characterKey（角色 key），沿用现有表把这一列标为 IP
-    title: 'IP',
-    dataIndex: 'characterKey',
-    key: 'characterKey',
-  },
-  {
-    title: '固件',
-    dataIndex: 'firmwareVersion',
-    key: 'firmwareVersion',
-    render: (v: string | null) => v ?? '—',
-  },
-  {
-    title: '角色',
-    dataIndex: 'isOwner',
-    key: 'isOwner',
-    render: (v: boolean) => (v ? <Tag color="blue">主账号</Tag> : <Tag>绑定</Tag>),
-  },
-  {
-    title: '绑定时间',
-    dataIndex: 'boundAt',
-    key: 'boundAt',
-    render: (v: string) => fmtTime(v),
-  },
-  {
-    title: '共享',
-    dataIndex: 'boundUserCount',
-    key: 'boundUserCount',
-    render: (v: number) => (v > 1 ? <Tag color="blue">{v} 位家长</Tag> : '—'),
-  },
-  {
-    title: '最近开机日',
-    dataIndex: 'lastPresenceDate',
-    key: 'lastPresenceDate',
-    render: (v: string | null) => v ?? '—',
-  },
-  {
-    title: '孩子昵称',
-    key: 'childName',
-    render: (_, r) => (r.childProfile ? (r.childProfile.name ?? '—') : '未录入'),
-  },
-  {
-    title: '英文名',
-    key: 'englishName',
-    render: (_, r) => (r.childProfile ? (r.childProfile.englishName ?? '—') : '—'),
-  },
-  {
-    title: '性别',
-    key: 'childGender',
-    render: (_, r) =>
-      r.childProfile?.gender ? GENDER_LABEL[r.childProfile.gender] : '—',
-  },
-  {
-    title: '生日',
-    key: 'childBirthday',
-    render: (_, r) => (r.childProfile ? (r.childProfile.birthday ?? '—') : '—'),
-  },
-  {
-    title: (
-      <>
-        操作
-        <InfoTip title="消息＝该设备的对话明细；反馈＝该设备全部绑定账号提交的反馈（经绑定关系反查），不等于当前这位家长本人的反馈" />
-      </>
-    ),
-    key: 'actions',
-    render: (_, r) => (
-      <Space size={12}>
-        <Link to={`/messages?deviceId=${encodeURIComponent(r.deviceId)}`}>消息</Link>
-        <Link
-          to={`/feedback?tab=user&deviceId=${encodeURIComponent(r.deviceId)}`}
+function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice> {
+  return [
+    {
+      title: '设备 ID',
+      dataIndex: 'deviceId',
+      key: 'deviceId',
+      width: 260,
+      // 设备 ID 列右侧不留 padding：ID/复制/备注整体贴住列边界，不给 IP 列留空档
+      onCell: () => ({ style: { paddingRight: 0 } }),
+      render: (v: string) => (
+        <DeviceIdCell
+          label={v}
+          href={`/users/${encodeURIComponent(v)}`}
+          whitelistNote={whitelistNotes.get(v)}
+          copyable
+          labelWidth={116}
+        />
+      ),
+    },
+    {
+      // 契约字段名是 characterKey（角色 key），沿用现有表把这一列标为 IP。
+      // 点进去是该角色的人设提示词；角色 key 非法或已下线时退化为纯文本。
+      title: 'IP',
+      dataIndex: 'characterKey',
+      key: 'characterKey',
+      render: (v: string) => {
+        const href = promptsPersonaLink(v)
+        return href ? <Link to={href}>{v}</Link> : v
+      },
+    },
+    {
+      title: '固件',
+      dataIndex: 'firmwareVersion',
+      key: 'firmwareVersion',
+      render: (v: string | null) => v ?? '—',
+    },
+    // 角色（isOwner 主账号 / 绑定）：按 2026-11-28 口径注释下线，保留代码待恢复。
+    // {
+    //   title: '角色',
+    //   dataIndex: 'isOwner',
+    //   key: 'isOwner',
+    //   render: (v: boolean) => (v ? <Tag color="blue">主账号</Tag> : <Tag>绑定</Tag>),
+    // },
+    {
+      title: '绑定时间',
+      dataIndex: 'boundAt',
+      key: 'boundAt',
+      render: (v: string) => fmtTime(v),
+    },
+    // 共享（boundUserCount：该设备上的绑定账号数）：按 2026-11-28 口径注释下线，
+    // 保留代码待恢复。>1 才展示「N 位家长」，=1 时原本渲染「—」。
+    // {
+    //   title: '共享',
+    //   dataIndex: 'boundUserCount',
+    //   key: 'boundUserCount',
+    //   render: (v: number) => (v > 1 ? <Tag color="blue">{v} 位家长</Tag> : '—'),
+    // },
+    {
+      title: '最近开机日',
+      dataIndex: 'lastPresenceDate',
+      key: 'lastPresenceDate',
+      render: (v: string | null) => v ?? '—',
+    },
+    {
+      title: '孩子昵称',
+      key: 'childName',
+      render: (_, r) => (r.childProfile ? (r.childProfile.name ?? '—') : '未录入'),
+    },
+    {
+      title: '英文名',
+      key: 'englishName',
+      render: (_, r) => (r.childProfile ? (r.childProfile.englishName ?? '—') : '—'),
+    },
+    {
+      title: '性别',
+      key: 'childGender',
+      render: (_, r) =>
+        r.childProfile?.gender ? GENDER_LABEL[r.childProfile.gender] : '—',
+    },
+    {
+      title: '生日',
+      key: 'childBirthday',
+      render: (_, r) => (r.childProfile ? (r.childProfile.birthday ?? '—') : '—'),
+    },
+    {
+      title: (
+        <>
+          操作
+          <InfoTip title="消息＝该设备的对话明细；反馈＝该设备全部绑定账号提交的反馈（经绑定关系反查），不等于当前这位家长本人的反馈" />
+        </>
+      ),
+      key: 'actions',
+      render: (_, r) => (
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'messages',
+                label: (
+                  <Link
+                    to={`/messages?deviceId=${encodeURIComponent(r.deviceId)}`}
+                  >
+                    查看消息
+                  </Link>
+                ),
+              },
+              {
+                key: 'feedback',
+                label: (
+                  <Link
+                    to={`/feedback?tab=user&deviceId=${encodeURIComponent(r.deviceId)}`}
+                  >
+                    查看反馈
+                  </Link>
+                ),
+              },
+            ],
+          }}
         >
-          反馈
-        </Link>
-      </Space>
-    ),
-  },
-]
+          <Button
+            size="small"
+            type="text"
+            icon={<MoreOutlined />}
+            aria-label="操作"
+          />
+        </Dropdown>
+      ),
+    },
+  ]
+}

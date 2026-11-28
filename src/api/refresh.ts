@@ -25,7 +25,8 @@ export const PAGE_QUERY_KEYS = {
     'parentDemographics',
     'phoneBrands',
   ],
-  parent: ['parentDetail'],
+  // 白名单备注在家长档案页也要跟着刷新，否则点刷新后 Tag 还是旧的
+  parent: ['parentDetail', 'testDevices'],
   content: [
     'contentAdventure',
     'contentAdventureChoices',
