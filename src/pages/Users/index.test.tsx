@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -236,5 +236,47 @@ describe('用户画像页 · 家长 / 孩子设备双 tab', () => {
     expect(await screen.findByText('统计单位：设备与孩子档案')).toBeTruthy()
     expect(mockGet).toHaveBeenCalledWith('/analytics/users/demographics')
     expect(screen.getByText(/孩子年龄段分布/)).toBeTruthy()
+  })
+})
+
+describe('用户画像页 · header 日期与刷新', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/users/summary')
+        return Promise.resolve({ data: SUMMARY })
+      if (url === '/analytics/users/parent-demographics')
+        return Promise.resolve({ data: PARENT_DEMOGRAPHICS })
+      if (url === '/analytics/users/demographics')
+        return Promise.resolve({ data: DEMOGRAPHICS })
+      if (url === '/analytics/users/phone-brands')
+        return Promise.resolve({ data: PHONE_BRANDS })
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  it('header 同时渲染日期区间与刷新按钮', async () => {
+    renderPage()
+
+    expect(await screen.findByText('注册家长总数')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /刷新/ })).toBeInTheDocument()
+    // 默认区间含今天，TodayOngoingTag 只在 header 的 RangePicker 内渲染
+    expect(screen.getByText('今日数据进行中')).toBeTruthy()
+  })
+
+  it('点击刷新重新拉取本页数据', async () => {
+    renderPage()
+    await screen.findByText('注册家长总数')
+
+    const callsBefore = mockGet.mock.calls.length
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /刷新/ }))
+
+    await waitFor(() =>
+      expect(mockGet.mock.calls.length).toBeGreaterThan(callsBefore),
+    )
+    expect(
+      mockGet.mock.calls.some(([url]) => url === '/analytics/users/summary'),
+    ).toBe(true)
   })
 })

@@ -1,6 +1,5 @@
 import { Alert, Card, Col, Row, Spin, Statistic } from 'antd'
 import { usePhoneBrands, useParentDemographics, useUsersSummary } from '../../api/queries'
-import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import { fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import ParentDemographics from './ParentDemographics'
@@ -9,14 +8,9 @@ import PhoneBrandChart from './PhoneBrandChart'
 /**
  * 家长画像 tab：概览卡片、家长性别/年龄段、手机品牌。
  * 统计单位是家长账号（users），与孩子/设备画像不混算。
+ * 区间控件在页面 header，由 Users 页统一管理。
  */
-export default function ParentTab({
-  range,
-  onRangeChange,
-}: {
-  range: DayRange
-  onRangeChange: (range: DayRange) => void
-}) {
+export default function ParentTab({ range }: { range: DayRange }) {
   const summaryQuery = useUsersSummary({
     startDate: fmt(range[0]),
     endDate: fmt(range[1]),
@@ -42,15 +36,6 @@ export default function ParentTab({
 
   return (
     <Spin spinning={loading}>
-      <div style={{ marginBottom: 16 }}>
-        <AnalyticsRangePicker
-          value={range}
-          onChange={(next) => {
-            if (next) onRangeChange(next)
-          }}
-        />
-      </div>
-
       {error && (
         <Alert
           type="error"

@@ -19,6 +19,19 @@ export const PAGE_QUERY_KEYS = {
     'fleetDeviceDetail',
   ],
   memories: ['memoriesOverview', 'memoryDevices'],
+  users: [
+    'usersSummary',
+    'usersDemographics',
+    'parentDemographics',
+    'phoneBrands',
+  ],
+  content: [
+    'contentAdventure',
+    'contentAdventureChoices',
+    'contentLearning',
+    'qualityConversation',
+  ],
+  feedback: ['reportFeedbacks', 'userFeedbacks', 'contentParentReport'],
   llm: [
     'llmSummary',
     'llmTrend',

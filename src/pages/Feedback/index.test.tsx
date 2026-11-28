@@ -91,4 +91,18 @@ describe('用户反馈页 · 三 tab', () => {
       expect(search()).toContain('tab=parentReport')
     })
   })
+
+  it('点击刷新重新拉取三个 tab 的查询', async () => {
+    renderPage()
+    await screen.findByText('日报反馈')
+    await waitFor(() => expect(mockGet).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const callsBefore = mockGet.mock.calls.length
+    fireEvent.click(screen.getByRole('button', { name: /刷新/ }))
+
+    await waitFor(() =>
+      expect(mockGet.mock.calls.length).toBeGreaterThan(callsBefore),
+    )
+  })
 })

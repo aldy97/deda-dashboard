@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Input, Tabs } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
 import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
+import { usePageRefresh } from '../../api/refresh'
 import { defaultRange } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import DeviceTab from './DeviceTab'
@@ -23,12 +26,24 @@ export default function Users() {
   const navigate = useNavigate()
   const [range, setRange] = useState<DayRange>(defaultRange(30))
   const [activeKey, setActiveKey] = useState<TabKey>('parents')
+  const { refresh, isRefreshing } = usePageRefresh('users')
 
   return (
     <div>
       <PageHeader
         title="用户画像"
         description="聚合数据，不出 PII。家长画像按账号统计；孩子/设备画像按设备与孩子档案统计，两者口径不同。"
+        actions={
+          <>
+            <AnalyticsRangePicker
+              value={range}
+              onChange={(next) => {
+                if (next) setRange(next)
+              }}
+            />
+            <RefreshButton loading={isRefreshing} onClick={refresh} />
+          </>
+        }
       />
 
       {/* 两个锚点共用一条搜索框：UUID = 家长档案，业务设备 ID = 设备档案 */}
@@ -56,7 +71,7 @@ export default function Users() {
             label: '家长画像',
             children:
               activeKey === 'parents' ? (
-                <ParentTab range={range} onRangeChange={setRange} />
+                <ParentTab range={range} />
               ) : null,
           },
           {

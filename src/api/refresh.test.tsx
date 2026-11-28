@@ -90,3 +90,72 @@ describe('usePageRefresh', () => {
     expect(predicate({ queryKey: ['analytics', 'fleetSummary', 'd'] } as never)).toBe(false)
   })
 })
+
+describe('usePageRefresh · users', () => {
+  it('users 页 predicate 只命中家长/设备画像与手机品牌', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const spy = vi.spyOn(client, 'refetchQueries')
+    const { result } = renderHook(() => usePageRefresh('users'), {
+      wrapper: createWrapper(client),
+    })
+    result.current.refresh()
+
+    const predicate = spy.mock.calls[0][0]!.predicate!
+    expect(predicate({ queryKey: ['analytics', 'usersSummary', {}] } as never)).toBe(true)
+    expect(
+      predicate({ queryKey: ['analytics', 'parentDemographics'] } as never),
+    ).toBe(true)
+    expect(predicate({ queryKey: ['analytics', 'usersDemographics'] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'phoneBrands'] } as never)).toBe(true)
+    expect(predicate({ queryKey: ['analytics', 'fleetSummary'] } as never)).toBe(false)
+  })
+})
+
+describe('usePageRefresh · content / feedback', () => {
+  function predicateFor(page: keyof typeof PAGE_QUERY_KEYS) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const spy = vi.spyOn(client, 'refetchQueries')
+    const { result } = renderHook(() => usePageRefresh(page), {
+      wrapper: createWrapper(client),
+    })
+    result.current.refresh()
+    return spy.mock.calls[0][0]!.predicate!
+  }
+
+  it('content 页命中四个内容查询，不误刷反馈查询', () => {
+    const predicate = predicateFor('content')
+
+    expect(predicate({ queryKey: ['analytics', 'contentAdventure', {}] } as never)).toBe(true)
+    expect(
+      predicate({ queryKey: ['analytics', 'contentAdventureChoices', {}] } as never),
+    ).toBe(true)
+    expect(predicate({ queryKey: ['analytics', 'contentLearning', {}] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'qualityConversation', {}] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'contentParentReport', {}] } as never)).toBe(
+      false,
+    )
+  })
+
+  it('feedback 页命中三个反馈查询，不误刷内容查询', () => {
+    const predicate = predicateFor('feedback')
+
+    expect(predicate({ queryKey: ['analytics', 'reportFeedbacks', {}] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'userFeedbacks', {}] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'contentParentReport', {}] } as never)).toBe(
+      true,
+    )
+    expect(predicate({ queryKey: ['analytics', 'contentAdventure', {}] } as never)).toBe(
+      false,
+    )
+  })
+})

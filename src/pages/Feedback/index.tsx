@@ -1,6 +1,8 @@
 import { Card, Tabs } from 'antd'
 import { useUrlQuery, readEnumParam } from '../../utils/url-state'
 import PageHeader from '../../components/PageHeader'
+import RefreshButton from '../../components/RefreshButton'
+import { usePageRefresh } from '../../api/refresh'
 import ReportFeedbackPanel from './ReportFeedbackPanel'
 import UserFeedbackPanel from './UserFeedbackPanel'
 import ParentReportPanel from './ParentReportPanel'
@@ -16,12 +18,14 @@ type TabKey = (typeof TAB_KEYS)[number]
 export default function Feedback() {
   const { searchParams, setQuery } = useUrlQuery()
   const tab = readEnumParam<TabKey>(searchParams, 'tab', TAB_KEYS, 'report')
+  const { refresh, isRefreshing } = usePageRefresh('feedback')
 
   return (
     <div>
       <PageHeader
         title="用户反馈"
         description="日报反馈、使用反馈与家长报告生成质量；报告按日期过滤，反馈按提交时间过滤"
+        actions={<RefreshButton loading={isRefreshing} onClick={refresh} />}
       />
       <Card>
         <Tabs
