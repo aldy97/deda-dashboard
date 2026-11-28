@@ -4,7 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { apiClient } from '../../api/client'
 import UserFeedbackPanel from './UserFeedbackPanel'
-import type { UserFeedbackListResponse } from '../../types/analytics'
+import type {
+  UserFeedbackItem,
+  UserFeedbackListResponse,
+} from '../../types/analytics'
 
 vi.mock('../../api/client', () => ({
   apiClient: { get: vi.fn() },
@@ -101,5 +104,86 @@ describe('UserFeedbackPanel · deviceId 预筛', () => {
     // API 请求也不带 deviceId
     const params = lastUserFeedbackParams()
     expect(params?.deviceId).toBeUndefined()
+  })
+})
+describe('UserFeedbackPanel · 联系方式链接/复制/重复标记', () => {
+  const ITEM: UserFeedbackItem = {
+    id: 'fb1',
+    userId: '9f8b7c6d-1a2b-4c3d-8e9f-0a1b2c3d4e5f',
+    content: '希望增加夜间模式',
+    contact: '13800138000',
+    contactDuplicate: true,
+    createdAt: '2026-11-05T02:00:00.000Z',
+    user: { nickname: '熊妈妈', phone: '13800138000' },
+  }
+
+  beforeEach(() => {
+    mockGet.mockReset()
+  })
+
+  it('联系方式链接到对应家长画像，带复制按钮与「重复」标记', async () => {
+    mockGet.mockResolvedValue({
+      data: { total: 1, page: 1, pageSize: 20, items: [ITEM] },
+    })
+
+    renderPanel()
+
+    const link = await screen.findByRole('link', { name: '13800138000' })
+    expect(link.getAttribute('href')).toBe(
+      `/parents/${encodeURIComponent(ITEM.userId!)}`,
+    )
+    expect(screen.getByText('重复')).toBeTruthy()
+    expect(document.querySelector('.ant-typography-copy')).not.toBeNull()
+  })
+
+  it('不重复时不渲染「重复」标记', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        total: 1,
+        page: 1,
+        pageSize: 20,
+        items: [{ ...ITEM, contactDuplicate: false }],
+      },
+    })
+
+    renderPanel()
+
+    expect(await screen.findByRole('link', { name: '13800138000' })).toBeTruthy()
+    expect(screen.queryByText('重复')).toBeNull()
+  })
+
+  it('用户已注销（userId=null）时号码不渲染成链接', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        total: 1,
+        page: 1,
+        pageSize: 20,
+        items: [{ ...ITEM, userId: null, user: null }],
+      },
+    })
+
+    renderPanel()
+
+    expect(await screen.findByText('13800138000')).toBeTruthy()
+    expect(
+      screen.queryByRole('link', { name: '13800138000' }),
+    ).toBeNull()
+  })
+
+  it('联系方式为空时只显示占位，不渲染复制与重复标记', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        total: 1,
+        page: 1,
+        pageSize: 20,
+        items: [{ ...ITEM, contact: null, contactDuplicate: false }],
+      },
+    })
+
+    renderPanel()
+
+    expect(await screen.findByText('—')).toBeTruthy()
+    expect(screen.queryByText('重复')).toBeNull()
+    expect(document.querySelector('.ant-typography-copy')).toBeNull()
   })
 })

@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { Alert, Radio, Table, Tag, Tooltip } from 'antd'
+import { Alert, Radio, Space, Table, Tag, Tooltip } from 'antd'
 import dayjs from 'dayjs'
+import { Link } from 'react-router-dom'
 import { useUserFeedbacks } from '../../api/queries'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
+import CopyableText from '../../components/CopyableText'
+import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
+import type { UserFeedbackItem } from '../../types/analytics'
 import { defaultRange, fmt } from '../../utils/date-range'
 import type { DayRange } from '../../utils/date-range'
 import { useUrlQuery, readParam } from '../../utils/url-state'
@@ -122,8 +126,23 @@ export default function UserFeedbackPanel() {
           {
             title: '联系方式',
             dataIndex: 'contact',
-            width: 130,
-            render: (contact: string | null) => contact ?? '—',
+            width: 190,
+            render: (contact: string | null, row: UserFeedbackItem) => {
+              if (!contact) return '—'
+              return (
+                <Space size={4}>
+                  {row.userId ? (
+                    <Link to={`/parents/${encodeURIComponent(row.userId)}`}>
+                      {contact}
+                    </Link>
+                  ) : (
+                    <span>{contact}</span>
+                  )}
+                  <CopyableText text={contact} tip="复制手机号" />
+                  <PhoneDuplicateTag duplicate={row.contactDuplicate} />
+                </Space>
+              )
+            },
           },
           // 账号手机号、家长列暂不需要（当前用户普遍未绑定手机号/昵称），需要时取消注释
           // {

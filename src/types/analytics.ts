@@ -158,10 +158,14 @@ export interface ReportFeedbackListResponse {
 
 export interface UserFeedbackItem {
   id: string
+  /** 提交者账号 UUID；用户已注销时为 null。仅用于跳转家长画像，不展示为文本 */
+  userId: string | null
   /** C 端限制 200 字 */
   content: string
   /** 用户主动留的联系手机号，可空 */
   contact: string | null
+  /** contact 在 users.phone 上被 ≥2 个账号使用（与家长档案 phoneDuplicate 同口径） */
+  contactDuplicate: boolean
   createdAt: string
   /** 用户已注销时为 null（反馈保留） */
   user: FeedbackUserBrief | null

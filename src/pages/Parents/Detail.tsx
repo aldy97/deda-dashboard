@@ -13,6 +13,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { Link, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import PageHeader from '../../components/PageHeader'
+import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
 import { useParentDetail } from '../../api/queries'
 import type { ParentDevice } from '../../types/analytics'
 
@@ -115,7 +116,7 @@ export default function ParentDetail() {
               {user.phone ? (
                 <Space size={8}>
                   <span>{user.phone}</span>
-                  {user.phoneDuplicate && <Tag color="gold">重复</Tag>}
+                  <PhoneDuplicateTag duplicate={user.phoneDuplicate} />
                 </Space>
               ) : (
                 '未绑定'
