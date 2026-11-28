@@ -8,7 +8,6 @@ import {
   Select,
   Space,
   Spin,
-  Tag,
   Typography,
 } from 'antd'
 import {
@@ -63,7 +62,6 @@ export default function VideoTab({
 
   const caps = capabilities.data ?? null
   const durationSec = caps?.durationSec ?? 60
-  const estimateYuan = (VIDEO_YUAN_PER_SECOND[resolution] ?? 0.6) * durationSec
   const reasonOk = reason.trim().length >= REASON_MIN
   const canGenerate =
     authoring &&
@@ -118,9 +116,9 @@ export default function VideoTab({
   }
 
   const blockedReason = retiredAt
-    ? '这一集已下架，不能生成预告。'
+    ? '这一集已下架，不能生成故事短片。'
     : !published || !currentVersionId
-      ? '只有已发布的故事才能生成预告；先发布草稿。'
+      ? '只有已发布的故事才能生成故事短片；先发布草稿。'
       : !authoring
         ? '当前账号/环境只读，不能生成。'
         : null
@@ -134,17 +132,8 @@ export default function VideoTab({
           onClick={openDialog}
           loading={create.isPending}
         >
-          生成 60 秒预告
+          生成故事短片
         </Button>
-        <Tag>{caps.aspect}</Tag>
-        <Tag>{caps.resolution}</Tag>
-        <Tag color={caps.ttsMode === 'cloned' ? 'green' : 'gold'}>
-          {caps.ttsMode === 'cloned' ? '复刻音色' : '系统音色试跑'}
-        </Tag>
-        <Typography.Text type="secondary">
-          单支预算 {caps.budgetCny.toFixed(2)} 元 · 预估{' '}
-          {estimateYuan.toFixed(2)} 元
-        </Typography.Text>
       </Space>
 
       {blockedReason ? (
@@ -181,20 +170,25 @@ export default function VideoTab({
       {sortedJobs.length === 0 ? (
         <Empty
           description={
-            jobs.isLoading ? '加载中…' : '这一集还没有生成过预告'
+            jobs.isLoading ? '加载中…' : '这一集还没有生成过故事短片'
           }
         />
       ) : (
         <Space orientation="vertical" size={12} style={{ width: '100%' }}>
           {sortedJobs.map((job) => (
-            <VideoJobCard key={job.id} job={job} authoring={authoring} />
+            <VideoJobCard
+              key={job.id}
+              job={job}
+              authoring={authoring}
+              canReview={caps.reviewWritable === true}
+            />
           ))}
         </Space>
       )}
 
       <Modal
         open={open}
-        title="生成 60 秒预告"
+        title="生成故事短片"
         okText="开始生成"
         cancelText="取消"
         okButtonProps={{ disabled: !reasonOk, loading: create.isPending }}
@@ -235,7 +229,7 @@ export default function VideoTab({
               rows={3}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
-              placeholder="例如：给第 3 集做一支抖音/小红书预告，验证投放素材"
+              placeholder="例如：给第 3 集做一支抖音/小红书短片，验证投放素材"
               maxLength={500}
               showCount
             />

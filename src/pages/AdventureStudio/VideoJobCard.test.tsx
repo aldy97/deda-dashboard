@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import VideoJobCard from './VideoJobCard'
 import type { VideoJobSummary } from '../../types/adventureVideo'
 
@@ -22,6 +28,29 @@ vi.mock('../../api/adventureVideo', () => ({
     mutateAsync: cancelMutate,
     isPending: false,
   })),
+  useVideoJob: vi.fn(() => ({ isLoading: false, data: undefined })),
+  useValidateVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useSaveVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useRevoiceVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useRegenerateVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useApproveVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  fetchVideoDownloadUrl: vi.fn(),
+  fetchVideoPreviewUrl: vi.fn(),
 }))
 
 const BASE: VideoJobSummary = {
@@ -60,14 +89,22 @@ describe('VideoJobCard', () => {
 
   it('只读账号不能重试', () => {
     render(<VideoJobCard job={BASE} authoring={false} />)
-    const retry = screen.getByRole('button', { name: /重\s*试/ }) as HTMLButtonElement
+    const retry = screen.getByRole('button', {
+      name: /重\s*试/,
+    }) as HTMLButtonElement
     expect(retry.disabled).toBe(true)
   })
 
   it('成功作业渲染播放器，并标注系统音色试跑', () => {
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'succeeded', stage: 'done', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'succeeded',
+          stage: 'done',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )
@@ -78,10 +115,52 @@ describe('VideoJobCard', () => {
     expect(screen.getByText(/系统音色试跑/)).toBeTruthy()
   })
 
+  it('待审核显示审核入口，且不调用视频预览', () => {
+    render(
+      <VideoJobCard
+        job={{
+          ...BASE,
+          status: 'awaiting_review',
+          stage: 'review',
+          errorCode: null,
+          errorMessage: null,
+        }}
+        authoring
+        canReview
+      />,
+    )
+    expect(screen.getByRole('button', { name: /审核分镜/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /取\s*消/ })).toBeTruthy()
+    expect(document.querySelector('video')).toBeNull()
+    expect(screen.getByText(/等待 superadmin 审核分镜/)).toBeTruthy()
+  })
+
+  it('没有审核权限时不显示审核入口', () => {
+    render(
+      <VideoJobCard
+        job={{
+          ...BASE,
+          status: 'awaiting_review',
+          stage: 'review',
+          errorCode: null,
+          errorMessage: null,
+        }}
+        authoring
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /审核分镜/ })).toBeNull()
+  })
+
   it('运行中显示取消入口，且不请求预览', () => {
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'running', stage: 'voice', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'running',
+          stage: 'voice',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )
@@ -113,7 +192,13 @@ describe('VideoJobCard', () => {
     cancelMutate.mockResolvedValue({ job: BASE })
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'running', stage: 'voice', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'running',
+          stage: 'voice',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )

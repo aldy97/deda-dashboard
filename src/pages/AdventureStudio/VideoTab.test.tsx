@@ -43,30 +43,34 @@ function renderTab(overrides: Partial<Parameters<typeof VideoTab>[0]> = {}) {
 
 describe('VideoTab', () => {
   it('开关关闭时说明原因，不显示生成按钮', () => {
-    mockCaps.mockReturnValue({ isLoading: false, data: { ...CAPS, enabled: false } })
+    mockCaps.mockReturnValue({
+      isLoading: false,
+      data: { ...CAPS, enabled: false },
+    })
     renderTab()
     expect(screen.getByText('短视频工作台在本环境未开启')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /生成 60 秒预告/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /生成故事短片/ })).toBeNull()
   })
 
   it('未发布时禁用生成并给出提示', () => {
     mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
     renderTab({ published: false, currentVersionId: null })
-    expect(screen.getByText(/只有已发布的故事才能生成预告/)).toBeTruthy()
+    expect(screen.getByText(/只有已发布的故事才能生成故事短片/)).toBeTruthy()
     const button = screen.getByRole('button', {
-      name: /生成 60 秒预告/,
+      name: /生成故事短片/,
     }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
   })
 
-  it('已发布 + authoring 时可生成，并展示预算与试跑提示', () => {
+  it('已发布 + authoring 时可生成，不再展示分辨率/预算摘要行', () => {
     mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
     renderTab()
     const button = screen.getByRole('button', {
-      name: /生成 60 秒预告/,
+      name: /生成故事短片/,
     }) as HTMLButtonElement
     expect(button.disabled).toBe(false)
-    expect(screen.getByText(/单支预算 50.00 元/)).toBeTruthy()
+    expect(screen.queryByText(/单支预算/)).toBeNull()
+    expect(screen.queryByText('9:16')).toBeNull()
     expect(screen.getByText('当前为系统音色试跑')).toBeTruthy()
   })
 
@@ -91,10 +95,10 @@ describe('VideoTab', () => {
     mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
     renderTab()
 
-    fireEvent.click(screen.getByRole('button', { name: /生成 60 秒预告/ }))
+    fireEvent.click(screen.getByRole('button', { name: /生成故事短片/ }))
     await screen.findByRole('dialog')
     fireEvent.change(document.querySelector('textarea')!, {
-      target: { value: '给第 3 集做一支投放预告' },
+      target: { value: '给第 3 集做一支投放短片' },
     })
     fireEvent.click(screen.getByRole('button', { name: '开始生成' }))
 
@@ -104,7 +108,7 @@ describe('VideoTab', () => {
       episodeId: 'ep-1',
       episodeVersionId: 'v-1',
       resolution: '720P',
-      reason: '给第 3 集做一支投放预告',
+      reason: '给第 3 集做一支投放短片',
     })
     expect(payload.requestId).toMatch(/^video-/)
   })
@@ -115,7 +119,7 @@ describe('VideoTab', () => {
     mockCaps.mockReturnValue({ isLoading: false, data: CAPS })
     renderTab()
 
-    fireEvent.click(screen.getByRole('button', { name: /生成 60 秒预告/ }))
+    fireEvent.click(screen.getByRole('button', { name: /生成故事短片/ }))
     await screen.findByRole('dialog')
     fireEvent.change(document.querySelector('textarea')!, {
       target: { value: '先试一次预算闸看看' },
