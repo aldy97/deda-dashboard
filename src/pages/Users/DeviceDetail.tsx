@@ -14,6 +14,7 @@ import {
 } from 'antd'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
+import AccessLink from '../../components/access/AccessLink'
 import CopyableText from '../../components/CopyableText'
 import InfoTip from '../../components/InfoTip'
 import DeviceProfile from '../../components/device/DeviceProfile'
@@ -211,7 +212,13 @@ export default function UserDeviceDetail() {
                 </>
               ) : null}
               <Descriptions.Item label="记忆档案">
-                <Link to={`/memories/${deviceId}`}>查看版本时间线 →</Link>
+                <AccessLink
+                  hint="memory-archive"
+                  carries={['deviceId']}
+                  to={`/memories/${deviceId}`}
+                >
+                  查看版本时间线 →
+                </AccessLink>
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -289,11 +296,17 @@ export default function UserDeviceDetail() {
             {memories && memories.memories.length > 0 ? (
               <Space wrap>
                 {memories.memories.map((m) => (
-                  <Link key={m.key} to={`/memories/${deviceId}?key=${m.key}`}>
+                  <AccessLink
+                    key={m.key}
+                    hint="memory-archive"
+                    detail="该记忆槽位的版本历史"
+                    carries={['deviceId', 'key']}
+                    to={`/memories/${deviceId}?key=${m.key}`}
+                  >
                     <Tag color="purple" style={{ cursor: 'pointer' }}>
                       {memoryKeyLabel(m.key)}：{m.valueText}
                     </Tag>
-                  </Link>
+                  </AccessLink>
                 ))}
               </Space>
             ) : (
@@ -426,9 +439,13 @@ export default function UserDeviceDetail() {
               </Space>
             }
             extra={
-              <Link to={`/messages?deviceId=${encodeURIComponent(deviceId)}`}>
+              <AccessLink
+                hint="message-list"
+                carries={['deviceId']}
+                to={`/messages?deviceId=${encodeURIComponent(deviceId)}`}
+              >
                 查看全部 →
-              </Link>
+              </AccessLink>
             }
           >
             <Table

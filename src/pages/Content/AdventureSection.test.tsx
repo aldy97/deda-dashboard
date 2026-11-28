@@ -204,16 +204,18 @@ describe('AdventureSection · 下钻出口', () => {
       })
     })
 
-    it('入口禁用，并明确要求超级管理员权限', () => {
+    it('入口退化为灰色纯文本，并保留超级管理员说明', () => {
       renderSection()
 
-      const epBtn = screen.getByText('森林冒险')
-      expect((epBtn.closest('button') as HTMLButtonElement).disabled).toBe(true)
+      const epText = screen.getByText('森林冒险')
+      expect(epText.tagName).toBe('SPAN')
+      expect(epText).toHaveAttribute('data-access', 'restricted')
       expect(screen.getByText(/超级管理员/)).toBeTruthy()
-      // 卡片级出口同样是禁用态（按角色查，避免命中原因文案里的同一串字）
+      // 卡片级出口同样退化为文本，不再留下可点的死链
+      expect(screen.getByText('冒险内容工作台').tagName).toBe('SPAN')
       expect(
-        screen.getByRole('button', { name: /冒险内容工作台/ }),
-      ).toBeDisabled()
+        screen.queryByRole('button', { name: /冒险内容工作台/ }),
+      ).toBeNull()
     })
 
     it('「看冒险对话消息 →」仍然可点（与运维权限无关）', () => {
@@ -238,12 +240,13 @@ describe('AdventureSection · 下钻出口', () => {
       })
     })
 
-    it('入口禁用，提示无法确认权限（fail-closed），且不发 capabilities', () => {
+    it('入口退化为纯文本，提示无法确认权限（fail-closed），且不发 capabilities', () => {
       renderSection()
 
       expect(screen.getByText(/无法确认账号权限/)).toBeTruthy()
-      const epBtn = screen.getByText('森林冒险')
-      expect((epBtn.closest('button') as HTMLButtonElement).disabled).toBe(true)
+      const epText = screen.getByText('森林冒险')
+      expect(epText.tagName).toBe('SPAN')
+      expect(epText).toHaveAttribute('data-access', 'restricted')
       expect(mockUseAdventureCapabilities).toHaveBeenCalledWith({
         enabled: false,
       })

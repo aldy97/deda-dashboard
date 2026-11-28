@@ -1,8 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import FeatureAdoptionTable from './FeatureAdoptionTable'
 import type { FeatureAdoptionResponse } from '../../types/analytics'
+
+const mockUseAnalyticsMeta = vi.fn()
+vi.mock('../../api/meta', () => ({
+  useAnalyticsMeta: () => mockUseAnalyticsMeta(),
+}))
+
+beforeEach(() => {
+  mockUseAnalyticsMeta.mockReturnValue({
+    data: { admin: { role: 'superadmin' } },
+    isPending: false,
+    isError: false,
+  })
+})
 
 /**
  * 功能渗透率表格的跨页出口契约。
@@ -65,5 +78,26 @@ describe('FeatureAdoptionTable 跨页出口', () => {
     )
     const link = screen.getByText('习惯打卡').closest('a')
     expect(link?.getAttribute('href')).toBe('/content')
+  })
+})
+
+describe('FeatureAdoptionTable · 普通 admin', () => {
+  it('冒险行退化为纯文本，消息类出口照常可点', () => {
+    mockUseAnalyticsMeta.mockReturnValue({
+      data: { admin: { role: 'admin' } },
+      isPending: false,
+      isError: false,
+    })
+
+    render(
+      <MemoryRouter>
+        <FeatureAdoptionTable data={adoption().data} startDate={adoption().startDate} endDate={adoption().endDate} />
+      </MemoryRouter>,
+    )
+
+    const adventure = screen.getByText('冒险故事')
+    expect(adventure.tagName).toBe('SPAN')
+    expect(adventure).toHaveAttribute('data-access', 'restricted')
+    expect(screen.getByText('英语学习').closest('a')).toBeTruthy()
   })
 })

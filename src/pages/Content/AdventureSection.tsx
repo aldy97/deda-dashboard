@@ -1,5 +1,5 @@
 import { Button, Card, Col, Rate, Row, Statistic, Table, Typography } from 'antd'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import type { ApiError } from '../../api/client'
 import type { ContentAdventureResponse } from '../../types/analytics'
 import type { DayRange } from '../../utils/date-range'
@@ -38,6 +38,10 @@ export default function AdventureSection({
 
   const is403 = (capsError as ApiError | null)?.status === 403
 
+  // 普通 admin / meta 未就绪交给 AccessLink 退化为纯文本；只有「superadmin 但能力
+  // 清单没拿到」才保留禁用按钮（authoring=false 只读环境仍可查看，不算未拿到）。
+  const showLink = !superadmin || hasScope
+
   let disabledReason: string | undefined
   if (metaQuery.isPending) {
     disabledReason = '权限确认中，稍后自动可用'
@@ -59,12 +63,15 @@ export default function AdventureSection({
   const dateQuery = `startDate=${fmt(range[0])}&endDate=${fmt(range[1])}`
 
   const renderEpisodeLink = (episodeId: string, title: string) =>
-    hasScope ? (
-      <Link
+    showLink ? (
+      <AccessLink
+        hint="adventure"
+        detail="该集"
+        carries={['episodeId']}
         to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(episodeId)}`}
       >
         {title}
-      </Link>
+      </AccessLink>
     ) : (
       <Button type="link" disabled>
         {title}
@@ -72,8 +79,10 @@ export default function AdventureSection({
     )
 
   const renderWorkbenchLink = () =>
-    hasScope ? (
-      <Link to="/adventure?tab=episodes">冒险内容工作台 →</Link>
+    showLink ? (
+      <AccessLink hint="adventure" arrow to="/adventure?tab=episodes">
+        冒险内容工作台
+      </AccessLink>
     ) : (
       <Button type="link" disabled>
         冒险内容工作台 →
@@ -145,9 +154,13 @@ export default function AdventureSection({
       <Row gutter={[16, 8]} style={{ marginTop: 16 }}>
         <Col>{renderWorkbenchLink()}</Col>
         <Col>
-          <Link to={`/messages?mode=adventure_story&${dateQuery}`}>
+          <AccessLink
+            hint="message-list"
+            carries={['mode', '当前时间区间']}
+            to={`/messages?mode=adventure_story&${dateQuery}`}
+          >
             看冒险对话消息 →
-          </Link>
+          </AccessLink>
         </Col>
       </Row>
       {disabledReason && (

@@ -174,6 +174,7 @@ describe('DeviceTable · 测试白名单标签', () => {
 
     // 超长设备 ID 在自己的第一列内省略，不推挤 Tag
     expect(tag.style.flexShrink).toBe('0')
-    expect(link.getAttribute('title')).toBe('aabbccddeeff')
+    expect(link).not.toHaveAttribute('title')
+    expect(link.getAttribute('data-hint')).toBe('device-profile')
   })
 })

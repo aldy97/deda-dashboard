@@ -10,10 +10,11 @@ import {
   Table,
   Typography,
 } from 'antd'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMemoriesOverview, useMemoryDevices } from '../../api/queries'
 import { usePageRefresh } from '../../api/refresh'
+import AccessLink from '../../components/access/AccessLink'
 import PageHeader from '../../components/PageHeader'
 import RefreshButton from '../../components/RefreshButton'
 import { MEMORY_KEYS, memoryKeyLabel } from './memoryMeta'
@@ -159,18 +160,22 @@ export default function Memories() {
               // 设备 ID 跳设备档案页；行其余区域保持跳记忆详情（stopPropagation 隔离）
               render: (v: string) => (
                 <Space size={4}>
-                  <Link
+                  <AccessLink
+                    hint="device-profile"
+                    carries={['deviceId']}
                     to={`/users/${encodeURIComponent(v)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {v}
-                  </Link>
-                  <Link
+                  </AccessLink>
+                  <AccessLink
+                    hint="message-list"
+                    carries={['deviceId']}
                     to={`/messages?deviceId=${encodeURIComponent(v)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     消息
-                  </Link>
+                  </AccessLink>
                 </Space>
               ),
             },

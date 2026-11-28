@@ -22,6 +22,7 @@ import InfoTip from '../../components/InfoTip'
 import PhoneDuplicateTag from '../../components/PhoneDuplicateTag'
 import RefreshButton from '../../components/RefreshButton'
 import DeviceIdCell from '../../components/device/DeviceIdCell'
+import AccessLink from '../../components/access/AccessLink'
 import { isSuperAdmin } from '../../components/access/role'
 import { promptsPersonaLink } from '../../components/message/mode-prompts'
 import { usePageRefresh } from '../../api/refresh'
@@ -252,7 +253,18 @@ function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice>
       key: 'characterKey',
       render: (v: string) => {
         const href = promptsPersonaLink(v)
-        return href ? <Link to={href}>{v}</Link> : v
+        return href ? (
+          <AccessLink
+            hint="prompts"
+            detail="角色人设"
+            carries={['characterKey']}
+            to={href}
+          >
+            {v}
+          </AccessLink>
+        ) : (
+          v
+        )
       },
     },
     {
@@ -325,21 +337,25 @@ function buildColumns(whitelistNotes: WhitelistNotes): ColumnsType<ParentDevice>
               {
                 key: 'messages',
                 label: (
-                  <Link
+                  <AccessLink
+                    hint="message-list"
+                    carries={['deviceId']}
                     to={`/messages?deviceId=${encodeURIComponent(r.deviceId)}`}
                   >
                     查看消息
-                  </Link>
+                  </AccessLink>
                 ),
               },
               {
                 key: 'feedback',
                 label: (
-                  <Link
+                  <AccessLink
+                    hint="feedback-user"
+                    carries={['deviceId']}
                     to={`/feedback?tab=user&deviceId=${encodeURIComponent(r.deviceId)}`}
                   >
                     查看反馈
-                  </Link>
+                  </AccessLink>
                 ),
               },
             ],

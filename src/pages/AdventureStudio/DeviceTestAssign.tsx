@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Alert, Button, Select, Space, Tag, Typography } from 'antd'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import type { ApiError } from '../../api/client'
 import {
   useAssignTestStory,
@@ -201,7 +201,10 @@ export default function DeviceTestAssign({
         {devices && devices.items.length === 0 && (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             白名单暂无设备，请先到{' '}
-            <Link to="/test-devices">运维与配置 → 测试设备白名单</Link> 添加。
+            <AccessLink hint="test-devices" to="/test-devices">
+              运维与配置 → 测试设备白名单
+            </AccessLink>{' '}
+            添加。
           </Typography.Text>
         )}
         {devices?.truncated && (
@@ -292,7 +295,9 @@ export default function DeviceTestAssign({
           description={
             <Typography.Text>
               这台设备的资格可能刚被撤销。请到{' '}
-              <Link to="/test-devices">运维与配置 → 测试设备白名单</Link>{' '}
+              <AccessLink hint="test-devices" to="/test-devices">
+                运维与配置 → 测试设备白名单
+              </AccessLink>{' '}
               处理后重新选择；白名单只管「测试冒险故事」。
             </Typography.Text>
           }

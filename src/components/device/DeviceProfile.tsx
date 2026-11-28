@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card, Descriptions, Empty, Table, Tag, Typography } from 'antd'
 import dayjs from 'dayjs'
-import { Link } from 'react-router-dom'
+import AccessLink from '../access/AccessLink'
 import CopyableText from '../CopyableText'
 import InfoTip from '../InfoTip'
 import type { BoundUser, FleetDeviceDetailResponse } from '../../types/analytics'
@@ -183,7 +183,13 @@ function BoundUsersTable({ users }: { users: BoundUser[] }) {
       ellipsis: true,
       width: 280,
       render: (v: string) => (
-        <Link to={`/parents/${encodeURIComponent(v)}`}>{v}</Link>
+        <AccessLink
+          hint="parent-profile"
+          carries={['userId']}
+          to={`/parents/${encodeURIComponent(v)}`}
+        >
+          {v}
+        </AccessLink>
       ),
     },
     {

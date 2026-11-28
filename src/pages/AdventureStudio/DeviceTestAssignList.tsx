@@ -12,7 +12,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { MoreOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Link } from 'react-router-dom'
+import AccessLink from '../../components/access/AccessLink'
 import CopyableText from '../../components/CopyableText'
 import type { ApiError } from '../../api/client'
 import {
@@ -144,12 +144,14 @@ export default function DeviceTestAssignList({
       width: 190,
       render: (_, row) => (
         <Space size={4}>
-          <Link
+          <AccessLink
+            hint="device-profile"
+            carries={['deviceId']}
             to={`/users/${encodeURIComponent(row.deviceId)}`}
             style={{ fontFamily: 'monospace' }}
           >
             {row.deviceId}
-          </Link>
+          </AccessLink>
           <CopyableText text={row.deviceId} tip="复制设备 ID" />
         </Space>
       ),

@@ -1,7 +1,7 @@
 import { Alert, Table, Tag } from 'antd'
-import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useLlmSlowCalls } from '../../api/queries'
+import AccessLink from '../../components/access/AccessLink'
 import InfoTip from '../../components/InfoTip'
 import { formatMs, sceneLabel } from './scenes'
 
@@ -120,7 +120,17 @@ export default function SlowCallsTable({
           dataIndex: 'turnId',
           width: 110,
           render: (v: string | null) =>
-            v ? <Link to={`/messages?turnId=${v}`}>查看链路</Link> : '—',
+            v ? (
+              <AccessLink
+                hint="message-detail"
+                carries={['turnId']}
+                to={`/messages?turnId=${v}`}
+              >
+                查看链路
+              </AccessLink>
+            ) : (
+              '—'
+            ),
         },
       ]}
     />

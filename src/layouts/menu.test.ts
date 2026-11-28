@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { OPS_PATHS, OPS_ROUTE_META, isOpsPath, selectedMenuKey } from './menu'
+import {
+  OPS_PATHS,
+  OPS_ROUTE_META,
+  isExclusivePath,
+  isOpsPath,
+  selectedMenuKey,
+} from './menu'
 
 /**
  * 运维组的路径清单是「雾」与菜单锁标的唯一来源，路由表与测试都从这里取，
@@ -36,6 +42,15 @@ describe('运维组路径', () => {
     expect(isOpsPath('/memories/dev-001')).toBe(false)
     expect(isOpsPath('/overview')).toBe(false)
     expect(isOpsPath('/llmxyz')).toBe(false)
+  })
+
+  it('isExclusivePath 先剥掉 query / hash 再判定', () => {
+    expect(isExclusivePath('/llm?tab=perf')).toBe(true)
+    expect(isExclusivePath('/prompts?key=persona_elly')).toBe(true)
+    expect(isExclusivePath('/adventure?tab=episodes&episodeId=ep-1')).toBe(true)
+    expect(isExclusivePath('/test-devices#top')).toBe(true)
+    expect(isExclusivePath('/messages?deviceId=dev-1')).toBe(false)
+    expect(isExclusivePath('/users/dev-1')).toBe(false)
   })
 })
 

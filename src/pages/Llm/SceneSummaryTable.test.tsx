@@ -1,8 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import SceneSummaryTable from './SceneSummaryTable'
 import type { LlmSummaryResponse } from '../../types/analytics'
+
+const mockUseAnalyticsMeta = vi.fn()
+vi.mock('../../api/meta', () => ({
+  useAnalyticsMeta: () => mockUseAnalyticsMeta(),
+}))
+
+beforeEach(() => {
+  mockUseAnalyticsMeta.mockReturnValue({
+    data: { admin: { role: 'superadmin' } },
+    isPending: false,
+    isError: false,
+  })
+})
 
 function summary(
   scenes: LlmSummaryResponse['scenes'],
@@ -151,5 +164,22 @@ describe('SceneSummaryTable 既有列行为不变', () => {
 
     // antd Table pagination={false} 不会渲染分页器
     expect(document.querySelector('.ant-pagination')).toBeNull()
+  })
+})
+
+describe('SceneSummaryTable · 普通 admin', () => {
+  it('场景名退化为灰色纯文本，不产生指向雾层的死链', () => {
+    mockUseAnalyticsMeta.mockReturnValue({
+      data: { admin: { role: 'admin' } },
+      isPending: false,
+      isError: false,
+    })
+
+    renderTable([sceneRow({ scene: 'chat_main' })])
+
+    const text = screen.getByText(/主对话回答/)
+    expect(text.tagName).toBe('SPAN')
+    expect(text).toHaveAttribute('data-access', 'restricted')
+    expect(screen.queryByRole('link')).toBeNull()
   })
 })
