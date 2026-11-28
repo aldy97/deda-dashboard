@@ -135,7 +135,6 @@ export default function Engagement() {
                 <AccessLink
                   key={m}
                   hint="message-list"
-                  carries={['mode', '当前时间区间']}
                   to={messagesModeLink(
                     m,
                     rangeDateStr.startDate,

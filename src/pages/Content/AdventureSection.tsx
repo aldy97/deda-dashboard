@@ -67,7 +67,6 @@ export default function AdventureSection({
       <AccessLink
         hint="adventure"
         detail="该集"
-        carries={['episodeId']}
         to={`/adventure?tab=episodes&episodeId=${encodeURIComponent(episodeId)}`}
       >
         {title}
@@ -156,7 +155,6 @@ export default function AdventureSection({
         <Col>
           <AccessLink
             hint="message-list"
-            carries={['mode', '当前时间区间']}
             to={`/messages?mode=adventure_story&${dateQuery}`}
           >
             看冒险对话消息 →

@@ -162,7 +162,6 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
               v ? (
                 <AccessLink
                   hint="message-detail"
-                  carries={['turnId']}
                   to={`/messages?turnId=${v}`}
                 >
                   查看链路

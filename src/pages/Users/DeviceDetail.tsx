@@ -214,7 +214,6 @@ export default function UserDeviceDetail() {
               <Descriptions.Item label="记忆档案">
                 <AccessLink
                   hint="memory-archive"
-                  carries={['deviceId']}
                   to={`/memories/${deviceId}`}
                 >
                   查看版本时间线 →
@@ -300,7 +299,6 @@ export default function UserDeviceDetail() {
                     key={m.key}
                     hint="memory-archive"
                     detail="该记忆槽位的版本历史"
-                    carries={['deviceId', 'key']}
                     to={`/memories/${deviceId}?key=${m.key}`}
                   >
                     <Tag color="purple" style={{ cursor: 'pointer' }}>
@@ -441,7 +439,6 @@ export default function UserDeviceDetail() {
             extra={
               <AccessLink
                 hint="message-list"
-                carries={['deviceId']}
                 to={`/messages?deviceId=${encodeURIComponent(deviceId)}`}
               >
                 查看全部 →

@@ -146,7 +146,6 @@ export default function DeviceTestAssignList({
         <Space size={4}>
           <AccessLink
             hint="device-profile"
-            carries={['deviceId']}
             to={`/users/${encodeURIComponent(row.deviceId)}`}
             style={{ fontFamily: 'monospace' }}
           >

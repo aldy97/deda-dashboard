@@ -16,7 +16,6 @@ function renderLink(
     to?: string
     hint?: LinkHintTarget
     detail?: string
-    carries?: readonly string[]
     arrow?: boolean
     children?: ReactNode
     meta?: unknown
@@ -36,7 +35,6 @@ function renderLink(
         to={linkProps.to ?? '/users/dev-1'}
         hint={linkProps.hint ?? 'device-profile'}
         detail={linkProps.detail}
-        carries={linkProps.carries}
         arrow={linkProps.arrow}
         style={linkProps.style}
         title={linkProps.title}
@@ -81,16 +79,14 @@ describe('AccessLink · 非专属目标', () => {
 
   it('悬停显示目的地；原生 title 合并进提示并移除双浮层', async () => {
     const user = userEvent.setup()
-    renderLink({ title: 'dev-1-full', carries: ['deviceId'] })
+    renderLink({ title: 'dev-1-full' })
 
     const link = screen.getByTestId('target')
     expect(link).not.toHaveAttribute('title')
     await user.hover(link)
 
     expect(
-      await screen.findByText(
-        '点击前往「设备档案」，会带上 deviceId（dev-1-full）',
-      ),
+      await screen.findByText('点击前往「设备档案」（dev-1-full）'),
     ).toBeInTheDocument()
   })
 

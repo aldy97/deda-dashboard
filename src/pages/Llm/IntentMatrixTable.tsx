@@ -67,7 +67,6 @@ export default function IntentMatrixTable({
               return (
                 <AccessLink
                   hint="message-list"
-                  carries={['mode', '当前时间区间']}
                   to={`/messages?mode=${mode}&startDate=${startDate}&endDate=${endDate}`}
                 >
                   {tag}

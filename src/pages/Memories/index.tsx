@@ -162,7 +162,6 @@ export default function Memories() {
                 <Space size={4}>
                   <AccessLink
                     hint="device-profile"
-                    carries={['deviceId']}
                     to={`/users/${encodeURIComponent(v)}`}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -170,7 +169,6 @@ export default function Memories() {
                   </AccessLink>
                   <AccessLink
                     hint="message-list"
-                    carries={['deviceId']}
                     to={`/messages?deviceId=${encodeURIComponent(v)}`}
                     onClick={(e) => e.stopPropagation()}
                   >

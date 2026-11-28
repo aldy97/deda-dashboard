@@ -44,7 +44,6 @@ export default function SceneSummaryTable({
                 <AccessLink
                   hint="prompts"
                   detail="该场景"
-                  carries={['scene']}
                   to={`/prompts?scene=${scene}`}
                 >
                   {sceneLabel(scene)}

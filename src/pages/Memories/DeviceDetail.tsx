@@ -221,7 +221,6 @@ export default function MemoryDetail() {
                           {(v.confidence * 100).toFixed(0)}% · 来源轮次{' '}
                           <AccessLink
                             hint="message-detail"
-                            carries={['turnId']}
                             to={`/messages?turnId=${v.sourceTurnId}`}
                           >
                             {v.sourceTurnId.slice(0, 8)}…

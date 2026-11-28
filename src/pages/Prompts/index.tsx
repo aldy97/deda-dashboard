@@ -136,7 +136,6 @@ export default function Prompts() {
           <AccessLink
             hint="llm-perf"
             detail="该场景"
-            carries={['scene']}
             to={`/llm?tab=perf&scene=${scene}`}
           >
             {sceneLabel(scene)}

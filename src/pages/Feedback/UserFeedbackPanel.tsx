@@ -134,7 +134,6 @@ export default function UserFeedbackPanel() {
                   {row.userId ? (
                     <AccessLink
                       hint="parent-profile"
-                      carries={['userId']}
                       to={`/parents/${encodeURIComponent(row.userId)}`}
                     >
                       {contact}

@@ -123,7 +123,6 @@ export default function SlowCallsTable({
             v ? (
               <AccessLink
                 hint="message-detail"
-                carries={['turnId']}
                 to={`/messages?turnId=${v}`}
               >
                 查看链路
