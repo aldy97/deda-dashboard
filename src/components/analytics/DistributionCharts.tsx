@@ -42,7 +42,7 @@ export function DistributionPie({
 }) {
   const option = {
     tooltip: { trigger: 'item', formatter: `{b}: {c} ${unit}（{d}%）` },
-    legend: { bottom: 0 },
+    legend: { type: 'scroll', bottom: 0 },
     series: [
       {
         name: seriesName,

@@ -1,14 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Empty,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Empty, Input, Select, Space, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import AnalyticsRangePicker from '../../components/AnalyticsRangePicker'
@@ -191,7 +183,7 @@ export default function AuditLog({ episodeId }: Props) {
       )}
 
       {data === null && auditQuery.isLoading ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={[]}
           rowKey="id"
@@ -200,7 +192,7 @@ export default function AuditLog({ episodeId }: Props) {
           pagination={false}
         />
       ) : data && data.items.length > 0 ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={data.items}
           rowKey="id"

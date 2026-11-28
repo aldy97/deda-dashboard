@@ -1,4 +1,5 @@
-import { Alert, Table, Tag } from 'antd'
+import { Alert, Tag } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import { useLlmSlowCalls } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
@@ -43,7 +44,7 @@ export default function SlowCallsTable({
   }
 
   return (
-    <Table
+    <ResponsiveTable
       size="small"
       rowKey="id"
       loading={items === null}

@@ -12,6 +12,7 @@ import {
   message,
 } from 'antd'
 import type { UploadProps } from 'antd'
+import { drawerWidth } from '../../utils/drawer-width'
 import { UploadOutlined } from '@ant-design/icons'
 import { usePublishAppAsset, useUploadAppAsset } from '../../api/appAssets'
 import type { AppAsset, AppAssetKey } from '../../types/appAssets'
@@ -181,7 +182,7 @@ export default function AssetUploadDrawer({
       title="新建素材版本"
       open={open}
       onClose={onClose}
-      width={480}
+      width={drawerWidth(480)}
       destroyOnHidden
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>

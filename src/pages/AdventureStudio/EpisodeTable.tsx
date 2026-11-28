@@ -1,16 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Empty,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Button, Checkbox, Empty, Input, Select, Space, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import {
@@ -233,7 +223,7 @@ export default function EpisodeTable({ onOpen, onCreate }: Props) {
       )}
 
       {data === null && episodesQuery.isLoading ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={[]}
           rowKey="id"
@@ -242,7 +232,7 @@ export default function EpisodeTable({ onOpen, onCreate }: Props) {
           pagination={false}
         />
       ) : data && data.items.length > 0 ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={data.items}
           rowKey="id"

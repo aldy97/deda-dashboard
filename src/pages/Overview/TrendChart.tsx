@@ -22,6 +22,8 @@ export default function TrendChart({ data }: { data: OverviewTrendResponse }) {
     tooltip: { trigger: 'axis' },
     legend: {
       data: ['活跃设备', '当日开机', '新增激活', '新增用户', '日均使用时长'],
+      // 5 条序列在 375 宽放不下，开启滚动而不是被裁掉
+      type: 'scroll',
       bottom: 0,
     },
     grid: { left: 48, right: 48, top: 24, bottom: 56 },

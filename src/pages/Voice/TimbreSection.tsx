@@ -1,17 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Popconfirm,
-  Space,
-  Table,
-  Tag,
-  message,
-} from 'antd'
+import { Alert, Button, Card, Form, Input, Modal, Popconfirm, Space, Tag, message } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import {
   useCreateVoiceTimbre,
@@ -176,7 +165,7 @@ export default function TimbreSection() {
           description={error instanceof Error ? error.message : undefined}
         />
       )}
-      <Table<VoiceTimbreItem>
+      <ResponsiveTable<VoiceTimbreItem>
         rowKey="characterKey"
         size="small"
         loading={isPending}

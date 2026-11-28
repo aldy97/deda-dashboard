@@ -136,7 +136,7 @@ export default function VideoJobCard({ job, authoring }: Props) {
       }
     >
       <Space orientation="vertical" size={10} style={{ width: '100%' }}>
-        <Descriptions size="small" column={2} items={[
+        <Descriptions size="small" column={{ xs: 1, md: 2 }} items={[
           {
             key: 'stage',
             label: '阶段',
@@ -180,7 +180,15 @@ export default function VideoJobCard({ job, authoring }: Props) {
                 controls
                 preload="metadata"
                 src={preview.data.url}
-                style={{ width: '100%', borderRadius: 8, background: '#000' }}
+                // 竖屏成片按自然比例能长到上千像素，手机上会把整页顶走：
+                // 宽度跟随容器，高度封顶，留黑边由 object-fit 处理
+                style={{
+                  width: '100%',
+                  maxHeight: 320,
+                  objectFit: 'contain',
+                  borderRadius: 8,
+                  background: '#000',
+                }}
               />
               <Space size={12}>
                 <Typography.Link href={preview.data.url} target="_blank" rel="noreferrer">

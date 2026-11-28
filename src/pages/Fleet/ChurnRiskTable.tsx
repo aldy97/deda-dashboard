@@ -1,4 +1,5 @@
-import { Empty, InputNumber, Table, Tag } from 'antd'
+import { Empty, InputNumber, Tag } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import AccessLink from '../../components/access/AccessLink'
@@ -135,7 +136,7 @@ export default function ChurnRiskTable({ data, days, onDaysChange, onOpenDevice 
       {devices.length === 0 ? (
         <Empty description={`近 ${days} 天无不活跃设备`} />
       ) : (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={devices}
           rowKey="deviceId"

@@ -1,4 +1,5 @@
-import { Card, Col, Empty, Row, Spin, Statistic, Table, Typography } from 'antd'
+import { Card, Col, Empty, Row, Spin, Statistic, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { DayRange } from '../../utils/date-range'
 import { fmt } from '../../utils/date-range'
 import { useContentAdventureChoices } from '../../api/queries'
@@ -138,7 +139,7 @@ export default function AdventureChoicesSection({
         </Col>
       </Row>
 
-      <Table
+      <ResponsiveTable
         size="small"
         rowKey="episodeId"
         style={{ marginTop: 16 }}
@@ -166,7 +167,7 @@ export default function AdventureChoicesSection({
         ]}
         expandable={{
           expandedRowRender: (episode) => (
-            <Table
+            <ResponsiveTable
               size="small"
               rowKey="index"
               dataSource={episode.choices}

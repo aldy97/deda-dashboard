@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Radio, Space, Table, Tag, Tooltip } from 'antd'
+import { Alert, Radio, Space, Tag, Tooltip } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import { useUserFeedbacks } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
@@ -95,7 +96,7 @@ export default function UserFeedbackPanel() {
         />
       )}
 
-      <Table
+      <ResponsiveTable
         size="small"
         rowKey="id"
         loading={loading}

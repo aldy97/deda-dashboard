@@ -38,3 +38,42 @@ describe('PageHeader 组件', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * 响应式骨架：间距与换行规则放 index.css 的 .page-header / .page-header-actions，
+ * 组件只负责挂对 class。jsdom 不计算布局，测的是「哪个节点挂了哪个钩子」。
+ */
+describe('PageHeader 响应式骨架', () => {
+  it('根节点与操作区挂全局 class，操作区包住 actions', () => {
+    const { container } = render(
+      <PageHeader
+        title="标题"
+        description="描述"
+        actions={<button type="button">刷新</button>}
+      />,
+    )
+
+    const root = container.firstElementChild as HTMLElement
+    expect(root).toHaveClass('page-header')
+    const actions = root.querySelector('.page-header-actions')
+    expect(actions).not.toBeNull()
+    expect(actions).toContainElement(
+      screen.getByRole('button', { name: '刷新' }),
+    )
+  })
+
+  it('标题容器允许收缩，长描述不会把标题顶成竖排', () => {
+    const { container } = render(
+      <PageHeader title="标题" description={'很长的说明'.repeat(60)} />,
+    )
+
+    expect(container.querySelector('.page-header-title')).toHaveStyle(
+      'min-width: 0',
+    )
+  })
+
+  it('无 actions 时不渲染空的操作区容器', () => {
+    const { container } = render(<PageHeader title="标题" />)
+    expect(container.querySelector('.page-header-actions')).toBeNull()
+  })
+})

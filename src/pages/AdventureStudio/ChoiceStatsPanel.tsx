@@ -1,16 +1,5 @@
-import {
-  Alert,
-  Card,
-  Col,
-  Empty,
-  Row,
-  Space,
-  Spin,
-  Statistic,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Card, Col, Empty, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import InfoTip from '../../components/InfoTip'
 import { useEpisodeChoiceStats } from '../../api/queries'
@@ -338,7 +327,7 @@ export default function ChoiceStatsPanel({ episodeId }: Props) {
 
           {/* 选项明细表 */}
           {segment.choices.length > 0 && (
-            <Table<ChoiceItem>
+            <ResponsiveTable<ChoiceItem>
               columns={choiceColumns}
               dataSource={segment.choices}
               rowKey={(row) => `${segment.segmentOrder ?? 'null'}-${row.index}`}

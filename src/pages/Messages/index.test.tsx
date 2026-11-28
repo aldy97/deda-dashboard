@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { apiClient } from '../../api/client'
+import { setViewportWidth } from '../../test/viewport'
 import Messages from './index'
 import type {
   InterruptionRateResponse,
@@ -471,5 +472,59 @@ describe('消息明细页 · 设备列白名单备注', () => {
     expect(callsTo('/analytics/test-devices')).toHaveLength(0)
     expect(screen.queryByText('3 号样机-熊枫')).toBeNull()
     expect(document.querySelectorAll('.ant-tag-gold')).toHaveLength(0)
+  })
+})
+
+/**
+ * 手机卡片化：375 宽下不再渲染表格，每行一张卡片；点卡片仍然打开详情抽屉
+ * （走 onRow.onClick 的既有契约，URL 仍是唯一状态源）。
+ */
+describe('消息明细页 · 手机卡片化', () => {
+  beforeEach(() => {
+    mockGet.mockReset()
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/analytics/meta') {
+        return Promise.resolve({
+          data: {
+            nodeEnv: 'staging',
+            promptWriteEnabled: false,
+            publishConfirmCode: 'PUBLISH',
+            admin: { username: 'root', displayName: 'Root', role: 'superadmin' },
+          },
+        })
+      }
+      if (url === '/analytics/messages/modes') {
+        return Promise.resolve({ data: MODES_RESPONSE })
+      }
+      if (url === '/analytics/messages/interruption-rate') {
+        return Promise.resolve({ data: INTERRUPTION_RESPONSE })
+      }
+      if (url === '/analytics/messages') {
+        return Promise.resolve({
+          data: makeList([
+            makeMessage({ id: 'm-1', content: '第一条' }),
+            makeMessage({ id: 'm-2', content: '第二条' }),
+          ]),
+        })
+      }
+      if (url === '/analytics/test-devices') {
+        return Promise.resolve({ data: { enabled: { adventure: true }, items: [], total: 0 } })
+      }
+      return Promise.resolve({ data: null })
+    })
+  })
+
+  it('表格换成卡片，点卡片带出 messageId', async () => {
+    act(() => setViewportWidth(375))
+    renderPage()
+
+    await screen.findByText('第一条')
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByTestId('mobile-cards')).toBeInTheDocument()
+    expect(screen.getByTestId('card-m-2')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('card-m-1'))
+
+    await waitFor(() => expect(search()).toContain('messageId=m-1'))
   })
 })

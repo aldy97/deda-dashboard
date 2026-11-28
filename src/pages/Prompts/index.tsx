@@ -1,6 +1,8 @@
-import { Alert, Button, Drawer, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Button, Drawer, Space, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import { drawerWidth } from '../../utils/drawer-width'
 import AccessLink from '../../components/access/AccessLink'
 import PageHeader from '../../components/PageHeader'
 import {
@@ -309,7 +311,7 @@ export default function Prompts() {
         </Tag>
       )}
 
-      <Table<PromptCatalogItem>
+      <ResponsiveTable<PromptCatalogItem>
         rowKey="key"
         size="middle"
         // 全站没配 ConfigProvider locale，Table 内置文案默认是英文 Reset/OK；
@@ -338,7 +340,7 @@ export default function Prompts() {
         }
         open={selectedKey !== null}
         onClose={() => setQuery({ key: null }, { replace: true })}
-        width={900}
+        width={drawerWidth(900)}
         // antd 6 改名：关闭即销毁编辑器，不留上一个 prompt 的状态
         destroyOnHidden
       >

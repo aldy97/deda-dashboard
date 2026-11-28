@@ -1,18 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Card,
-  Col,
-  Descriptions,
-  Empty,
-  Row,
-  Space,
-  Spin,
-  Statistic,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Card, Col, Descriptions, Empty, Row, Space, Spin, Statistic, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import InfoTip from '../../components/InfoTip'
 import { useAdventureRecovery } from '../../api/queries'
@@ -163,7 +151,7 @@ function BreakerCard({ snapshot }: { snapshot: RecoveryHealthSnapshot }) {
 
         <Descriptions
           size="small"
-          column={3}
+          column={{ xs: 1, md: 3 }}
           bordered
           title="生效配置"
           items={[
@@ -395,7 +383,7 @@ export default function HealthPanel() {
                 description="还没有巡检记录（服务刚启动，或 kill switch 关着）"
               />
             ) : (
-              <Table
+              <ResponsiveTable
                 columns={SWEEP_COLUMNS}
                 dataSource={snapshot.sweeps}
                 rowKey={(row) => `${row.startedAt}-${row.durationMs}`}
@@ -454,7 +442,7 @@ export default function HealthPanel() {
                 description="最近没有引擎失败——这是期望中的常态"
               />
             ) : (
-              <Table
+              <ResponsiveTable
                 columns={FAILURE_COLUMNS}
                 dataSource={snapshot.engineFailures}
                 rowKey={(row) => `${row.at}-${row.deviceId}`}

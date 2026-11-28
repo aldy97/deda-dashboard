@@ -1,14 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Button, Input, Select, Space, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import { useReviewQueue } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
@@ -155,7 +147,7 @@ export default function ReviewQueueTable({
         />
       )}
 
-      <Table
+      <ResponsiveTable
         size="small"
         rowKey="turnId"
         loading={query.isLoading}

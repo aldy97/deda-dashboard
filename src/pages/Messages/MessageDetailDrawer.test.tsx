@@ -451,3 +451,20 @@ describe('MessageDetailDrawer 网络字段', () => {
     expect(screen.queryByText('未知')).not.toBeInTheDocument()
   })
 })
+
+/**
+ * 抽屉宽度走 drawerWidth：手机上封顶到视口宽度。
+ * 断言的是 antd 渲染出的 wrapper 内联宽度，宽度字符串本身就是契约。
+ */
+describe('MessageDetailDrawer 宽度', () => {
+  it('桌面宽度 640，手机上随视口收缩', () => {
+    renderDrawer({ message: makeMessage(), messageId: 'm-1' })
+
+    const wrapper = document.querySelector(
+      '.ant-drawer-content-wrapper',
+    ) as HTMLElement
+    expect(wrapper).not.toBeNull()
+    // toHaveStyle 的解析器不认 min()，直接比较内联宽度字符串
+    expect(wrapper.style.width).toBe('min(640px, 100vw)')
+  })
+})

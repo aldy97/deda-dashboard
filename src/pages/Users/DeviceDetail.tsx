@@ -1,17 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Card,
-  Descriptions,
-  Empty,
-  InputNumber,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Alert, Card, Descriptions, Empty, InputNumber, Space, Spin, Tag, Tooltip, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import AccessLink from '../../components/access/AccessLink'
@@ -324,7 +313,7 @@ export default function UserDeviceDetail() {
               </Space>
             }
           >
-            <Table
+            <ResponsiveTable
               size="small"
               rowKey="reportDate"
               loading={reportsQuery.isFetching}
@@ -390,7 +379,7 @@ export default function UserDeviceDetail() {
               </Space>
             }
           >
-            <Table
+            <ResponsiveTable
               size="small"
               rowKey="id"
               loading={userFbQuery.isFetching}
@@ -445,7 +434,7 @@ export default function UserDeviceDetail() {
               </AccessLink>
             }
           >
-            <Table
+            <ResponsiveTable
               size="small"
               rowKey="id"
               loading={messagesQuery.isLoading}

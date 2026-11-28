@@ -38,9 +38,9 @@ export default function FirmwareDistributionChart({
       },
     },
     legend: {
-      orient: 'vertical',
-      right: 10,
-      top: 'center',
+      // 右侧竖排图例在 375 宽会把饼图挤成一条缝，改为底部横向滚动
+      type: 'scroll',
+      bottom: 0,
       formatter: (name: string) =>
         name === 'unknown' ? 'unknown（无固件信息）' : name,
     },
@@ -48,7 +48,7 @@ export default function FirmwareDistributionChart({
       {
         type: 'pie',
         radius: ['40%', '70%'],
-        center: ['40%', '50%'],
+        center: ['50%', '42%'],
         avoidLabelOverlap: false,
         label: { show: false },
         emphasis: {

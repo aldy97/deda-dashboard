@@ -10,6 +10,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
+import { drawerWidth } from '../../utils/drawer-width'
 import type { ApiError } from '../../api/client'
 import {
   useAdventureLint,
@@ -359,7 +360,7 @@ export default function NewEpisodeDrawer({
         open={simulateOpen}
         onCancel={() => setSimulateOpen(false)}
         footer={null}
-        width={860}
+        width={drawerWidth(860)}
         title="试播：按引擎规则走一遍（不写库、不审计）"
       >
         {identity && (

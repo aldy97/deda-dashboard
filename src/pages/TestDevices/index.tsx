@@ -1,18 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Input,
-  Modal,
-  Space,
-  Switch,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
+import { Alert, Button, Card, Form, Input, Modal, Space, Switch, Tag, Typography, message } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import { SnippetsOutlined } from '@ant-design/icons'
 import AccessLink from '../../components/access/AccessLink'
@@ -257,7 +245,7 @@ export default function TestDevices() {
           onFinish={submitAdd}
           disabled={adventureTestOff}
         >
-          <Space size={12} wrap align="start">
+          <div className="filter-row">
             <Form.Item
               name="deviceId"
               label="设备"
@@ -302,7 +290,7 @@ export default function TestDevices() {
                 添加到白名单
               </Button>
             </Form.Item>
-          </Space>
+          </div>
         </Form>
         {add.error && (
           <Alert
@@ -349,7 +337,7 @@ export default function TestDevices() {
             description={query.error.message}
           />
         )}
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={data?.items ?? []}
           rowKey="id"

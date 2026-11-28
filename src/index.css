@@ -23,3 +23,108 @@ body {
 .llm-failure-row > td {
   background: #fff1f0 !important;
 }
+
+/*
+ * 壳层高度：手机地址栏会随滚动显隐，100vh 会把底部内容顶出屏幕。
+ * dvh 跟随可视视口；不支持 dvh 的浏览器回退到上一行 vh。
+ */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* 全站页面头部：标题 + 描述在左，操作在右；换行规则见媒体查询 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/*
+ * 筛选行：替代逐处 <Space wrap> 的固定宽度堆叠。
+ * 桌面端每项保持自身宽度；手机端每项占满一行（先撑满再换行），
+ * 内置的 width:180 之类不会再制造横向溢出。
+ */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/*
+ * 收起的图标栏（平板档）：antd 只把分组标题压缩，不会隐藏，结果是一列
+ * 「概览…」「用户…」的截断文字。收起态没有文字位置，直接隐藏分组标题。
+ */
+.ant-menu-inline-collapsed .ant-menu-item-group-title {
+  display: none;
+}
+
+/*
+ * 移动端（<768，与 useLayoutMode 的 mobile 档同口径）。
+ * 这里覆盖的是 antd 内部类名，目的是把「桌面密度的外壳」在手机上收窄，
+ * 不改变任何组件的交互语义；antd 大版本升级时需要复查这批选择器。
+ */
+@media (max-width: 767px) {
+  .page-header-actions {
+    width: 100%;
+  }
+
+  .filter-row > * {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+
+  /* 卡片外壳收紧，给正文多留 24px */
+  .ant-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .ant-card > .ant-card-head {
+    padding: 0 12px;
+    min-height: 48px;
+  }
+
+  /* 卡片标题与右侧操作在窄屏各占一行，避免标题被挤成一个字一行的竖条 */
+  .ant-card > .ant-card-head > .ant-card-head-wrapper {
+    flex-wrap: wrap;
+  }
+
+  /* 标题允许换行，右侧入口链接整行落到第二行：
+     375 宽两列卡片里，标题和链接挤同一行时标题会被省略成「累计激活…」 */
+  .ant-card > .ant-card-head .ant-card-head-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .ant-card > .ant-card-head .ant-card-extra {
+    flex: 1 0 100%;
+    margin-inline-start: 0;
+  }
+
+  /* 表格单元格：手机横向滚动时少占一点，列不会被挤成两行 */
+  .ant-table-wrapper .ant-table-cell {
+    padding: 8px;
+  }
+
+  /* 弹窗内边距收紧（antd 已在 ≤575px 收窄外框宽度） */
+  .ant-modal .ant-modal-content {
+    padding: 16px;
+  }
+
+  /* 描述列表两列在 375 宽会把值挤成竖排，统一按单列读 */
+  .ant-descriptions-row > .ant-descriptions-item {
+    padding-bottom: 8px;
+  }
+}

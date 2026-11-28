@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Table, Tag, Tooltip, Typography } from 'antd'
+import { Alert, Tag, Tooltip, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import { useLlmRecentFailures } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
@@ -43,7 +44,7 @@ export default function RecentFailuresTable({ scene }: { scene?: string }) {
           style={{ marginBottom: 12 }}
         />
       )}
-      <Table
+      <ResponsiveTable
         size="small"
         rowKey="id"
         loading={loading}

@@ -48,6 +48,7 @@ export default function SafetyTrendChart({
     },
     legend: {
       data: ['判定轮次', '拦截率', '调用异常放行', '非法标签放行', '未做 L2'],
+      type: 'scroll',
       bottom: 0,
     },
     grid: { left: 56, right: 56, top: 24, bottom: 56 },

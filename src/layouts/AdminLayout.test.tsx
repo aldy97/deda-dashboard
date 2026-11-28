@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { apiClient } from '../api/client'
 import { ISSUED_AT_KEY, TOKEN_KEY } from '../utils/auth-token'
+import { setViewportWidth } from '../test/viewport'
 import AdminLayout from './AdminLayout'
 import { selectedMenuKey } from './menu'
 
@@ -101,6 +102,21 @@ describe('AdminLayout 标题与环境标签', () => {
     await waitFor(() => expect(tag.dataset.tone).toBe('staging'))
     expect(header).toContainElement(tag)
     expect(tag).toHaveTextContent('测试')
+  })
+
+  it('品牌头与顶栏同高（64px），两栏顶边在同一条水平线上', () => {
+    stubMeta({
+      nodeEnv: 'staging',
+      promptWriteEnabled: true,
+      publishConfirmCode: 'DEDA2025',
+    })
+    renderLayout()
+
+    // antd Header 高度 = controlHeight(32) × 2 = 64；品牌头不设这个下限会矮一截
+    expect(screen.getByTestId('brand-header')).toHaveStyle('min-height: 64px')
+    expect(document.querySelector('.ant-layout-header')).toHaveClass(
+      'ant-layout-header',
+    )
   })
 
   it('品牌头钉在侧栏顶端：菜单滚动时不跟着走', () => {
@@ -417,5 +433,128 @@ describe('AdminLayout 退出登录', () => {
         '/login',
       ),
     )
+  })
+})
+
+/**
+ * 壳层三档：手机（<768）无 Sider、导航进抽屉；平板（768–991）Sider 收成
+ * 64px 图标栏；桌面（≥992）维持 240px。断点口径由 useLayoutMode 统一，
+ * 这里只钉「三档各自的 DOM 形态」，不重复断点数值。
+ */
+describe('AdminLayout 移动端与平板壳层', () => {
+  const META = {
+    nodeEnv: 'staging',
+    promptWriteEnabled: true,
+    publishConfirmCode: 'DEDA2025',
+  }
+
+  function renderAt(width: number, entry = '/overview') {
+    act(() => setViewportWidth(width))
+    stubMeta(META)
+    return renderLayout(entry)
+  }
+
+  it('手机宽度不渲染 Sider，顶栏给出「打开菜单」', () => {
+    renderAt(375)
+
+    expect(document.querySelector('.ant-layout-sider')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: '打开菜单' }),
+    ).toBeInTheDocument()
+    // 抽屉没打开时导航不在 DOM 里（destroyOnHidden），避免读屏读到隐藏菜单
+    expect(screen.queryByTestId('brand-header')).not.toBeInTheDocument()
+  })
+
+  it('手机顶栏只留环境标签与退出登录，不放大段标题', async () => {
+    renderAt(375)
+
+    expect(screen.queryByText(/儿童 AI 毛绒玩具/)).not.toBeInTheDocument()
+    expect(await screen.findByTestId('env-tag')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '退出登录' })).toBeInTheDocument()
+  })
+
+  it('点「打开菜单」后抽屉里有全部 15 个入口', async () => {
+    renderAt(375)
+
+    await userEvent.click(screen.getByRole('button', { name: '打开菜单' }))
+
+    const drawer = await screen.findByRole('dialog')
+    expect(within(drawer).getByTestId('brand-header')).toBeInTheDocument()
+    expect(within(drawer).getAllByRole('menuitem')).toHaveLength(15)
+    // 抽屉里也要能看出当前在哪个环境
+    expect(within(drawer).getByTestId('env-tag')).toBeInTheDocument()
+  })
+
+  it('抽屉里点菜单项：路由切换、抽屉关闭、入口从 DOM 移除', async () => {
+    renderAt(375)
+
+    await userEvent.click(screen.getByRole('button', { name: '打开菜单' }))
+    const drawer = await screen.findByRole('dialog')
+    await userEvent.click(
+      within(drawer).getByRole('menuitem', { name: /用户画像/ }),
+    )
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location-pathname')).toHaveTextContent(
+        '/users',
+      ),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByTestId('brand-header')).not.toBeInTheDocument()
+  })
+
+  it('点遮罩关闭菜单抽屉，不改变路由', async () => {
+    renderAt(375)
+
+    await userEvent.click(screen.getByRole('button', { name: '打开菜单' }))
+    await screen.findByRole('dialog')
+
+    const mask = document.querySelector('.ant-drawer-mask') as HTMLElement
+    await userEvent.click(mask)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByTestId('location-pathname')).toHaveTextContent(
+      '/overview',
+    )
+  })
+
+  it('手机内容区 padding 收成 12，顶栏同步收紧', () => {
+    renderAt(375)
+
+    // 底部另有 safe-area 叠加，所以只断言其余三边
+    expect(document.querySelector('.ant-layout-content')).toHaveStyle({
+      paddingLeft: '12px',
+      paddingRight: '12px',
+      paddingTop: '12px',
+    })
+    expect(document.querySelector('.ant-layout-header')).toHaveStyle(
+      'padding: 0px 12px',
+    )
+  })
+
+  it('平板宽度：Sider 收成 64px 图标栏，标题文字隐藏，logo 仍在', () => {
+    renderAt(900)
+
+    const sider = document.querySelector('.ant-layout-sider')
+    expect(sider).toHaveClass('ant-layout-sider-collapsed')
+    expect(sider).toHaveStyle('flex: 0 0 64px')
+    expect(screen.getByTestId('brand-logo')).toBeInTheDocument()
+    expect(screen.queryByText('Deda Dashboard')).not.toBeInTheDocument()
+    // 收起态没有空间放环境标签，环境提示不能挤成两行
+    expect(screen.queryByTestId('env-tag')).not.toBeInTheDocument()
+  })
+
+  it('桌面宽度：Sider 240px 展开，标题与环境标签都在', async () => {
+    renderAt(1280)
+
+    const sider = document.querySelector('.ant-layout-sider')
+    expect(sider).not.toHaveClass('ant-layout-sider-collapsed')
+    expect(sider).toHaveStyle('flex: 0 0 240px')
+    expect(screen.getByText('Deda Dashboard')).toBeInTheDocument()
+    expect(await screen.findByTestId('env-tag')).toBeInTheDocument()
   })
 })
