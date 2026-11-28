@@ -18,8 +18,3 @@ export function useLayoutMode(): LayoutMode {
   if (!screens.lg) return 'tablet'
   return 'desktop'
 }
-
-/** 手机档：表格卡片化等「整块换形态」的判定都用它，避免各页面各写一套条件。 */
-export function useIsMobile(): boolean {
-  return useLayoutMode() === 'mobile'
-}
