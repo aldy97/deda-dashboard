@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useFleetDeviceDetail } from '../../api/queries'
 import DeviceProfile from '../../components/device/DeviceProfile'
 import ChildProfileSection from './ChildProfileSection'
+import { drawerWidth } from '../../utils/drawer-width'
 
 interface Props {
   deviceId: string | null
@@ -46,7 +47,7 @@ export default function DeviceDetailDrawer({ deviceId, onClose }: Props) {
       }
       open={open}
       onClose={onClose}
-      width={640}
+      width={drawerWidth(640)}
       destroyOnHidden
       extra={
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

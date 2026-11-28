@@ -1,4 +1,5 @@
-import { Empty, Table, Tag } from 'antd'
+import { Empty, Tag } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { IntentSummaryResponse } from '../../types/analytics'
 import AccessLink from '../../components/access/AccessLink'
 import {
@@ -40,7 +41,7 @@ export default function IntentMatrixTable({
     intentSourceLabel(sourceKey === NULL_BUCKET ? null : sourceKey)
 
   return (
-    <Table
+    <ResponsiveTable
       size="small"
       rowKey={(row) => row.intent ?? NULL_BUCKET}
       dataSource={rows}

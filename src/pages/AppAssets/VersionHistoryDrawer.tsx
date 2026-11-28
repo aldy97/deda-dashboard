@@ -12,6 +12,7 @@ import {
   Typography,
   message,
 } from 'antd'
+import { drawerWidth } from '../../utils/drawer-width'
 import {
   useAppAssetVersions,
   useArchiveAppAsset,
@@ -102,7 +103,7 @@ export default function VersionHistoryDrawer({ group, onClose }: Props) {
       }
       open={group !== null}
       onClose={onClose}
-      width={720}
+      width={drawerWidth(720)}
       destroyOnHidden
     >
       {group && (

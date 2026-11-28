@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import {
-  Alert,
-  Button,
-  Dropdown,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Alert, Button, Dropdown, Space, Tag, Tooltip, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import { MoreOutlined, ReloadOutlined } from '@ant-design/icons'
 import AccessLink from '../../components/access/AccessLink'
@@ -284,7 +276,7 @@ export default function DeviceTestAssignList({
         </Typography.Text>
       )}
 
-      <Table
+      <ResponsiveTable
         columns={columns}
         dataSource={rows}
         rowKey="deviceId"

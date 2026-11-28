@@ -1,4 +1,5 @@
-import { Progress, Table } from 'antd'
+import { Progress } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import AccessLink from '../../components/access/AccessLink'
 import type { LinkHintTarget } from '../../components/access/link-hints'
 import InfoTip from '../../components/InfoTip'
@@ -35,7 +36,7 @@ export default function FeatureAdoptionTable({
   endDate?: string
 }) {
   return (
-    <Table
+    <ResponsiveTable
       size="small"
       rowKey="key"
       dataSource={data.features}

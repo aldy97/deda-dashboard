@@ -71,7 +71,7 @@ export default function PreviewSimulator({
         <>
           <Descriptions
             size="small"
-            column={4}
+            column={{ xs: 1, sm: 2, md: 4 }}
             bordered
             items={[
               {

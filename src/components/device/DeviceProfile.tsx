@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Card, Descriptions, Empty, Table, Tag, Typography } from 'antd'
+import { Card, Descriptions, Empty, Tag, Typography } from 'antd'
+import ResponsiveTable from '../ResponsiveTable'
 import dayjs from 'dayjs'
 import AccessLink from '../access/AccessLink'
 import CopyableText from '../CopyableText'
@@ -32,7 +33,7 @@ export default function DeviceProfile({ data, days, exitLinks }: Props) {
 
       {/* 静态信息 */}
       <Card size="small" title="设备信息">
-        <Descriptions column={2} size="small" colon={false}>
+        <Descriptions column={{ xs: 1, md: 2 }} size="small" colon={false}>
           <Descriptions.Item label="设备 ID">{data.deviceId}</Descriptions.Item>
           <Descriptions.Item label="UUID">
             <CopyableText text={data.deviceUuid} ellipsis style={{ maxWidth: 200 }}>
@@ -80,7 +81,7 @@ export default function DeviceProfile({ data, days, exitLinks }: Props) {
         }
       >
         {data.realtime ? (
-          <Descriptions column={3} size="small" colon={false}>
+          <Descriptions column={{ xs: 1, md: 3 }} size="small" colon={false}>
             <Descriptions.Item label="在线">
               <Tag color={data.realtime.online ? 'green' : 'default'}>
                 {data.realtime.online ? '在线' : '离线'}
@@ -143,7 +144,7 @@ export default function DeviceProfile({ data, days, exitLinks }: Props) {
 
       {/* totals */}
       <Card size="small" title="近 N 天汇总">
-        <Descriptions column={2} size="small" colon={false}>
+        <Descriptions column={{ xs: 1, md: 2 }} size="small" colon={false}>
           <Descriptions.Item label="开机天数">
             {data.totals.presenceDays}
           </Descriptions.Item>
@@ -209,7 +210,7 @@ function BoundUsersTable({ users }: { users: BoundUser[] }) {
   ]
 
   return (
-    <Table
+    <ResponsiveTable
       columns={columns}
       dataSource={users}
       rowKey="userId"

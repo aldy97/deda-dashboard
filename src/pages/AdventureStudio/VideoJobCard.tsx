@@ -136,7 +136,7 @@ export default function VideoJobCard({ job, authoring }: Props) {
       }
     >
       <Space orientation="vertical" size={10} style={{ width: '100%' }}>
-        <Descriptions size="small" column={2} items={[
+        <Descriptions size="small" column={{ xs: 1, md: 2 }} items={[
           {
             key: 'stage',
             label: '阶段',

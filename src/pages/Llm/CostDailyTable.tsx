@@ -1,4 +1,5 @@
-import { Alert, Table, Tag } from 'antd'
+import { Alert, Tag } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import type {
   LlmCostReconciliation,
@@ -171,7 +172,7 @@ export default function CostDailyTable({ data }: Props) {
   return (
     <div>
       <ReconciliationBar rec={reconciliation} />
-      <Table
+      <ResponsiveTable
         columns={columns}
         dataSource={series}
         rowKey="date"

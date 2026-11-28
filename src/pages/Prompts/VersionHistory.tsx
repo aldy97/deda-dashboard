@@ -1,4 +1,5 @@
-import { Button, Empty, Table, Tag, Tooltip, Typography } from 'antd'
+import { Button, Empty, Tag, Tooltip, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { PromptVersionItem } from '../../types/analytics'
@@ -129,7 +130,7 @@ export default function VersionHistory({
   ]
 
   return (
-    <Table<PromptVersionItem>
+    <ResponsiveTable<PromptVersionItem>
       rowKey="revision"
       size="small"
       tableLayout="fixed"

@@ -1,15 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Card,
-  Col,
-  Radio,
-  Row,
-  Statistic,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Card, Col, Radio, Row, Statistic, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import { useContentParentReport, useReportFeedbacks } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
@@ -176,7 +167,7 @@ export default function ReportFeedbackPanel() {
         />
       )}
 
-      <Table
+      <ResponsiveTable
         size="small"
         rowKey="id"
         loading={loading}

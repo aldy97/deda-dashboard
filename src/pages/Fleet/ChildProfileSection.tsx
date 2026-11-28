@@ -92,7 +92,7 @@ export default function ChildProfileSection({ deviceId }: Props) {
       ) : (
         <Descriptions
           size="small"
-          column={2}
+          column={{ xs: 1, md: 2 }}
           items={[
             { key: 'name', label: '姓名', children: profile.name ?? '—' },
             {

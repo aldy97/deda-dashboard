@@ -1,26 +1,17 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+import { installMatchMedia, resetViewportWidth } from './viewport'
 
 /**
  * jsdom 缺失的浏览器 API 补齐 + echarts 替身。
  * 原则：只补 antd/echarts 真正会调用的最小实现，不引入 polyfill 依赖。
  */
 
-// antd 的响应式组件（Grid/Tabs/Table）会读 matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    dispatchEvent: () => false,
-  }),
-})
+// antd 的响应式组件（Grid/Sider/Table 列/Modal）会读 matchMedia：
+// 用按宽度回答的实现替代恒 false 的桩，断点相关代码才可测。
+// 默认 1280（桌面），afterEach 复位，确保既有用例的渲染结果不变。
+installMatchMedia()
 
 // antd Table / Select 的虚拟滚动依赖 ResizeObserver
 class ResizeObserverStub {
@@ -57,6 +48,7 @@ vi.mock('echarts-for-react', async () => {
 
 afterEach(async () => {
   cleanup()
+  resetViewportWidth()
   const { resetChartOptions } = await import('./echartsOptions')
   resetChartOptions()
   vi.clearAllMocks()

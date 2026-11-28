@@ -1,16 +1,5 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Descriptions,
-  Dropdown,
-  Empty,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Button, Card, Descriptions, Dropdown, Empty, Space, Spin, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import { MoreOutlined } from '@ant-design/icons'
 import { useMemo } from 'react'
@@ -147,7 +136,7 @@ export default function ParentDetail() {
 
       <Space orientation="vertical" size={16} style={{ width: '100%' }}>
         <Card size="small" title="身份信息">
-          <Descriptions column={2} size="small" colon={false}>
+          <Descriptions column={{ xs: 1, md: 2 }} size="small" colon={false}>
             <Descriptions.Item label="昵称">
               {user.nickname ?? <Tag>未设置昵称</Tag>}
             </Descriptions.Item>
@@ -212,7 +201,7 @@ export default function ParentDetail() {
             </Typography.Text>
           }
         >
-          <Table<ParentDevice>
+          <ResponsiveTable<ParentDevice>
             columns={columns}
             dataSource={devices}
             rowKey="deviceId"

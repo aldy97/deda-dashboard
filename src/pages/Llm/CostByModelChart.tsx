@@ -112,7 +112,7 @@ export default function CostByModelChart({ data }: { data: LlmCostSeriesItem[] }
         return [`${point.date}`, ...lines, ...meta].join('<br/>')
       },
     },
-    legend: { data: legendData, bottom: 0 },
+    legend: { data: legendData, type: 'scroll', bottom: 0 },
     grid: { left: 56, right: 24, top: 24, bottom: 56 },
     xAxis: { type: 'category', data: dates },
     yAxis: {

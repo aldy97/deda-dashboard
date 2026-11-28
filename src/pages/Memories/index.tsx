@@ -1,15 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Card,
-  Flex,
-  Input,
-  Progress,
-  Space,
-  Spin,
-  Table,
-  Typography,
-} from 'antd'
+import { Alert, Card, Flex, Input, Progress, Space, Spin, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useMemoriesOverview, useMemoryDevices } from '../../api/queries'
@@ -132,7 +123,7 @@ export default function Memories() {
             }}
           />
         </div>
-        <Table
+        <ResponsiveTable
           size="small"
           rowKey="deviceId"
           loading={loading}

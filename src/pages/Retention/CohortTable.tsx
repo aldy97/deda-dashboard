@@ -1,4 +1,5 @@
-import { Empty, Table } from 'antd'
+import { Empty } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { RetentionCohortsResponse } from '../../types/analytics'
 
 /** rate 0-1 → 单元格底色（蓝色阶，越深留存越高） */
@@ -73,7 +74,7 @@ export default function CohortTable({
   ]
 
   return (
-    <Table
+    <ResponsiveTable
       size="small"
       rowKey="cohort"
       columns={columns}

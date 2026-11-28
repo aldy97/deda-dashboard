@@ -1,17 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Dropdown,
-  Empty,
-  Image,
-  Modal,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
+import { Alert, Button, Dropdown, Empty, Image, Modal, Space, Tag, Typography, message } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { MenuProps } from 'antd'
 import { MoreOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -489,7 +478,7 @@ export default function AppAssets() {
               }
             />
           )}
-          <Table<AppAssetGroup>
+          <ResponsiveTable<AppAssetGroup>
             rowKey="key"
             size="middle"
             locale={{ emptyText: '暂无素材' }}

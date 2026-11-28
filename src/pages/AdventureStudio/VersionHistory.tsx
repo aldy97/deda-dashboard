@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Modal, Select, Space, Spin, Table, Tag, Typography } from 'antd'
+import { Alert, Modal, Select, Space, Spin, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import InfoTip from '../../components/InfoTip'
 import type { ApiError } from '../../api/client'
@@ -249,7 +250,7 @@ export default function VersionHistory({
         />
       )}
 
-      <Table
+      <ResponsiveTable
         columns={columns}
         dataSource={versions}
         rowKey="id"

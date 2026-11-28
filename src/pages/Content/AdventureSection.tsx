@@ -1,4 +1,5 @@
-import { Button, Card, Col, Rate, Row, Statistic, Table, Typography } from 'antd'
+import { Button, Card, Col, Rate, Row, Statistic, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import AccessLink from '../../components/access/AccessLink'
 import type { ApiError } from '../../api/client'
 import type { ContentAdventureResponse } from '../../types/analytics'
@@ -117,7 +118,7 @@ export default function AdventureSection({
         </Col>
       </Row>
       {data.topEpisodes.length > 0 && (
-        <Table
+        <ResponsiveTable
           size="small"
           rowKey="episodeId"
           style={{ marginTop: 16 }}

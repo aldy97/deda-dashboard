@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Empty, Input, Table, Tag, Typography } from 'antd'
+import { Empty, Input, Tag, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { FleetDeviceItem } from '../../types/analytics'
@@ -212,7 +213,7 @@ export default function DeviceTable({ onOpenDevice }: Props) {
         </Typography.Text>
       </div>
       {data === null && devicesQuery.isLoading ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={[]}
           rowKey="deviceId"
@@ -221,7 +222,7 @@ export default function DeviceTable({ onOpenDevice }: Props) {
           pagination={false}
         />
       ) : data && data.items.length > 0 ? (
-        <Table
+        <ResponsiveTable
           columns={columns}
           dataSource={data.items}
           rowKey="deviceId"

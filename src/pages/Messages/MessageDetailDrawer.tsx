@@ -9,6 +9,7 @@ import {
   Typography,
 } from 'antd'
 import dayjs from 'dayjs'
+import { drawerWidth } from '../../utils/drawer-width'
 import { useMessageDetail, useMessages } from '../../api/queries'
 import AccessLink from '../../components/access/AccessLink'
 import CopyableText from '../../components/CopyableText'
@@ -106,7 +107,7 @@ export default function MessageDetailDrawer({
   return (
     <Drawer
       title="消息详情"
-      width={640}
+      width={drawerWidth(640)}
       open={id !== null}
       onClose={onClose}
     >

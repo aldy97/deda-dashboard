@@ -35,7 +35,7 @@ export default function NetworkUsageCard({
 
   const donutOption = {
     tooltip: { trigger: 'item', formatter: '{b}: {c} 轮（{d}%）' },
-    legend: { bottom: 0 },
+    legend: { type: 'scroll', bottom: 0 },
     series: [
       {
         name: '对话网络',
@@ -54,7 +54,7 @@ export default function NetworkUsageCard({
   const dates = data.series.map((point) => point.date.slice(5))
   const stackedOption = {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { bottom: 0 },
+    legend: { type: 'scroll', bottom: 0 },
     grid: { left: 48, right: 24, top: 24, bottom: 48 },
     xAxis: { type: 'category', data: dates },
     yAxis: {

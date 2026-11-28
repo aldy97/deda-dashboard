@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Drawer, Modal, Space, Spin, Tabs, Tag, Typography } from 'antd'
+import { drawerWidth } from '../../utils/drawer-width'
 import {
   useAdventureAuthoring,
   useAdventureCapabilities,
@@ -120,7 +121,7 @@ export default function EpisodeDetailDrawer({
     <Drawer
       open={episodeId !== null}
       onClose={requestClose}
-      size={1040}
+      width={drawerWidth(1040)}
       // 有未保存改动时遮罩点击不关闭：误触一下就丢掉半集稿子，代价太高
       maskClosable={!state.dirty}
       destroyOnHidden

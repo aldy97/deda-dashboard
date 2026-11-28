@@ -1,4 +1,5 @@
-import { Progress, Table, Tag } from 'antd'
+import { Progress, Tag } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { LlmSummaryResponse } from '../../types/analytics'
 import AccessLink from '../../components/access/AccessLink'
 import InfoTip from '../../components/InfoTip'
@@ -22,7 +23,7 @@ export default function SceneSummaryTable({
   data: LlmSummaryResponse
 }) {
   return (
-    <Table
+    <ResponsiveTable
       size="small"
       rowKey="scene"
       dataSource={data.scenes}

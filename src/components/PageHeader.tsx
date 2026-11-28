@@ -15,6 +15,9 @@ interface PageHeaderProps {
  * 之前各页面各自手写 header，间距与结构逐页漂移（fleet / prompts 就是
  * 离群的两个）。收敛到这一个组件后，现有与未来的所有 tab 共用同一套
  * 「flex 两端对齐 + 标题 level 4 + 描述次级色 + 16px 下边距」的样式。
+ *
+ * 换行规则交给 index.css：手机（<768）时操作区整行独占，日期选择与刷新按钮
+ * 不再和标题挤在同一行；这里只挂 class，不写断点判断。
  */
 export default function PageHeader({
   title,
@@ -22,29 +25,18 @@ export default function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-        flexWrap: 'wrap',
-        gap: 12,
-      }}
-    >
-      <div>
+    <div className="page-header">
+      <div className="page-header-title" style={{ minWidth: 0 }}>
         <Typography.Title level={4} style={{ margin: 0 }}>
           {title}
         </Typography.Title>
         {description != null && (
-          <Typography.Text type="secondary">{description}</Typography.Text>
+          <Typography.Text type="secondary" style={{ display: 'block' }}>
+            {description}
+          </Typography.Text>
         )}
       </div>
-      {actions != null && (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {actions}
-        </div>
-      )}
+      {actions != null && <div className="page-header-actions">{actions}</div>}
     </div>
   )
 }

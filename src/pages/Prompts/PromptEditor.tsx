@@ -277,7 +277,7 @@ function PromptEditorForm({
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Descriptions column={2} size="small" colon={false}>
+      <Descriptions column={{ xs: 1, md: 2 }} size="small" colon={false}>
         <Descriptions.Item label="key">
           <Typography.Text code>{detail.key}</Typography.Text>
         </Descriptions.Item>

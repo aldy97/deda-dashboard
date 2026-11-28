@@ -1,18 +1,6 @@
 import { useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Checkbox,
-  Descriptions,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  Upload,
-} from 'antd'
+import { Alert, Button, Card, Checkbox, Descriptions, Input, Select, Space, Tag, Typography, Upload } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import type { ColumnsType } from 'antd/es/table'
 import { UploadOutlined } from '@ant-design/icons'
 import type { ApiError } from '../../api/client'
@@ -180,7 +168,7 @@ function ExportCard() {
 
         {result && (
           <>
-            <Descriptions size="small" column={2} bordered>
+            <Descriptions size="small" column={{ xs: 1, md: 2 }} bordered>
               <Descriptions.Item label="导出集数">
                 {result.episodeCount}
               </Descriptions.Item>
@@ -447,7 +435,7 @@ function ImportCard() {
               />
             )}
 
-            <Descriptions size="small" column={4} bordered>
+            <Descriptions size="small" column={{ xs: 1, sm: 2, md: 4 }} bordered>
               <Descriptions.Item label="新增">{preview.plan.adds}</Descriptions.Item>
               <Descriptions.Item label="替换">{preview.plan.replaces}</Descriptions.Item>
               <Descriptions.Item label="已一致">
@@ -481,7 +469,7 @@ function ImportCard() {
               />
             )}
 
-            <Table
+            <ResponsiveTable
               columns={PLAN_COLUMNS}
               dataSource={preview.plan.items}
               rowKey={(row) => row.businessKey}

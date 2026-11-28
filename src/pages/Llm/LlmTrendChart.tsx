@@ -40,6 +40,7 @@ export default function LlmTrendChart({ data }: { data: LlmTrendResponse }) {
     },
     legend: {
       data: ['调用量', '成功率', '首包 P50', '首包 P90'],
+      type: 'scroll',
       bottom: 0,
     },
     grid: { left: 56, right: 112, top: 24, bottom: 56 },

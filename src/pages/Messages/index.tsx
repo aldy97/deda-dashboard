@@ -1,16 +1,6 @@
 import { useMemo, useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Input,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Alert, Button, Card, Input, Select, Tag, Tooltip, Typography } from 'antd'
+import ResponsiveTable from '../../components/ResponsiveTable'
 import dayjs from 'dayjs'
 import {
   useInterruptionRate,
@@ -160,7 +150,7 @@ export default function Messages() {
             <InfoTip title="推断口径：新一轮对话开始时，若上一轮 AI 回复的估算播放窗口（字数 × 120ms，封顶 60s）尚未结束，或上一轮还在生成孩子就又开口，则记为被打断。非设备真实事件；孩子话密、家长插话都会计入。" />
           </Typography.Text>
         )}
-        <Space wrap style={{ marginBottom: 12 }}>
+        <div className="filter-row" style={{ marginBottom: 12 }}>
           <AnalyticsRangePicker
             allowClear
             placeholder={['消息开始日期', '消息结束日期']}
@@ -233,7 +223,7 @@ export default function Messages() {
               同一轮问答：{turnId.slice(0, 8)}…
             </Tag>
           )}
-        </Space>
+        </div>
 
         {error && (
           <Alert
@@ -245,7 +235,7 @@ export default function Messages() {
           />
         )}
 
-        <Table
+        <ResponsiveTable
           size="small"
           rowKey="id"
           loading={loading}
