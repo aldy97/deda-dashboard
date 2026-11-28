@@ -77,7 +77,7 @@ export const SCENE_META: Record<string, SceneMeta> = {
   adventure_video_storyboard: {
     label: '冒险短视频分镜',
     description:
-      '冒险内容工作台生成短视频时调用：把已发布剧集压成 60 秒竖屏预告分镜 JSON' +
+      '冒险内容工作台生成故事短片时调用：把已发布剧集压成 54–58 秒竖屏分镜 JSON' +
       '（温度 0.4、关闭思考、maxTokens 4000）。校验失败会带着错误原因重试，' +
       '耗尽后作业失败。',
     streaming: false,

@@ -1,11 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import VideoJobCard from './VideoJobCard'
 import type { VideoJobSummary } from '../../types/adventureVideo'
 
-const { retryMutate, cancelMutate } = vi.hoisted(() => ({
+const {
+  retryMutate,
+  cancelMutate,
+  previewRefetch,
+  fetchDownload,
+  fetchPreview,
+} = vi.hoisted(() => ({
   retryMutate: vi.fn(),
   cancelMutate: vi.fn(),
+  previewRefetch: vi.fn(),
+  fetchDownload: vi.fn(),
+  fetchPreview: vi.fn(),
 }))
 
 vi.mock('../../api/adventureVideo', () => ({
@@ -13,6 +28,7 @@ vi.mock('../../api/adventureVideo', () => ({
     isLoading: false,
     data: { url: 'https://oss/final.mp4?sig=1', expiresInSec: 3600 },
     error: null,
+    refetch: previewRefetch,
   })),
   useRetryVideoJob: vi.fn(() => ({
     mutateAsync: retryMutate,
@@ -22,6 +38,29 @@ vi.mock('../../api/adventureVideo', () => ({
     mutateAsync: cancelMutate,
     isPending: false,
   })),
+  useVideoJob: vi.fn(() => ({ isLoading: false, data: undefined })),
+  useValidateVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useSaveVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useRevoiceVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useRegenerateVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useApproveVideoStoryboard: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  fetchVideoDownloadUrl: fetchDownload,
+  fetchVideoPreviewUrl: fetchPreview,
 }))
 
 const BASE: VideoJobSummary = {
@@ -60,14 +99,22 @@ describe('VideoJobCard', () => {
 
   it('只读账号不能重试', () => {
     render(<VideoJobCard job={BASE} authoring={false} />)
-    const retry = screen.getByRole('button', { name: /重\s*试/ }) as HTMLButtonElement
+    const retry = screen.getByRole('button', {
+      name: /重\s*试/,
+    }) as HTMLButtonElement
     expect(retry.disabled).toBe(true)
   })
 
   it('成功作业渲染播放器，并标注系统音色试跑', () => {
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'succeeded', stage: 'done', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'succeeded',
+          stage: 'done',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )
@@ -78,10 +125,110 @@ describe('VideoJobCard', () => {
     expect(screen.getByText(/系统音色试跑/)).toBeTruthy()
   })
 
+  it('待审核显示审核入口，且不调用视频预览', () => {
+    render(
+      <VideoJobCard
+        job={{
+          ...BASE,
+          status: 'awaiting_review',
+          stage: 'review',
+          errorCode: null,
+          errorMessage: null,
+        }}
+        authoring
+        canReview
+      />,
+    )
+    expect(screen.getByRole('button', { name: /审核分镜/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /取\s*消/ })).toBeTruthy()
+    expect(document.querySelector('video')).toBeNull()
+    expect(screen.getByText(/等待 superadmin 审核分镜/)).toBeTruthy()
+  })
+
+  it('没有审核权限时不显示审核入口', () => {
+    render(
+      <VideoJobCard
+        job={{
+          ...BASE,
+          status: 'awaiting_review',
+          stage: 'review',
+          errorCode: null,
+          errorMessage: null,
+        }}
+        authoring
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /审核分镜/ })).toBeNull()
+  })
+
+  it('播放器过期报错时换签并恢复进度；下载/新窗口现签', async () => {
+    const assign = vi.fn()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, assign },
+    })
+    previewRefetch.mockReset()
+    fetchDownload.mockReset()
+    fetchPreview.mockReset()
+    fetchDownload.mockResolvedValue({ url: 'https://oss/dl', expiresInSec: 60, filename: 'a.mp4' })
+    fetchPreview.mockResolvedValue({ url: 'https://oss/play', expiresInSec: 60 })
+
+    render(
+      <VideoJobCard
+        job={{ ...BASE, status: 'succeeded', stage: 'done', errorCode: null, errorMessage: null }}
+        authoring
+      />,
+    )
+    const video = document.querySelector('video') as HTMLVideoElement
+    video.currentTime = 12
+    fireEvent.error(video)
+    expect(previewRefetch).toHaveBeenCalled()
+    fireEvent.loadedMetadata(video)
+    expect(video.currentTime).toBe(12)
+
+    fireEvent.click(screen.getByRole('button', { name: /下\s*载/ }))
+    await waitFor(() => expect(fetchDownload).toHaveBeenCalledWith('job-1'))
+    expect(assign).toHaveBeenCalledWith('https://oss/dl')
+
+    fireEvent.click(screen.getByRole('button', { name: '在新窗口打开' }))
+    await waitFor(() => expect(fetchPreview).toHaveBeenCalledWith('job-1'))
+    expect(open).toHaveBeenCalledWith('https://oss/play', '_blank', 'noopener,noreferrer')
+
+    open.mockRestore()
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    })
+  })
+
+  it('待审核点击审核分镜，关闭抽屉', async () => {
+    render(
+      <VideoJobCard
+        job={{ ...BASE, status: 'awaiting_review', stage: 'review', errorCode: null, errorMessage: null }}
+        authoring
+        canReview
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /审核分镜/ }))
+    expect(await screen.findByRole('button', { name: 'Close' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() =>
+      expect(screen.queryByText('原文对照')).toBeNull(),
+    )
+  })
+
   it('运行中显示取消入口，且不请求预览', () => {
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'running', stage: 'voice', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'running',
+          stage: 'voice',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )
@@ -113,7 +260,13 @@ describe('VideoJobCard', () => {
     cancelMutate.mockResolvedValue({ job: BASE })
     render(
       <VideoJobCard
-        job={{ ...BASE, status: 'running', stage: 'voice', errorCode: null, errorMessage: null }}
+        job={{
+          ...BASE,
+          status: 'running',
+          stage: 'voice',
+          errorCode: null,
+          errorMessage: null,
+        }}
         authoring
       />,
     )

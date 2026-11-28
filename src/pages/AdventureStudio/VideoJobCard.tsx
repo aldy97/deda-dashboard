@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Alert,
   Button,
@@ -12,6 +12,8 @@ import {
   Typography,
 } from 'antd'
 import {
+  fetchVideoDownloadUrl,
+  fetchVideoPreviewUrl,
   useCancelVideoJob,
   useRetryVideoJob,
   useVideoPreviewUrl,
@@ -23,6 +25,7 @@ import {
   type VideoJobSummary,
 } from '../../types/adventureVideo'
 import { fmtDateTime } from './labels'
+import StoryboardReview from './StoryboardReview'
 
 /**
  * 单条视频作业卡片。
@@ -39,6 +42,7 @@ const STATUS_META: Record<
 > = {
   queued: { label: '排队中', color: 'default' },
   running: { label: '生成中', color: 'processing' },
+  awaiting_review: { label: '待审核', color: 'gold' },
   succeeded: { label: '已完成', color: 'success' },
   failed: { label: '失败', color: 'error' },
   canceled: { label: '已取消', color: 'default' },
@@ -48,6 +52,7 @@ const STAGE_LABEL: Record<string, string> = {
   queued: '排队',
   storyboard: '分镜',
   voice: '配音',
+  review: '待审核',
   visual: '画面',
   assemble: '合成',
   upload: '上传',
@@ -62,11 +67,19 @@ type Action = 'retry' | 'cancel'
 interface Props {
   job: VideoJobSummary
   authoring: boolean
+  canReview?: boolean
 }
 
-export default function VideoJobCard({ job, authoring }: Props) {
+export default function VideoJobCard({
+  job,
+  authoring,
+  canReview = false,
+}: Props) {
   const [action, setAction] = useState<Action | null>(null)
   const [reason, setReason] = useState('')
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const resumeAtRef = useRef(0)
   const preview = useVideoPreviewUrl(
     job.id,
     job.status === 'succeeded',
@@ -80,6 +93,28 @@ export default function VideoJobCard({ job, authoring }: Props) {
   function openAction(next: Action) {
     setAction(next)
     setReason('')
+  }
+
+  function handleVideoError() {
+    resumeAtRef.current = videoRef.current?.currentTime ?? 0
+    void preview.refetch()
+  }
+
+  function handleLoadedMetadata() {
+    if (videoRef.current && resumeAtRef.current > 0) {
+      videoRef.current.currentTime = resumeAtRef.current
+      resumeAtRef.current = 0
+    }
+  }
+
+  async function handleDownload() {
+    const { url } = await fetchVideoDownloadUrl(job.id)
+    window.location.assign(url)
+  }
+
+  async function handleOpenWindow() {
+    const { url } = await fetchVideoPreviewUrl(job.id)
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   async function submitAction() {
@@ -122,7 +157,18 @@ export default function VideoJobCard({ job, authoring }: Props) {
               重试
             </Button>
           ) : null}
-          {job.status === 'queued' || job.status === 'running' ? (
+          {job.status === 'awaiting_review' && canReview ? (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => setReviewOpen(true)}
+            >
+              审核分镜
+            </Button>
+          ) : null}
+          {job.status === 'queued' ||
+          job.status === 'running' ||
+          job.status === 'awaiting_review' ? (
             <Button
               size="small"
               danger
@@ -177,9 +223,12 @@ export default function VideoJobCard({ job, authoring }: Props) {
           ) : preview.data?.url ? (
             <Space orientation="vertical" size={6} style={{ width: '100%' }}>
               <video
+                ref={videoRef}
                 controls
                 preload="metadata"
                 src={preview.data.url}
+                onError={handleVideoError}
+                onLoadedMetadata={handleLoadedMetadata}
                 // 竖屏成片按自然比例能长到上千像素，手机上会把整页顶走：
                 // 宽度跟随容器，高度封顶，留黑边由 object-fit 处理
                 style={{
@@ -190,15 +239,15 @@ export default function VideoJobCard({ job, authoring }: Props) {
                   background: '#000',
                 }}
               />
-              <Space size={12}>
-                <Typography.Link href={preview.data.url} target="_blank" rel="noreferrer">
+              <Space size={12} wrap>
+                <Button size="small" onClick={() => void handleOpenWindow()}>
                   在新窗口打开
-                </Typography.Link>
-                <Typography.Link href={preview.data.url} download>
+                </Button>
+                <Button size="small" onClick={() => void handleDownload()}>
                   下载
-                </Typography.Link>
+                </Button>
                 <Typography.Text type="secondary">
-                  链接 {Math.round(preview.data.expiresInSec / 60)} 分钟后过期
+                  链接约 {Math.round(preview.data.expiresInSec / 60)} 分钟内有效；过期后播放器会自动换签
                 </Typography.Text>
               </Space>
             </Space>
@@ -215,7 +264,11 @@ export default function VideoJobCard({ job, authoring }: Props) {
           )
         ) : null}
 
-        {!isTerminal(job.status) ? (
+        {job.status === 'awaiting_review' ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            配音已完成，等待 superadmin 审核分镜；批准前不会调用视频模型。
+          </Typography.Text>
+        ) : !isTerminal(job.status) ? (
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             生成中会自动刷新；关掉抽屉也不会中断。
           </Typography.Text>
@@ -224,10 +277,14 @@ export default function VideoJobCard({ job, authoring }: Props) {
 
       <Modal
         open={action !== null}
-        title={action === 'retry' ? '重试这支预告' : '取消这支预告'}
+        title={action === 'retry' ? '重试这支短片' : '取消这支短片'}
         okText={action === 'retry' ? '重试' : '取消作业'}
         cancelText="返回"
-        okButtonProps={{ danger: action === 'cancel', disabled: !reasonOk, loading: busy }}
+        okButtonProps={{
+          danger: action === 'cancel',
+          disabled: !reasonOk,
+          loading: busy,
+        }}
         mask={{ closable: false }}
         onCancel={() => setAction(null)}
         onOk={() => void submitAction()}
@@ -243,13 +300,19 @@ export default function VideoJobCard({ job, authoring }: Props) {
             placeholder={
               action === 'retry'
                 ? '例如：上一版画面角色漂移，换 seed 重跑一次'
-                : '例如：这一集先不投放预告了'
+                : '例如：这一集先不投放短片了'
             }
             maxLength={500}
             showCount
           />
         </Space>
       </Modal>
+
+      <StoryboardReview
+        jobId={job.id}
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+      />
     </Card>
   )
 }
